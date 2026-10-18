@@ -1,6 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './maplibre-worker';
 import './style.css';
+import { languageSwitcher, translate } from './app-i18n';
 import { mountBasicDemo } from './demos/basic';
 import { mountMemoryDemo } from './demos/memory';
 import { setHooks } from './test-hooks';
@@ -10,17 +11,22 @@ type Unmount = () => Promise<void> | void;
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let unmount: Unmount | undefined;
 
+// 语言切换按钮常驻右下角，跨页面保留
+document.body.append(languageSwitcher().element);
+translate();
+
 function mountGallery(root: HTMLElement): Unmount {
   root.innerHTML = `
     <main class="gallery">
       <h1>vivi-map</h1>
-      <p>开源 TypeScript 室内地图 SDK 的示例画廊 · Demo gallery of an open-source indoor map SDK</p>
+      <p data-i18n="gallery.subtitle"></p>
       <ul class="cards">
-        <li><a href="#/basic"><strong>1 · 基础地图 Basic map</strong><span>虚构医院、楼层切换、标记</span></a></li>
-        <li><a href="#/memory"><strong>2 · 内存实验室 Memory lab</strong><span>反复创建/销毁地图，观察堆与未释放资源</span></a></li>
+        <li><a href="#/basic"><strong data-i18n="gallery.basic.title"></strong><span data-i18n="gallery.basic.desc"></span></a></li>
+        <li><a href="#/memory"><strong data-i18n="gallery.memory.title"></strong><span data-i18n="gallery.memory.desc"></span></a></li>
       </ul>
-      <p class="note">地图数据为虚构的「さくら総合病院」。<a href="https://github.com/vivi-shiki/vivi-map">GitHub</a></p>
+      <p class="note"><span data-i18n="gallery.note"></span> <a href="https://github.com/vivi-shiki/vivi-map">GitHub</a></p>
     </main>`;
+  translate(root);
   setHooks({ demo: 'gallery', ready: true });
   return () => {};
 }

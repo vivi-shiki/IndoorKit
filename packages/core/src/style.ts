@@ -52,6 +52,21 @@ function match(map: Record<string, string | number>, fallback: string | number):
   return ['match', ['get', 'category'], ...pairs, fallback] as unknown as ExpressionSpecification;
 }
 
+/** 按语言优先级读取 label_<lang> 属性的标注表达式 */
+export function labelExpression(languages: readonly string[]): ExpressionSpecification {
+  return ['coalesce', ...languages.map((l) => ['get', `label_${l}`])] as ExpressionSpecification;
+}
+
+/** 地图支持的界面语言，选中的语言排第一，其余作为缺失时的回退 */
+export function languageFallbacks(locale: string): string[] {
+  const order: Record<string, string[]> = {
+    zh: ['zh', 'ja', 'en'],
+    en: ['en', 'ja', 'zh'],
+    ja: ['ja', 'en', 'zh'],
+  };
+  return order[locale] ?? [locale, 'en', 'ja', 'zh'];
+}
+
 /** 由数据类别和主题生成 MapLibre 图层，替代写死的大段样式 */
 export function buildIndoorStyle(venue: VenueModel, theme: Theme, languages: readonly string[]): IndoorStyle {
   const walls = {
@@ -65,7 +80,7 @@ export function buildIndoorStyle(venue: VenueModel, theme: Theme, languages: rea
     { id: 'indoor-openings', spec: { type: 'geojson', data: venue.features.openings } },
   ] satisfies IndoorStyle['sources'];
 
-  const label = ['coalesce', ...languages.map((l) => ['get', `label_${l}`])] as ExpressionSpecification;
+  const label = labelExpression(languages);
 
   const layers: LayerSpecification[] = [
     {

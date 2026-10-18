@@ -24,6 +24,7 @@
     "tools/leak-bench",
     "apps/*/src",
     "apps/*/e2e",
+    "apps/*/test",
     "*.config.ts"
   ]
 }

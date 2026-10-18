@@ -19,6 +19,7 @@ export interface MapLike {
   getLayer(id: string): unknown;
   removeLayer(id: string): unknown;
   setFilter(layerId: string, filter: FilterSpecification | null): unknown;
+  setLayoutProperty(layerId: string, name: string, value: unknown): unknown;
   on(type: string, listener: MapListener): unknown;
   off(type: string, listener: MapListener): unknown;
   once(type: string, listener: MapListener): unknown;
@@ -45,13 +46,15 @@ export interface IndoorEvents {
   lifecycle: { phase: LifecyclePhase };
   'floor:change': { levelId: string; previous: string | null };
   'marker:change': { count: number };
+  'language:change': { languages: readonly string[] };
 }
 
 export interface PluginContext {
   map: MapLike;
   venue: VenueModel;
   events: EventBus<IndoorEvents>;
-  languages: readonly string[];
+  /** 当前标注语言优先级，随 setLanguages 变化 */
+  readonly languages: readonly string[];
   /** 随楼层切换的室内图层 */
   indoorLayerIds: readonly string[];
   track<T>(value: T, dispose: (value: T) => void, label?: string): T;
