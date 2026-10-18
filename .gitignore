@@ -1,0 +1,9 @@
+# 本地私有文档：改造项目设计，不上传到 GitHub
+改造项目文档.md
+docs/private/
+
+# 依赖与构建产物
+node_modules/
+dist/
+.DS_Store
+Thumbs.db
