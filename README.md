@@ -1,20 +1,17 @@
 # vivi-map
 
-室内地图 SDK 与演示项目（IndoorKit，暂名）。
+开源的 TypeScript 室内地图 SDK（工作名 IndoorKit），配套示例画廊、实时定位看板与 AI 地图助手。
 
-## 项目设计文档
+An open-source TypeScript indoor map SDK (working name IndoorKit), with a demo gallery, a real-time location dashboard, and an AI map assistant.
 
-完整的改造/设计文档《代码库分析与演示项目设计》保存在本地文件 [改造项目文档.md](./改造项目文档.md)。
+オープンソースの TypeScript 製屋内地図 SDK（仮称 IndoorKit）。デモギャラリー、リアルタイム位置情報ダッシュボード、AI 地図アシスタント付き。
 
-该文档包含内部代码分析等不公开内容，已加入 `.gitignore`，**不会被提交或推送到 GitHub**。在 GitHub 上看到这个链接打不开是正常的。
+## 路线图 / Roadmap / ロードマップ
 
-文档目录：
+- [中文](docs/roadmap.zh-CN.md)
+- [English](docs/roadmap.en.md)
+- [日本語](docs/roadmap.ja.md)
 
-- 结论速览
-- map-sdk 分析
-- 业务前端分析
-- 演示项目设计：IndoorKit（暂名）
-- SDK 新大纲（私有依赖全部换成公共库）
-- 地图数据与模型资产
-- 借鉴：vczh 的 AI 协作框架
-- 合规与求职呈现建议
+## 本地设计文档
+
+完整的设计文档保存在本地文件 [改造项目文档.md](./改造项目文档.md)，已加入 `.gitignore`，不会被提交或推送到 GitHub。在 GitHub 上这个链接打不开是正常的。
