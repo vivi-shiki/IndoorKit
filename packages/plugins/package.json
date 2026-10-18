@@ -1,0 +1,16 @@
+{
+  "name": "@indoorkit/plugins",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@indoorkit/core": "workspace:*",
+    "@indoorkit/imdf": "workspace:*"
+  }
+}

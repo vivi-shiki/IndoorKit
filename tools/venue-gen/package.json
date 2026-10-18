@@ -1,0 +1,15 @@
+{
+  "name": "@indoorkit/venue-gen",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "tsx src/cli.ts ../../apps/playground/public/data/sakura-hospital"
+  },
+  "dependencies": {
+    "@indoorkit/imdf": "workspace:*"
+  }
+}

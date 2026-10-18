@@ -1,0 +1,254 @@
+import type { ImdfArchive, LabelMap, RawCollection, RawFeature } from '@indoorkit/imdf';
+import type { Polygon } from 'geojson';
+
+export interface VenueGenOptions {
+  seed: string;
+  name: LabelMap;
+  /** 场馆中心经纬度（虚构地点） */
+  origin: [number, number];
+  buildings: number;
+  floors: number;
+  roomsPerSide: number;
+  roomWidth: number;
+  roomDepth: number;
+  corridorWidth: number;
+}
+
+export const SAKURA_HOSPITAL: VenueGenOptions = {
+  seed: 'sakura-hospital',
+  name: { ja: 'さくら総合病院', en: 'Sakura General Hospital', zh: '樱花综合医院' },
+  // 海上的虚构坐标，避免与任何真实医院重合
+  origin: [139.9, 35.2],
+  buildings: 1,
+  floors: 3,
+  roomsPerSide: 6,
+  roomWidth: 6,
+  roomDepth: 6,
+  corridorWidth: 3,
+};
+
+const WALL = 0.2;
+const DOOR = 1.2;
+const BUILDING_GAP = 12;
+
+const DEPARTMENTS: LabelMap[][] = [
+  [
+    { ja: '受付', en: 'Reception', zh: '挂号处' },
+    { ja: '救急外来', en: 'Emergency', zh: '急诊' },
+    { ja: '放射線科', en: 'Radiology', zh: '放射科' },
+    { ja: '検査室', en: 'Laboratory', zh: '检验科' },
+    { ja: '薬局', en: 'Pharmacy', zh: '药房' },
+    { ja: '会計', en: 'Cashier', zh: '收费处' },
+    { ja: '売店', en: 'Shop', zh: '小卖部' },
+    { ja: '待合室', en: 'Waiting Room', zh: '候诊室' },
+    { ja: '総合案内', en: 'Information', zh: '咨询台' },
+  ],
+  [
+    { ja: '内科', en: 'Internal Medicine', zh: '内科' },
+    { ja: '外科', en: 'Surgery', zh: '外科' },
+    { ja: '小児科', en: 'Pediatrics', zh: '儿科' },
+    { ja: '整形外科', en: 'Orthopedics', zh: '骨科' },
+    { ja: '眼科', en: 'Ophthalmology', zh: '眼科' },
+    { ja: '皮膚科', en: 'Dermatology', zh: '皮肤科' },
+    { ja: '耳鼻科', en: 'ENT', zh: '耳鼻喉科' },
+    { ja: '診察室', en: 'Consultation', zh: '诊室' },
+    { ja: '処置室', en: 'Treatment Room', zh: '处置室' },
+  ],
+  [
+    { ja: 'ICU', en: 'ICU', zh: '重症监护室' },
+    { ja: 'ナースステーション', en: 'Nurse Station', zh: '护士站' },
+    { ja: '病室 301', en: 'Ward 301', zh: '病房 301' },
+    { ja: '病室 302', en: 'Ward 302', zh: '病房 302' },
+    { ja: '病室 303', en: 'Ward 303', zh: '病房 303' },
+    { ja: '病室 304', en: 'Ward 304', zh: '病房 304' },
+    { ja: 'リハビリ室', en: 'Rehabilitation', zh: '康复室' },
+    { ja: 'カンファレンス室', en: 'Conference', zh: '会议室' },
+    { ja: '病室 305', en: 'Ward 305', zh: '病房 305' },
+  ],
+];
+
+const SERVICE: { category: string; name: LabelMap }[] = [
+  { category: 'elevator', name: { ja: 'エレベーター', en: 'Elevator', zh: '电梯' } },
+  { category: 'stairs', name: { ja: '階段', en: 'Stairs', zh: '楼梯' } },
+  { category: 'restroom', name: { ja: 'トイレ', en: 'Restroom', zh: '洗手间' } },
+];
+
+/** FNV-1a，生成与 seed 绑定的稳定 UUID */
+function hash32(text: string, salt: number): number {
+  let h = 0x811c9dc5 ^ salt;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+function makeUuid(seed: string, key: string): string {
+  const hex = [0, 1, 2, 3]
+    .map((salt) => hash32(`${seed}/${key}`, salt).toString(16).padStart(8, '0'))
+    .join('');
+  const chars = hex.split('');
+  chars[12] = '4';
+  chars[16] = '89ab'[Number.parseInt(chars[16]!, 16) % 4]!;
+  const s = chars.join('');
+  return `${s.slice(0, 8)}-${s.slice(8, 12)}-${s.slice(12, 16)}-${s.slice(16, 20)}-${s.slice(20, 32)}`;
+}
+
+type Rect = [number, number, number, number];
+
+export function generateVenue(options: VenueGenOptions): ImdfArchive {
+  const { seed, roomsPerSide: n, roomWidth: w, roomDepth: d, corridorWidth: c } = options;
+  const id = (key: string) => makeUuid(seed, key);
+  const buildingWidth = n * w;
+  const buildingHeight = 2 * d + c;
+  const totalWidth = options.buildings * buildingWidth + (options.buildings - 1) * BUILDING_GAP;
+
+  const [lng0, lat0] = options.origin;
+  const metersPerLng = 111_320 * Math.cos((lat0 * Math.PI) / 180);
+  const metersPerLat = 110_540;
+  const round = (v: number) => Math.round(v * 1e8) / 1e8;
+  const toLngLat = (x: number, y: number): [number, number] => [
+    round(lng0 + (x - totalWidth / 2) / metersPerLng),
+    round(lat0 + (y - buildingHeight / 2) / metersPerLat),
+  ];
+  const polygon = ([x0, y0, x1, y1]: Rect): Polygon => ({
+    type: 'Polygon',
+    coordinates: [[toLngLat(x0, y0), toLngLat(x1, y0), toLngLat(x1, y1), toLngLat(x0, y1), toLngLat(x0, y0)]],
+  });
+  const feature = (
+    featureType: string,
+    key: string,
+    geometry: RawFeature['geometry'],
+    properties: RawFeature['properties'],
+  ): RawFeature => ({ type: 'Feature', id: id(key), feature_type: featureType, geometry, properties });
+  const fc = (features: RawFeature[]): RawCollection => ({ type: 'FeatureCollection', features });
+
+  const margin = 10;
+  const venue = feature(
+    'venue',
+    'venue',
+    polygon([-margin, -margin, totalWidth + margin, buildingHeight + margin]),
+    {
+      category: 'healthcare',
+      name: options.name,
+      alt_name: null,
+      display_point: { type: 'Point', coordinates: toLngLat(totalWidth / 2, buildingHeight / 2) },
+    },
+  );
+
+  const buildings: RawFeature[] = [];
+  const levels: RawFeature[] = [];
+  const units: RawFeature[] = [];
+  const openings: RawFeature[] = [];
+  const fixtures: RawFeature[] = [];
+
+  for (let b = 0; b < options.buildings; b++) {
+    const bx = b * (buildingWidth + BUILDING_GAP);
+    const letter = String.fromCharCode(65 + b);
+    const buildingId = id(`building/${b}`);
+    buildings.push(
+      feature('building', `building/${b}`, null, {
+        category: 'unspecified',
+        name: { ja: `${letter}棟`, en: `Building ${letter}`, zh: `${letter}栋` },
+      }),
+    );
+
+    for (let f = 0; f < options.floors; f++) {
+      const key = `b${b}/f${f}`;
+      const levelId = id(`level/${key}`);
+      const short = `${f + 1}F`;
+      const names = DEPARTMENTS[f % DEPARTMENTS.length]!;
+      levels.push(
+        feature('level', `level/${key}`, polygon([bx, 0, bx + buildingWidth, buildingHeight]), {
+          category: 'unspecified',
+          ordinal: f,
+          outdoor: false,
+          name: { ja: `${f + 1}階`, en: `Level ${f + 1}`, zh: `${f + 1}层` },
+          short_name: { ja: short, en: short, zh: short },
+          building_ids: [buildingId],
+        }),
+      );
+
+      units.push(
+        feature('unit', `unit/${key}/corridor`, polygon([bx, d, bx + buildingWidth, d + c]), {
+          category: 'walkway',
+          level_id: levelId,
+          name: null,
+        }),
+      );
+
+      let named = 0;
+      // row 0 在走廊南侧，row 1 在北侧
+      for (let row = 0; row < 2; row++) {
+        for (let i = 0; i < n; i++) {
+          const cell: Rect =
+            row === 0
+              ? [bx + i * w, 0, bx + (i + 1) * w, d]
+              : [bx + i * w, d + c, bx + (i + 1) * w, buildingHeight];
+          const service = row === 0 ? SERVICE[i] : undefined;
+          const department = service ? undefined : names[named++ % names.length]!;
+          const category = service?.category ?? (department === names[0] && f === 0 ? 'lobby' : 'room');
+          const cellKey = `${key}/r${row}c${i}`;
+          units.push(
+            feature('unit', `unit/${cellKey}`, polygon(cell), {
+              category,
+              level_id: levelId,
+              name: service?.name ?? department,
+            }),
+          );
+
+          // 门开在朝走廊的一侧
+          const [x0, y0, x1, y1] = cell;
+          const doorY = row === 0 ? y1 : y0;
+          const cx = (x0 + x1) / 2;
+          openings.push(
+            feature(
+              'opening',
+              `opening/${cellKey}`,
+              {
+                type: 'LineString',
+                coordinates: [toLngLat(cx - DOOR / 2, doorY), toLngLat(cx + DOOR / 2, doorY)],
+              },
+              { category: 'pedestrian', level_id: levelId },
+            ),
+          );
+
+          const front: [number, number] = row === 0 ? [y1 - WALL, y1] : [y0, y0 + WALL];
+          const back: [number, number] = row === 0 ? [y0, y0 + WALL] : [y1 - WALL, y1];
+          const walls: Rect[] = [
+            [x0, y0, x0 + WALL, y1],
+            [x1 - WALL, y0, x1, y1],
+            [x0, back[0], x1, back[1]],
+            [x0, front[0], cx - DOOR / 2, front[1]],
+            [cx + DOOR / 2, front[0], x1, front[1]],
+          ];
+          walls.forEach((rect, k) => {
+            fixtures.push(
+              feature('fixture', `wall/${cellKey}/${k}`, polygon(rect), {
+                category: 'wall',
+                level_id: levelId,
+                name: null,
+              }),
+            );
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    manifest: {
+      version: '1.0.0',
+      created: '2026-01-01T00:00:00Z',
+      language: 'ja',
+      generator: 'vivi-map venue-gen',
+    },
+    venue: fc([venue]),
+    building: fc(buildings),
+    level: fc(levels),
+    unit: fc(units),
+    opening: fc(openings),
+    fixture: fc(fixtures),
+    amenity: fc([]),
+  };
+}
