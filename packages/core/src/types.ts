@@ -1,0 +1,76 @@
+import type { VenueModel } from '@indoorkit/imdf';
+import type {
+  FilterSpecification,
+  LayerSpecification,
+  SourceSpecification,
+  StyleSpecification,
+} from 'maplibre-gl';
+import type { EventBus } from './event-bus';
+
+// biome-ignore lint/suspicious/noExplicitAny: MapLibre 的监听器参数随事件类型变化
+export type MapListener = (...args: any[]) => void;
+
+/** SDK 用到的 MapLibre Map 子集；测试时可以替换为假实现 */
+export interface MapLike {
+  addSource(id: string, source: SourceSpecification): unknown;
+  getSource(id: string): unknown;
+  removeSource(id: string): unknown;
+  addLayer(layer: LayerSpecification, beforeId?: string): unknown;
+  getLayer(id: string): unknown;
+  removeLayer(id: string): unknown;
+  setFilter(layerId: string, filter: FilterSpecification | null): unknown;
+  on(type: string, listener: MapListener): unknown;
+  off(type: string, listener: MapListener): unknown;
+  once(type: string, listener: MapListener): unknown;
+  remove(): void;
+}
+
+export interface MapFactoryOptions {
+  container: HTMLElement | string;
+  style: StyleSpecification;
+  center: [number, number];
+  zoom: number;
+  /** 未指定 zoom 时按场馆范围取景 */
+  bounds?: [[number, number], [number, number]];
+  pitch: number;
+  bearing: number;
+}
+
+export type MapFactory = (options: MapFactoryOptions) => MapLike | Promise<MapLike>;
+
+export type LifecyclePhase = 'init' | 'load' | 'ready' | 'destroy';
+
+/** 核心事件；插件可以通过声明合并扩展 */
+export interface IndoorEvents {
+  lifecycle: { phase: LifecyclePhase };
+  'floor:change': { levelId: string; previous: string | null };
+  'marker:change': { count: number };
+}
+
+export interface PluginContext {
+  map: MapLike;
+  venue: VenueModel;
+  events: EventBus<IndoorEvents>;
+  languages: readonly string[];
+  /** 随楼层切换的室内图层 */
+  indoorLayerIds: readonly string[];
+  track<T>(value: T, dispose: (value: T) => void, label?: string): T;
+  trackSource(id: string, source: SourceSpecification): string;
+  trackLayer(layer: LayerSpecification, beforeId?: string): string;
+  on<K extends keyof IndoorEvents>(type: K, handler: (payload: IndoorEvents[K]) => void): void;
+  onMap(type: string, listener: MapListener): void;
+  get<T>(name: string): T;
+}
+
+export interface PluginDef<N extends string = string, A = unknown> {
+  name: N;
+  deps?: readonly string[];
+  setup(ctx: PluginContext): A | Promise<A>;
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: 插件 API 类型由各插件推导
+export type AnyPlugin = PluginDef<string, any>;
+
+export type PluginApis<P extends readonly AnyPlugin[]> = {
+  [K in P[number] as K['name']]: Awaited<ReturnType<K['setup']>>;
+};
