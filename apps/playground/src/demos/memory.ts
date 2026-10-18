@@ -1,6 +1,7 @@
-import { createIndoorMap } from '@indoorkit/core';
+import { createIndoorMap, languageFallbacks } from '@indoorkit/core';
 import { floorPlugin, markerPlugin } from '@indoorkit/plugins';
 import type { Map as MapLibreMap } from 'maplibre-gl';
+import { i18n, translate } from '../app-i18n';
 import { setHooks } from '../test-hooks';
 import { loadVenue } from '../venue';
 
@@ -27,16 +28,17 @@ export async function mountMemoryDemo(root: HTMLElement) {
   root.innerHTML = `
     <header class="bar">
       <a href="#/" class="back">← vivi-map</a>
-      <h1>2 · 内存实验室 Memory lab</h1>
-      <span class="metric">轮数 Cycles: <b data-testid="cycles">0</b></span>
-      <span class="metric">JS 堆 Heap: <b data-testid="heap">–</b></span>
-      <span class="metric">未释放资源 Unreleased: <b data-testid="unreleased">0</b></span>
-      <button type="button" class="action" data-action="run">运行 10 轮 Run 10 cycles</button>
+      <h1 data-i18n="demo.memory.title"></h1>
+      <span class="metric"><span data-i18n="metric.cycles"></span>: <b data-testid="cycles">0</b></span>
+      <span class="metric"><span data-i18n="metric.heap"></span>: <b data-testid="heap">–</b></span>
+      <span class="metric"><span data-i18n="metric.unreleased"></span>: <b data-testid="unreleased">0</b></span>
+      <button type="button" class="action" data-action="run" data-i18n="action.runCycles"></button>
     </header>
     <div class="stage">
       <div class="map" id="map"></div>
       <canvas class="chart" width="360" height="140" aria-label="Heap per cycle"></canvas>
     </div>`;
+  translate(root);
   const hooks = setHooks({ demo: 'memory' });
   const venue = await loadVenue();
   const container = root.querySelector<HTMLElement>('#map')!;
@@ -64,11 +66,16 @@ export async function mountMemoryDemo(root: HTMLElement) {
     ctx.stroke();
     ctx.fillStyle = '#2f3a48';
     ctx.font = '12px sans-serif';
-    ctx.fillText(`heap per cycle (MB), max ${max.toFixed(1)}`, 10, 16);
+    ctx.fillText(i18n.t('chart.heap', { value: max.toFixed(1) }), 10, 16);
   };
 
   const cycle = async () => {
-    const indoor = await createIndoorMap({ container, venue, plugins: [floorPlugin, markerPlugin] });
+    const indoor = await createIndoorMap({
+      container,
+      venue,
+      plugins: [floorPlugin, markerPlugin],
+      languages: languageFallbacks(i18n.locale),
+    });
     const [lng, lat] = venue.center;
     for (let i = 0; i < 20; i++) {
       indoor.plugins.marker.add({ id: `m${i}`, coord: [lng + (i - 10) * 0.00002, lat] });
@@ -98,10 +105,12 @@ export async function mountMemoryDemo(root: HTMLElement) {
     return running;
   };
   button.addEventListener('click', () => void hooks.runCycles(10));
+  const unsubscribe = i18n.subscribe(drawChart);
   drawChart();
   hooks.ready = true;
 
   return async () => {
+    unsubscribe();
     stopped = true;
     await running;
   };

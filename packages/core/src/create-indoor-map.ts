@@ -3,7 +3,7 @@ import type { LayerSpecification, SourceSpecification, StyleSpecification } from
 import { EventBus } from './event-bus';
 import { sortPlugins } from './plugin';
 import { ResourceTracker } from './resource-tracker';
-import { buildIndoorStyle, type Theme, themes } from './style';
+import { buildIndoorStyle, labelExpression, type Theme, themes } from './style';
 import type {
   AnyPlugin,
   IndoorEvents,
@@ -34,6 +34,10 @@ export interface IndoorMap<P extends readonly AnyPlugin[]> {
   plugins: PluginApis<P>;
   events: EventBus<IndoorEvents>;
   indoorLayerIds: readonly string[];
+  /** 当前标注语言优先级 */
+  readonly languages: readonly string[];
+  /** 切换地图内标注语言，不重建地图 */
+  setLanguages(languages: readonly string[]): void;
   resources: { readonly size: number; labels(): string[] };
   readonly destroyed: boolean;
   destroy(): Promise<void>;
@@ -63,7 +67,7 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
   options: CreateIndoorMapOptions<P>,
 ): Promise<IndoorMap<P>> {
   const theme = options.theme ?? themes.light;
-  const languages = options.languages ?? ['ja', 'en'];
+  let languages: readonly string[] = [...(options.languages ?? ['ja', 'en'])];
   const events = new EventBus<IndoorEvents>();
   const tracker = new ResourceTracker();
   for (const [type, handler] of Object.entries(options.on ?? {})) {
@@ -119,7 +123,9 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
         map,
         venue: options.venue,
         events,
-        languages,
+        get languages() {
+          return languages;
+        },
         indoorLayerIds: style.levelLayerIds,
         track: (value, dispose, label) =>
           tracker.track(value, dispose, `${plugin.name}:${label ?? 'resource'}`),
@@ -148,6 +154,15 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
       events,
       indoorLayerIds: style.levelLayerIds,
       resources: tracker,
+      get languages() {
+        return languages;
+      },
+      setLanguages(next) {
+        if (next.length === 0) throw new Error('setLanguages needs at least one language');
+        languages = [...next];
+        map.setLayoutProperty('indoor-labels', 'text-field', labelExpression(languages));
+        events.emit('language:change', { languages });
+      },
       get destroyed() {
         return destroyed;
       },

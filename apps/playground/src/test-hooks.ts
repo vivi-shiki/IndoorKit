@@ -7,6 +7,8 @@ export interface ViviTestHooks {
   levelIdOf(shortName: string): string;
   renderedLevelIds(layerId: string): string[];
   renderedCount(layerId: string): number;
+  /** 地图内标注当前优先使用的语言 */
+  labelLanguage(): string;
   // Demo 2
   cycles: number;
   unreleased: number;
@@ -30,6 +32,7 @@ export function setHooks(partial: Partial<ViviTestHooks> & Pick<ViviTestHooks, '
     levelIdOf: unavailable,
     renderedLevelIds: unavailable,
     renderedCount: unavailable,
+    labelLanguage: unavailable,
     cycles: 0,
     unreleased: 0,
     runCycles: unavailable,

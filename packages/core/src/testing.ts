@@ -58,6 +58,17 @@ export class FakeMap implements MapLike {
     if (!this.#layers.has(id)) throw new Error(`layer "${id}" does not exist`);
     this.#filters.set(id, filter);
   }
+  setLayoutProperty(id: string, name: string, value: unknown) {
+    const layer = this.#layers.get(id);
+    if (!layer) throw new Error(`layer "${id}" does not exist`);
+    (layer as { layout?: Record<string, unknown> }).layout = {
+      ...(layer as { layout?: Record<string, unknown> }).layout,
+      [name]: value,
+    };
+  }
+  getLayoutProperty(id: string, name: string) {
+    return (this.#layers.get(id) as { layout?: Record<string, unknown> } | undefined)?.layout?.[name];
+  }
   getFilter(id: string) {
     return this.#filters.get(id);
   }
