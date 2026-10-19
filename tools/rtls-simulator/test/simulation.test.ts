@@ -57,13 +57,26 @@ describe('createSimulation', () => {
   });
 
   it('keeps every tag inside a unit of its floor and never inside a wall', () => {
+    // 按楼层分组并只在最后断言一次：逐点 expect 会让这条测试接近 5 秒超时
+    const byLevel = <T extends { level: string }>(items: T[]) => {
+      const map = new Map<string, T[]>();
+      for (const item of items) map.set(item.level, [...(map.get(item.level) ?? []), item]);
+      return map;
+    };
+    const wallsByLevel = byLevel(walls);
+    const unitsByLevel = byLevel(units);
+    const problems: string[] = [];
     for (const frame of run('walls', 80, 600, 250)) {
       for (const p of frame) {
-        expect(unitAt(p).length, `${p.id} at ${p.coord} is outside every unit`).toBeGreaterThan(0);
-        const blocked = walls.some((w) => w.level === p.levelId && strictlyWithin(w.box, p.coord));
-        expect(blocked, `${p.id} at ${p.coord} is inside a wall`).toBe(false);
+        if (!unitsByLevel.get(p.levelId)?.some((u) => within(u.box, p.coord))) {
+          problems.push(`${p.id} at ${p.coord} is outside every unit`);
+        }
+        if (wallsByLevel.get(p.levelId)?.some((w) => strictlyWithin(w.box, p.coord))) {
+          problems.push(`${p.id} at ${p.coord} is inside a wall`);
+        }
       }
     }
+    expect(problems.slice(0, 5)).toEqual([]);
   });
 
   it('moves tags, and moves them between floors only through elevators or stairs', () => {
