@@ -15,6 +15,8 @@ export interface ViviTestHooks {
   styleLayerIds(): string[];
   /** 地图背景色，用于检查主题 */
   mapBackground(): string;
+  /** 场馆中心在视口里的位置，用来检查它没有被面板盖住 */
+  venueScreenCenter(): { x: number; y: number };
   // 带科室范围的页面
   departmentIdOf(code: string): string;
   highlightedDepartment(): string | null;
