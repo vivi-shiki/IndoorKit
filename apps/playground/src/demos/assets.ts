@@ -311,6 +311,7 @@ export async function mountAssetsPage(root: HTMLElement) {
   });
 
   // 点击聚合点打开区块抽屉
+  const CLUSTER_LAYERS = ['indoor-unit-clusters', 'indoor-unit-points'];
   map.on('click', (e) => {
     const { x, y } = e.point;
     const hit = map.queryRenderedFeatures(
@@ -318,7 +319,7 @@ export async function mountAssetsPage(root: HTMLElement) {
         [x - 12, y - 12],
         [x + 12, y + 12],
       ],
-      { layers: ['indoor-unit-clusters', 'indoor-unit-points'] },
+      { layers: CLUSTER_LAYERS },
     )[0];
     if (hit) openUnit(String(hit.properties.unit_id));
   });
@@ -366,8 +367,12 @@ export async function mountAssetsPage(root: HTMLElement) {
   hooks.groupDepartments = () =>
     [...new Set(clusters.groups().flatMap((g) => g.ids.map((id) => assets.get(id)!.departmentId)))].sort();
   hooks.groupStatuses = () => [...new Set(clusters.groups().flatMap((g) => Object.keys(g.statuses)))].sort();
+  // 只给出已经画在地图上的聚合点：数据更新后要等下一帧才能点到
   hooks.clusterScreenPoint = () => {
-    const g = clusters.groups()[0];
+    const drawn = new Set(
+      map.queryRenderedFeatures({ layers: CLUSTER_LAYERS }).map((f) => String(f.properties.unit_id)),
+    );
+    const g = clusters.groups().find((x) => drawn.has(x.unitId));
     if (!g) return null;
     const { x, y } = map.project(g.center);
     return { unitId: g.unitId, x, y, count: g.ids.length };
