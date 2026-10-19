@@ -9,6 +9,12 @@ const bbox = (ring: Ring) => {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const;
 };
 const outer = (f: { geometry: unknown }) => (f.geometry as GeoJSON.Polygon).coordinates[0] as Ring;
+/** 楼层轮廓可能由多栋楼和连廊组成 */
+const outlines = (f: { geometry: unknown }) => {
+  const g = f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
+  const polygons = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+  return polygons.map((p) => bbox(p[0] as Ring));
+};
 const EPS = 1e-9;
 
 const archive = generateVenue(SAKURA_HOSPITAL);
@@ -22,11 +28,26 @@ describe('generateVenue', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('creates one building with three floors named 1F to 3F', () => {
-    expect(archive.building.features).toHaveLength(1);
+  it('creates three buildings with five floors, one level per floor shared by every building', () => {
+    expect(archive.building.features).toHaveLength(3);
     const sorted = [...levels].sort((a, b) => a.properties.ordinal - b.properties.ordinal);
-    expect(sorted.map((l) => l.properties.ordinal)).toEqual([0, 1, 2]);
-    expect(sorted.map((l) => l.properties.short_name.en)).toEqual(['1F', '2F', '3F']);
+    expect(sorted.map((l) => l.properties.ordinal)).toEqual([0, 1, 2, 3, 4]);
+    expect(sorted.map((l) => l.properties.short_name.en)).toEqual(['1F', '2F', '3F', '4F', '5F']);
+    const buildingIds = archive.building.features.map((b) => b.id).sort();
+    for (const level of levels) expect([...level.properties.building_ids].sort()).toEqual(buildingIds);
+  });
+
+  it('connects neighbouring buildings with a walkway bridge on every floor', () => {
+    for (const level of levels) {
+      const walkways = unitsOn(level.id).filter((u) => u.properties.category === 'walkway');
+      // 每栋一条走廊 + 相邻两栋之间一条连廊
+      expect(walkways).toHaveLength(3 + 2);
+      const boxes = walkways.map((w) => bbox(outer(w))).sort((a, b) => a[0] - b[0]);
+      for (let i = 1; i < boxes.length; i++) {
+        // 从西到东首尾相接，人可以沿走廊走遍三栋楼
+        expect(Math.abs(boxes[i]![0] - boxes[i - 1]![2])).toBeLessThan(EPS);
+      }
+    }
   });
 
   it('gives every floor a corridor, rooms, an elevator, stairs and a restroom', () => {
@@ -39,13 +60,13 @@ describe('generateVenue', () => {
 
   it('places every unit inside its level outline', () => {
     for (const level of levels) {
-      const [lx0, ly0, lx1, ly1] = bbox(outer(level));
+      const parts = outlines(level);
       for (const unit of unitsOn(level.id)) {
         const [x0, y0, x1, y1] = bbox(outer(unit));
-        expect(x0).toBeGreaterThanOrEqual(lx0 - EPS);
-        expect(y0).toBeGreaterThanOrEqual(ly0 - EPS);
-        expect(x1).toBeLessThanOrEqual(lx1 + EPS);
-        expect(y1).toBeLessThanOrEqual(ly1 + EPS);
+        const inside = parts.some(
+          ([lx0, ly0, lx1, ly1]) => x0 >= lx0 - EPS && y0 >= ly0 - EPS && x1 <= lx1 + EPS && y1 <= ly1 + EPS,
+        );
+        expect(inside).toBe(true);
       }
     }
   });

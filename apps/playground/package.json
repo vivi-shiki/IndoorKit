@@ -12,6 +12,8 @@
     "@indoorkit/core": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
     "@indoorkit/plugins": "workspace:*",
+    "@indoorkit/rtls-simulator": "workspace:*",
+    "comlink": "^4.4.2",
     "maplibre-gl": "^6.15.0"
   }
 }

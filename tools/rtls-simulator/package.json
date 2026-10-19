@@ -1,0 +1,17 @@
+{
+  "name": "@indoorkit/rtls-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@indoorkit/core": "workspace:*",
+    "@indoorkit/imdf": "workspace:*",
+    "comlink": "^4.4.2"
+  },
+  "devDependencies": {
+    "@indoorkit/venue-gen": "workspace:*"
+  }
+}

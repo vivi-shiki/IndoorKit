@@ -22,7 +22,7 @@ test('renders the fictional hospital on a WebGL canvas', async ({ page }) => {
 
 test('switches floors from the floor control', async ({ page }) => {
   const buttons = page.getByRole('group', { name: /floor/i }).getByRole('button');
-  await expect(buttons).toHaveText(['3F', '2F', '1F']);
+  await expect(buttons).toHaveText(['5F', '4F', '3F', '2F', '1F']);
   await page.getByRole('button', { name: '2F' }).click();
   await expect(page.getByRole('button', { name: '2F' })).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => page.evaluate(() => window.__vivi!.floor())).toBe('2F');
