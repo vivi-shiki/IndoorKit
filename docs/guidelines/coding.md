@@ -1,9 +1,33 @@
-# 编码约束
+# Coding rules
 
-1. 插件创建的 source、layer、地图监听、事件订阅，必须通过 `ctx.trackSource`、`ctx.trackLayer`、`ctx.onMap`、`ctx.on` 或 `ctx.track` 登记；禁止在插件里直接调用 `map.on` 而不登记。
-2. `destroy()` 后 `resources.size` 必须为 0，内存实验室和 leak-bench 会检查。
-3. 插件之间只通过 `ctx.get(name)`（需在 `deps` 中声明）和 `EventBus` 通信，禁止全局变量。
-4. 图层与数据源 id 统一以 `indoor-` 开头。
-5. 样式由数据类别 + 主题生成，不把颜色写进数据。
-6. 地图文案至少提供 `ja` 和 `en`。
-7. 核心逻辑必须能在没有 WebGL 的环境下用 `FakeMap` 测试。
+## Architecture constraints
+
+1. Every source, layer, map listener and event subscription a plugin creates must be registered through `ctx.trackSource`, `ctx.trackLayer`, `ctx.onMap`, `ctx.on` or `ctx.track`. Plugins must not call `map.on` without registering it.
+2. After `destroy()`, `resources.size` must be 0. The memory lab and leak-bench check this.
+3. Plugins communicate only through `ctx.get(name)` (declared in `deps`) and the `EventBus`. No global variables.
+4. Layer and source ids always start with `indoor-`.
+5. Styles are generated from data categories plus a theme. Colors never go into the data.
+6. Map text is provided in at least `ja` and `en`.
+7. Core logic must be testable without WebGL, using `FakeMap`.
+
+## Fail loudly, but validate input
+
+vivi-map is an SDK other people will call, so the rule depends on where the problem comes from.
+
+- **Internal invariants** (a plugin dependency must be loaded, a level id produced by the SDK must exist, `resources.size` is 0 after `destroy()`): when one is violated, throw. Do not skip silently, log a warning and carry on, or add "just in case" null checks for values that cannot be missing. A crash shows the bug; a fallback hides it. Fix the cause instead of tolerating the impossible state.
+- **External input** (IMDF data, options and arguments passed by callers): validate explicitly, with zod where a schema fits, and fail with an error that names the bad field. These are expected failures, so they belong in the function's signature or documented behavior.
+- Never swallow an exception. Catch only where recovery is real.
+
+## Memory leaks and intermittent failures
+
+- Memory leaks and intermittent test failures are always the highest priority.
+- An intermittent failure is not an "environment issue" until proven otherwise. Treat a fix as confirmed only after the affected test passes 10 times in a row, for example `pnpm exec playwright test <file> --repeat-each=10` or `pnpm exec vitest run <file>` in a loop. Raise the count for failures that showed up rarely.
+- Reproduce on the smallest scope first (one test file, one test), and use that same scope to confirm the fix before running the full suite.
+- If you run into an existing leak or intermittent failure while working on something else, fix it as part of the task, in a separate commit.
+
+## Design
+
+- Don't repeat information: a rule (an id prefix, a level id format, a style mapping) lives in exactly one place. This is about information, not code. A few lines of plain object construction do not need a helper.
+- Be conservative with new abstractions. Extract when the same logic appears three or more times, or when it gives clear ownership. Do not write helpers that are called only once.
+- Fix the root cause. If an API in this repo does not fit, change the API instead of working around it at the call site. Breaking changes are fine until the packages are published to npm (roadmap level 6); after that, record them with Changesets.
+- Avoid polling. Use events or async scheduling.
