@@ -8,15 +8,14 @@ An open-source TypeScript indoor map SDK (working name IndoorKit), with a demo g
 
 **在线演示 / Live demo / オンラインデモ：<https://vivi-shiki.github.io/vivi-map/>**
 
-![Demo 1 基础地图](docs/images/basic-map.png)
+## 页面
 
-## 当前进度：第 1 级（MVP）
+- 人员实时定位：数千个定位标签在 Worker 中模拟上报，平滑移动，点击回放轨迹
+- 设备资产分布：按楼层用聚集点显示设备数量
+- 禁入区域告警：进出 ICU 禁入区时告警并弹窗
+- 人流密度分析：按时间段显示人员密集区域
 
-- `@indoorkit/core`：`createIndoorMap`、类型安全插件 `definePlugin`、`ResourceTracker` 自动按逆序释放资源、`EventBus`、按数据类别生成样式
-- `@indoorkit/imdf`：IMDF 读取与 zod 校验（含引用完整性、id 唯一性）
-- `@indoorkit/plugins`：`floor`（楼层切换）、`marker`（标记）
-- `tools/venue-gen`：生成虚构医院「さくら総合病院」1 栋 × 3 层
-- Demo 1 基础地图、Demo 2 内存实验室；CI 中用 Playwright 做 50 轮创建/销毁的内存回归
+全部页面支持中英日三语和亮色/暗色主题。路线图第 0～2 级已完成。
 
 ## 开发
 

@@ -3,12 +3,10 @@ import './maplibre-worker';
 import './style.css';
 import { languageSwitcher, translate } from './app-i18n';
 import { themeToggle } from './app-theme';
-import { mountBasicDemo } from './demos/basic';
-import { mountClusterDemo } from './demos/cluster';
-import { mountGeofenceDemo } from './demos/geofence';
-import { mountHeatmapDemo } from './demos/heatmap';
-import { mountMemoryDemo } from './demos/memory';
-import { mountRealtimeDemo } from './demos/realtime';
+import { mountAlertsPage } from './demos/alerts';
+import { mountAssetsPage } from './demos/assets';
+import { mountOccupancyPage } from './demos/occupancy';
+import { mountTrackingPage } from './demos/tracking';
 import type { MessageKey } from './i18n';
 import { setHooks, stats } from './test-hooks';
 
@@ -25,28 +23,24 @@ controls.append(themeToggle(), languageSwitcher().element);
 document.body.append(controls);
 translate();
 
-const DEMOS: Record<string, (root: HTMLElement) => Promise<Unmount>> = {
-  basic: mountBasicDemo,
-  memory: mountMemoryDemo,
-  realtime: mountRealtimeDemo,
-  cluster: mountClusterDemo,
-  geofence: mountGeofenceDemo,
-  heatmap: mountHeatmapDemo,
+/** 四个业务页面；其他地址（包括已移除的旧示例页）都回到画廊 */
+const PAGES: Record<string, (root: HTMLElement) => Promise<Unmount>> = {
+  tracking: mountTrackingPage,
+  assets: mountAssetsPage,
+  alerts: mountAlertsPage,
+  occupancy: mountOccupancyPage,
 };
 
-const CARDS: { demo: string; title: MessageKey; desc: MessageKey }[] = [
-  { demo: 'basic', title: 'gallery.basic.title', desc: 'gallery.basic.desc' },
-  { demo: 'memory', title: 'gallery.memory.title', desc: 'gallery.memory.desc' },
-  { demo: 'realtime', title: 'demo.realtime.title', desc: 'demo.realtime.desc' },
-  { demo: 'cluster', title: 'demo.cluster.title', desc: 'demo.cluster.desc' },
-  { demo: 'geofence', title: 'demo.geofence.title', desc: 'demo.geofence.desc' },
-  { demo: 'heatmap', title: 'demo.heatmap.title', desc: 'demo.heatmap.desc' },
-];
+const CARDS = Object.keys(PAGES).map((page) => ({
+  page,
+  title: `page.${page}.title` as MessageKey,
+  desc: `page.${page}.desc` as MessageKey,
+}));
 
 function mountGallery(root: HTMLElement): Unmount {
   const cards = CARDS.map(
     (c) =>
-      `<li><a href="#/${c.demo}"><strong data-i18n="${c.title}"></strong><span data-i18n="${c.desc}"></span></a></li>`,
+      `<li><a href="#/${c.page}"><strong data-i18n="${c.title}"></strong><span data-i18n="${c.desc}"></span></a></li>`,
   ).join('');
   root.innerHTML = `
     <main class="gallery">
@@ -70,7 +64,7 @@ async function route() {
   target.className = 'page';
   app.append(target);
   const name = location.hash.replace(/^#\/?/, '').split('?')[0]!;
-  const mount = DEMOS[name];
+  const mount = PAGES[name];
   unmount = mount ? await mount(target) : mountGallery(target);
 }
 

@@ -171,14 +171,6 @@ a {
   font-weight: 600;
 }
 
-.chart {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
 .lang-switch {
   position: fixed;
   right: 16px;

@@ -14,40 +14,10 @@ export interface Cluster {
 }
 
 /**
- * 两个版本共用的贪心规则：按输入顺序，第一个未归类的点作为起点，
- * 与起点距离不超过 radius 的未归类点并入该组。
+ * 贪心聚合：按输入顺序，第一个未归类的点作为起点，与起点距离不超过 radius 的未归类点并入该组。
+ * 用 KDBush 空间索引取候选，再按真实距离判定。
  */
-function finish(points: readonly ClusterPoint[], members: number[]): Cluster {
-  let x = 0;
-  let y = 0;
-  for (const i of members) {
-    x += points[i]!.coord[0];
-    y += points[i]!.coord[1];
-  }
-  return { center: [x / members.length, y / members.length], ids: members.map((i) => points[i]!.id) };
-}
-
-/** O(n²)：每个起点都与其后所有点逐一比较距离 */
-export function clusterNaive(points: readonly ClusterPoint[], radiusMeters: number): Cluster[] {
-  const assigned = new Uint8Array(points.length);
-  const clusters: Cluster[] = [];
-  for (let i = 0; i < points.length; i++) {
-    if (assigned[i]) continue;
-    assigned[i] = 1;
-    const members = [i];
-    for (let j = i + 1; j < points.length; j++) {
-      if (!assigned[j] && distanceMeters(points[i]!.coord, points[j]!.coord) <= radiusMeters) {
-        assigned[j] = 1;
-        members.push(j);
-      }
-    }
-    clusters.push(finish(points, members));
-  }
-  return clusters;
-}
-
-/** KDBush 空间索引先取候选，再用与朴素版相同的距离判定，结果与朴素版完全一致 */
-export function clusterIndexed(points: readonly ClusterPoint[], radiusMeters: number): Cluster[] {
+export function clusterPoints(points: readonly ClusterPoint[], radiusMeters: number): Cluster[] {
   if (points.length === 0) return [];
   const { toMeters } = localProjection(points[0]!.coord);
   const index = new KDBush(points.length);
@@ -68,22 +38,29 @@ export function clusterIndexed(points: readonly ClusterPoint[], radiusMeters: nu
       .filter((j) => !assigned[j] && distanceMeters(points[i]!.coord, points[j]!.coord) <= radiusMeters)
       .sort((a, b) => a - b);
     for (const j of near) assigned[j] = 1;
-    clusters.push(finish(points, [i, ...near]));
+    const members = [i, ...near];
+    let cx = 0;
+    let cy = 0;
+    for (const m of members) {
+      cx += points[m]!.coord[0];
+      cy += points[m]!.coord[1];
+    }
+    clusters.push({
+      center: [cx / members.length, cy / members.length],
+      ids: members.map((m) => points[m]!.id),
+    });
   }
   return clusters;
 }
 
-export type ClusterAlgorithm = 'naive' | 'indexed';
-
 export interface ClusterApi {
+  /** 手动给一批点；地图上广播的位置（positions:update）会自动接入 */
   setPoints(points: readonly TagPosition[]): void;
-  setAlgorithm(algorithm: ClusterAlgorithm): void;
-  algorithm(): ClusterAlgorithm;
   /** 当前楼层的聚合结果 */
   clusters(): readonly Cluster[];
-  lastDurationMs(): number;
 }
 
+/** 把位置聚合成带数量的点，只显示当前楼层 */
 export function clusterPlugin(options: { radiusMeters: number }) {
   return definePlugin({
     name: 'cluster',
@@ -95,8 +72,8 @@ export function clusterPlugin(options: { radiusMeters: number }) {
           type: 'circle',
           paint: {
             'circle-color': '#7c3aed',
-            'circle-opacity': 0.8,
-            'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 4, 10, 10, 100, 18],
+            'circle-opacity': 0.85,
+            'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 6, 10, 12, 100, 20],
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 1,
           },
@@ -113,16 +90,14 @@ export function clusterPlugin(options: { radiusMeters: number }) {
         },
       ]);
       let points: readonly TagPosition[] = [];
-      let algorithm: ClusterAlgorithm = 'indexed';
       let result: Cluster[] = [];
-      let duration = 0;
 
       const run = () => {
         const levelId = overlay.floor.current().id;
-        const onFloor = points.filter((p) => p.levelId === levelId);
-        const started = performance.now();
-        result = (algorithm === 'naive' ? clusterNaive : clusterIndexed)(onFloor, options.radiusMeters);
-        duration = performance.now() - started;
+        result = clusterPoints(
+          points.filter((p) => p.levelId === levelId),
+          options.radiusMeters,
+        );
         overlay.setData(
           result.map((c) => ({
             type: 'Feature',
@@ -131,21 +106,14 @@ export function clusterPlugin(options: { radiusMeters: number }) {
           })),
         );
       };
-      ctx.on('floor:change', run);
-
-      return {
-        setPoints(next) {
-          points = next;
-          run();
-        },
-        setAlgorithm(next) {
-          algorithm = next;
-          run();
-        },
-        algorithm: () => algorithm,
-        clusters: () => result,
-        lastDurationMs: () => duration,
+      const setPoints = (next: readonly TagPosition[]) => {
+        points = next;
+        run();
       };
+      ctx.on('floor:change', run);
+      ctx.on('positions:update', (batch) => setPoints(batch.positions));
+
+      return { setPoints, clusters: () => result };
     },
   });
 }

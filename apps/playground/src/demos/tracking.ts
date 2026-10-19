@@ -6,12 +6,12 @@ import { createSimProvider, SIM_INTERVAL_MS } from '../sim';
 
 const TAG_COUNTS = [500, 2000, 5000];
 
-export async function mountRealtimeDemo(root: HTMLElement) {
+export async function mountTrackingPage(root: HTMLElement) {
   const tags = TAG_COUNTS.includes(Number(routeParam('tags'))) ? Number(routeParam('tags')) : 2000;
   const page = await mountMapPage(root, {
-    demo: 'realtime',
+    demo: 'tracking',
     readyWhen: 'first-positions',
-    title: 'demo.realtime.title',
+    title: 'page.tracking.title',
     controls: `
       ${radioGroup(
         'tags',
@@ -33,7 +33,7 @@ export async function mountRealtimeDemo(root: HTMLElement) {
   // 换标签数量时重新进入页面，旧地图和 Worker 随之释放
   for (const input of root.querySelectorAll<HTMLInputElement>('input[name="tags"]')) {
     input.addEventListener('change', () => {
-      location.hash = `#/realtime?tags=${input.value}`;
+      location.hash = `#/tracking?tags=${input.value}`;
     });
   }
 

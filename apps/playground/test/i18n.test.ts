@@ -57,8 +57,8 @@ describe('createI18n', () => {
   it('translates with parameters', () => {
     const i18n = createI18n({ storage: memoryStorage(), languages: ['en'] });
     expect(i18n.locale).toBe('en');
-    expect(i18n.t('demo.basic.title')).toBe(messages.en['demo.basic.title']);
-    expect(i18n.t('metric.ms', { value: 12 })).toBe('12 ms');
+    expect(i18n.t('page.tracking.title')).toBe('Real-time Tracking');
+    expect(i18n.t('control.minutes', { value: 15 })).toBe('Last 15 min');
   });
 
   it('saves the new locale and notifies listeners', () => {

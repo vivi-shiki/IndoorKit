@@ -12,11 +12,11 @@ import { createSimProvider, SIM_INTERVAL_MS } from '../sim';
 
 const MAX_ALERTS_SHOWN = 30;
 
-export async function mountGeofenceDemo(root: HTMLElement) {
+export async function mountAlertsPage(root: HTMLElement) {
   const page = await mountMapPage(root, {
-    demo: 'geofence',
+    demo: 'alerts',
     readyWhen: 'first-positions',
-    title: 'demo.geofence.title',
+    title: 'page.alerts.title',
     controls: `
       <span class="metric"><span data-i18n="metric.alerts"></span>: <b data-testid="alert-count">0</b></span>`,
     overlays: `<ul class="alerts" data-testid="alert-list"></ul>`,

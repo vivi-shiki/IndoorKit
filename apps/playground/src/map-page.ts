@@ -133,10 +133,7 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   hooks.styleLayerIds = () => map.getStyle().layers.map((layer) => layer.id);
   hooks.mapBackground = () => String(map.getPaintProperty('background', 'background-color'));
 
-  const started = performance.now();
   const ready = () => {
-    const el = root.querySelector('[data-testid="first-render"]');
-    if (el) el.textContent = i18n.t('metric.ms', { value: Math.round(performance.now() - started) });
     hooks.ready = true;
   };
   if (options.readyWhen === 'first-positions') {

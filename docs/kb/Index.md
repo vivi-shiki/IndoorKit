@@ -47,7 +47,7 @@ Live positions come from a `DataProvider` (`packages/core/src/types.ts`). `tools
 - Use `positionStreamPlugin({ provider, intervalMs })` to draw positions; it owns the provider, disposes it with the map, and re-broadcasts each batch as the `positions:update` event.
 - Use `geofencePlugin` (needs `polygon`), `heatmapPlugin` and `clusterPlugin` to consume positions; geofence and heatmap listen to `positions:update` themselves.
 - Use `floorOverlay` (`packages/plugins/src/overlay.ts`) for any plugin layer that follows the current floor, and `localProjection` / `distanceMeters` for metric math on lng/lat.
-- `clusterNaive` and `clusterIndexed` share one greedy rule, so their results are identical; only their cost differs.
+- Use `clusterPoints` for greedy radius clustering with a KDBush index; `clusterPlugin` runs it on every `positions:update` for the current floor.
 - Use `indoor.setTheme(themes.dark)` to recolor without recreating the map; `themePaint` is the single mapping from a theme to paint properties.
 
 #### Testing

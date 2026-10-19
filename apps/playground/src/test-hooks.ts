@@ -1,7 +1,7 @@
 /** 端到端测试和 agent 通过 window.__vivi 读取当前页面状态 */
 export interface ViviTestHooks {
   ready: boolean;
-  demo: 'gallery' | 'basic' | 'memory' | 'realtime' | 'cluster' | 'geofence' | 'heatmap';
+  demo: 'gallery' | 'tracking' | 'assets' | 'alerts' | 'occupancy';
   // 所有地图页
   floor(): string;
   levelIdOf(shortName: string): string;
@@ -15,27 +15,18 @@ export interface ViviTestHooks {
   styleLayerIds(): string[];
   /** 地图背景色，用于检查主题 */
   mapBackground(): string;
-  // Demo 2 内存实验室
-  cycles: number;
-  unreleased: number;
-  runCycles(n: number): Promise<void>;
-  // Demo 3 实时定位
+  // 人员实时定位
   perf(): { fps: number; frameMs: number; tags: number };
   /** 当前楼层一个已上报多次的标签在屏幕上的位置 */
   tagScreenPoint(): { id: string; x: number; y: number; samples: number } | null;
   replaying(): string | null;
-  // Demo 4 聚合对比
-  clusterRun(): {
-    points: number;
-    naiveMs: number;
-    indexedMs: number;
-    match: boolean;
-    clusters: number;
-  } | null;
-  // Demo 7 电子围栏
+  // 设备资产分布
+  /** 当前楼层的聚集点数量 */
+  clusterCount(): number;
+  // 禁入区域告警
   fenceIds(): string[];
   alertCount(): number;
-  // Demo 10 热力图
+  // 人流密度分析
   heatWindow(): number;
   heatPointCount(): number;
   heatLevelIds(): string[];
@@ -73,13 +64,10 @@ export function setHooks(partial: Partial<ViviTestHooks> & Pick<ViviTestHooks, '
     resourceLabels: unavailable,
     styleLayerIds: unavailable,
     mapBackground: unavailable,
-    cycles: 0,
-    unreleased: 0,
-    runCycles: unavailable,
     perf: unavailable,
     tagScreenPoint: unavailable,
     replaying: unavailable,
-    clusterRun: unavailable,
+    clusterCount: unavailable,
     fenceIds: unavailable,
     alertCount: unavailable,
     heatWindow: unavailable,

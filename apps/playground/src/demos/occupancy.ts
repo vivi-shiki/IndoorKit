@@ -9,11 +9,11 @@ import { i18n } from '../app-i18n';
 import { mountMapPage, radioGroup } from '../map-page';
 import { createSimProvider, SIM_INTERVAL_MS } from '../sim';
 
-export async function mountHeatmapDemo(root: HTMLElement) {
+export async function mountOccupancyPage(root: HTMLElement) {
   const page = await mountMapPage(root, {
-    demo: 'heatmap',
+    demo: 'occupancy',
     readyWhen: 'first-positions',
-    title: 'demo.heatmap.title',
+    title: 'page.occupancy.title',
     controls: `
       ${radioGroup(
         'window',

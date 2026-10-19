@@ -1,12 +1,4 @@
-export {
-  type Cluster,
-  type ClusterAlgorithm,
-  type ClusterApi,
-  type ClusterPoint,
-  clusterIndexed,
-  clusterNaive,
-  clusterPlugin,
-} from './cluster';
+export { type Cluster, type ClusterApi, type ClusterPoint, clusterPlugin, clusterPoints } from './cluster';
 export { type FloorApi, floorPlugin } from './floor';
 export { type Fence, type GeofenceApi, type GeofenceEvent, geofencePlugin } from './geofence';
 export { HEAT_WINDOWS, type HeatmapApi, type HeatWindow, heatmapPlugin } from './heatmap';
