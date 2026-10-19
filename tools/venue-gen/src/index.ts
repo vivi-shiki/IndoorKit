@@ -89,6 +89,118 @@ const DEPARTMENTS: LabelMap[][] = [
   ],
 ];
 
+/**
+ * 科室按「楼层 + 房间英文名」认领房间，三栋楼的同名房间都属于同一科室；
+ * 走廊、电梯、楼梯、洗手间是公共区域，不属于任何科室。
+ */
+const DEPARTMENT_TABLE: { code: string; name: LabelMap; rooms: [floor: number, en: string][] }[] = [
+  {
+    code: 'outpatient',
+    name: { ja: '外来受付', en: 'Outpatient Services', zh: '门诊部' },
+    rooms: [
+      [0, 'Reception'],
+      [0, 'Cashier'],
+      [0, 'Shop'],
+      [0, 'Waiting Room'],
+      [0, 'Information'],
+    ],
+  },
+  { code: 'emergency', name: { ja: '救急科', en: 'Emergency', zh: '急诊科' }, rooms: [[0, 'Emergency']] },
+  {
+    code: 'medtech',
+    name: { ja: '医療技術部', en: 'Medical Technology', zh: '医技科' },
+    rooms: [
+      [0, 'Radiology'],
+      [0, 'Laboratory'],
+      [4, 'Sterile Supply'],
+    ],
+  },
+  {
+    code: 'pharmacy',
+    name: { ja: '薬剤部', en: 'Pharmacy', zh: '药剂科' },
+    rooms: [
+      [0, 'Pharmacy'],
+      [4, 'Storage'],
+    ],
+  },
+  {
+    code: 'internal',
+    name: { ja: '内科', en: 'Internal Medicine', zh: '内科' },
+    rooms: [
+      [1, 'Internal Medicine'],
+      [1, 'Consultation'],
+      [1, 'Treatment Room'],
+      [3, 'Ward 401'],
+      [3, 'Ward 402'],
+      [3, 'Ward 403'],
+    ],
+  },
+  {
+    code: 'surgery',
+    name: { ja: '外科', en: 'Surgery', zh: '外科' },
+    rooms: [
+      [1, 'Surgery'],
+      [1, 'Orthopedics'],
+      [3, 'Ward 404'],
+      [3, 'Ward 405'],
+      [3, 'Ward 406'],
+      [4, 'Operating Room 1'],
+      [4, 'Operating Room 2'],
+      [4, 'Recovery Room'],
+      [4, 'Locker Room'],
+    ],
+  },
+  {
+    code: 'clinics',
+    name: { ja: '専門外来', en: 'Specialty Clinics', zh: '专科门诊' },
+    rooms: [
+      [1, 'Pediatrics'],
+      [1, 'Ophthalmology'],
+      [1, 'Dermatology'],
+      [1, 'ENT'],
+    ],
+  },
+  {
+    code: 'icu',
+    name: { ja: '集中治療科', en: 'Intensive Care', zh: '重症医学科' },
+    rooms: [
+      [2, 'ICU'],
+      [2, 'Nurse Station'],
+      [2, 'Ward 301'],
+      [2, 'Ward 302'],
+    ],
+  },
+  {
+    code: 'rehab',
+    name: { ja: 'リハビリテーション科', en: 'Rehabilitation', zh: '康复科' },
+    rooms: [
+      [2, 'Rehabilitation'],
+      [2, 'Ward 303'],
+      [2, 'Ward 304'],
+      [2, 'Ward 305'],
+      [2, 'Conference'],
+    ],
+  },
+  {
+    code: 'nursing',
+    name: { ja: '看護部', en: 'Nursing', zh: '护理部' },
+    rooms: [
+      [3, 'Nurse Station'],
+      [3, 'Day Room'],
+      [3, 'Visiting Room'],
+    ],
+  },
+  {
+    code: 'admin',
+    name: { ja: '事務部', en: 'Administration', zh: '行政部' },
+    rooms: [
+      [4, 'Doctors Office'],
+      [4, 'Meeting Room'],
+      [4, 'Director Office'],
+    ],
+  },
+];
+
 const SERVICE: { category: string; name: LabelMap }[] = [
   { category: 'elevator', name: { ja: 'エレベーター', en: 'Elevator', zh: '电梯' } },
   { category: 'stairs', name: { ja: '階段', en: 'Stairs', zh: '楼梯' } },
@@ -163,6 +275,10 @@ export function generateVenue(options: VenueGenOptions): ImdfArchive {
   const units: RawFeature[] = [];
   const openings: RawFeature[] = [];
   const fixtures: RawFeature[] = [];
+  /** 科室代码 → 区块 id */
+  const departmentUnits = new Map<string, string[]>(DEPARTMENT_TABLE.map((d) => [d.code, []]));
+  const departmentFor = (floor: number, en: string) =>
+    DEPARTMENT_TABLE.find((d) => d.rooms.some(([f, name]) => f === floor && name === en));
 
   const buildingX = (b: number) => b * (buildingWidth + BUILDING_GAP);
   for (let b = 0; b < options.buildings; b++) {
@@ -250,6 +366,11 @@ export function generateVenue(options: VenueGenOptions): ImdfArchive {
               name: service?.name ?? department,
             }),
           );
+          if (department) {
+            const owner = departmentFor(f % DEPARTMENTS.length, department.en!);
+            if (!owner) throw new Error(`room "${department.en}" on floor ${f + 1} has no department`);
+            departmentUnits.get(owner.code)!.push(units.at(-1)!.id);
+          }
 
           // 门开在朝走廊的一侧
           const [x0, y0, x1, y1] = cell;
@@ -304,5 +425,14 @@ export function generateVenue(options: VenueGenOptions): ImdfArchive {
     opening: fc(openings),
     fixture: fc(fixtures),
     amenity: fc([]),
+    department: fc(
+      DEPARTMENT_TABLE.map((d) =>
+        feature('department', `department/${d.code}`, null, {
+          code: d.code,
+          name: d.name,
+          unit_ids: departmentUnits.get(d.code)!,
+        }),
+      ),
+    ),
   };
 }

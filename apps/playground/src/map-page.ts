@@ -7,7 +7,7 @@ import {
   themes,
 } from '@indoorkit/core';
 import { pickLabel, type VenueModel } from '@indoorkit/imdf';
-import type { FloorApi } from '@indoorkit/plugins';
+import { createVenueIndex, type DepartmentApi, type FloorApi } from '@indoorkit/plugins';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { i18n, setPageTitle, translate } from './app-i18n';
 import { appTheme } from './app-theme';
@@ -53,9 +53,9 @@ export interface MapPageOptions<P extends readonly AnyPlugin[]> {
   floor?: string;
   /**
    * 页面何时算就绪。默认等地图第一次 idle；实时数据页的地图会一直重绘、不会 idle，
-   * 改为等第一批位置画出来。
+   * 改为等第一批位置画出来。manual：页面自己设置 hooks.ready。
    */
-  readyWhen?: 'idle' | 'first-positions';
+  readyWhen?: 'idle' | 'first-positions' | 'manual';
 }
 
 /**
@@ -92,6 +92,15 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   const map = indoor.map as unknown as MapLibreMap;
   const floor = (indoor.plugins as Record<string, unknown>).floor as FloorApi;
   if (options.floor) floor.set(options.floor);
+  // 左侧面板压在地图上，场馆要放在面板右边的空白里
+  if (root.querySelector('.panel')) {
+    map.fitBounds(venue.bounds, {
+      padding: { top: 48, bottom: 72, left: 312, right: 88 },
+      pitch: map.getPitch(),
+      bearing: map.getBearing(),
+      duration: 0,
+    });
+  }
 
   // 地图外的场馆名与地图内的标注随语言一起切换，不重建地图
   const venueNameEl = root.querySelector('.venue-name')!;
@@ -120,6 +129,14 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   renderFloors();
   indoor.events.on('floor:change', renderFloors);
 
+  const index = createVenueIndex(venue);
+  const department = (indoor.plugins as Record<string, unknown>).department as DepartmentApi | undefined;
+  if (department) {
+    hooks.departmentIdOf = (code) => index.departmentByCode(code).id;
+    hooks.highlightedDepartment = () => department.highlighted();
+    hooks.departmentLayerVisible = () => department.visible();
+  }
+
   const rendered = (layerId: string) => map.queryRenderedFeatures({ layers: [layerId] });
   hooks.floor = () => floor.current().shortName.en ?? '';
   hooks.levelIdOf = (short) => floor.resolve(short).id;
@@ -142,7 +159,7 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
       off();
       map.once('render', ready);
     });
-  } else {
+  } else if (options.readyWhen !== 'manual') {
     map.once('idle', ready);
   }
 
@@ -151,6 +168,7 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
     map,
     floor,
     venue,
+    index,
     hooks,
     cleanups,
     unmount: async () => {
@@ -175,6 +193,12 @@ export function radioGroup(
     .join('');
   return `<fieldset class="radios"><legend data-i18n="${label}"></legend>${items}</fieldset>`;
 }
+
+/** 楼层简称，如 3F */
+export const floorName = (floor: FloorApi, levelId: string) => {
+  const level = floor.resolve(levelId);
+  return level.shortName.en ?? level.id;
+};
 
 /** 读取 #/demo?key=value 里的参数 */
 export function routeParam(key: string): string | null {

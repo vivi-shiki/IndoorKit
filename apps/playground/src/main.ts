@@ -7,6 +7,7 @@ import { mountAlertsPage } from './demos/alerts';
 import { mountAssetsPage } from './demos/assets';
 import { mountOccupancyPage } from './demos/occupancy';
 import { mountTrackingPage } from './demos/tracking';
+import { mountTrailPage } from './demos/trail';
 import type { MessageKey } from './i18n';
 import { setHooks, stats } from './test-hooks';
 
@@ -23,30 +24,39 @@ controls.append(themeToggle(), languageSwitcher().element);
 document.body.append(controls);
 translate();
 
-/** 四个业务页面；其他地址（包括已移除的旧示例页）都回到画廊 */
+/** 业务页面；其他地址（包括已移除的旧示例页）都回到画廊 */
 const PAGES: Record<string, (root: HTMLElement) => Promise<Unmount>> = {
-  tracking: mountTrackingPage,
   assets: mountAssetsPage,
+  tracking: mountTrackingPage,
+  trail: mountTrailPage,
   alerts: mountAlertsPage,
   occupancy: mountOccupancyPage,
 };
 
-const CARDS = Object.keys(PAGES).map((page) => ({
-  page,
-  title: `page.${page}.title` as MessageKey,
-  desc: `page.${page}.desc` as MessageKey,
-}));
+/** 两条业务线：效能定位看设备，人员定位看人 */
+const GROUPS = {
+  efficiency: ['assets'],
+  people: ['tracking', 'trail', 'alerts', 'occupancy'],
+};
 
 function mountGallery(root: HTMLElement): Unmount {
-  const cards = CARDS.map(
-    (c) =>
-      `<li><a href="#/${c.page}"><strong data-i18n="${c.title}"></strong><span data-i18n="${c.desc}"></span></a></li>`,
-  ).join('');
+  const card = (page: string) =>
+    `<li><a href="#/${page}"><strong data-i18n="page.${page}.title"></strong><span data-i18n="page.${page}.desc"></span></a></li>`;
+  const groups = Object.entries(GROUPS)
+    .map(
+      ([group, pages]) => `
+      <section class="group" data-group="${group}">
+        <h2 data-i18n="${`group.${group}.title` as MessageKey}"></h2>
+        <p data-i18n="${`group.${group}.desc` as MessageKey}"></p>
+        <ul class="cards">${pages.map(card).join('')}</ul>
+      </section>`,
+    )
+    .join('');
   root.innerHTML = `
     <main class="gallery">
       <h1 data-i18n="app.name"></h1>
       <p data-i18n="gallery.subtitle"></p>
-      <ul class="cards">${cards}</ul>
+      ${groups}
       <p class="note"><span data-i18n="gallery.note"></span> <a href="https://github.com/vivi-shiki/IndoorKit">GitHub</a></p>
     </main>`;
   setPageTitle(null);

@@ -175,6 +175,16 @@ export const amenityFeature = feature('amenity', point, {
   name: nullableLabels,
 });
 
+/**
+ * IMDF 扩展：科室。标准的 occupant 挂在 anchor 上、一对一，表达不了「一个科室有多个区块」，
+ * 所以用单独的文件列出科室包含的区块。
+ */
+export const departmentFeature = feature('department', z.null(), {
+  code: z.string().min(1),
+  name: labels,
+  unit_ids: z.array(uuid).min(1),
+});
+
 export const archiveSchemas = {
   manifest: manifestSchema,
   venue: collection(venueFeature),
@@ -184,9 +194,10 @@ export const archiveSchemas = {
   opening: collection(openingFeature),
   fixture: collection(fixtureFeature),
   amenity: collection(amenityFeature),
+  department: collection(departmentFeature),
 };
 
 export const REQUIRED_FILES = ['manifest', 'venue', 'building', 'level', 'unit', 'opening'] as const;
-export const OPTIONAL_FILES = ['fixture', 'amenity'] as const;
+export const OPTIONAL_FILES = ['fixture', 'amenity', 'department'] as const;
 export const IMDF_FILES = [...REQUIRED_FILES, ...OPTIONAL_FILES] as const;
 export type ImdfFileName = (typeof IMDF_FILES)[number];

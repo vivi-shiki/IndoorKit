@@ -105,13 +105,15 @@ test.describe('Zone Alerts: two layers', () => {
   test('acknowledges and resolves an alarm', async ({ page }) => {
     await openDemo(page, 'alerts');
     await pollHook(page, () => window.__vivi!.alertCount()).toBeGreaterThan(0);
-    const item = page.getByTestId('alarm-item').last();
-    const id = await item.getAttribute('data-alarm');
+    const id = await page.getByTestId('alarm-item').first().getAttribute('data-alarm');
+    // 新告警插在列表顶部，按 id 定位同一条
+    const item = page.locator(`[data-alarm="${id}"]`);
     const open = await page.evaluate(() => window.__vivi!.unhandledCount());
     await item.getByRole('button', { name: /Acknowledge|确认|確認/ }).click();
-    await pollHook(page, () => window.__vivi!.alarmState(id!)).toBe('acknowledged');
+    const state = () => page.evaluate((alarm) => window.__vivi!.alarmState(alarm), id!);
+    await expect.poll(state).toBe('acknowledged');
     await item.getByRole('button', { name: /Resolve|处理|対応/ }).click();
-    await pollHook(page, () => window.__vivi!.alarmState(id!)).toBe('resolved');
+    await expect.poll(state).toBe('resolved');
     expect(await page.evaluate(() => window.__vivi!.unhandledCount())).toBeLessThanOrEqual(open);
   });
 

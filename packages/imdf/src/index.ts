@@ -29,6 +29,7 @@ export interface ImdfArchive {
   opening: RawCollection;
   fixture?: RawCollection;
   amenity?: RawCollection;
+  department?: RawCollection;
 }
 
 export interface ValidationIssue {
@@ -96,6 +97,17 @@ export function validateImdf(input: unknown): ValidationResult {
     }
   }
 
+  const owners = new Map<string, string>();
+  for (const d of archive.department?.features ?? []) {
+    for (const id of d.properties.unit_ids as string[]) {
+      if (!unitIds.has(id)) issues.push({ file: 'department', path: d.id, message: `unknown unit ${id}` });
+      const owner = owners.get(id);
+      if (owner)
+        issues.push({ file: 'department', path: d.id, message: `unit ${id} already belongs to ${owner}` });
+      else owners.set(id, d.id);
+    }
+  }
+
   return issues.length > 0 ? { ok: false, issues } : { ok: true, archive };
 }
 
@@ -122,10 +134,20 @@ export interface IndoorProperties {
   id: string;
   level_id: string;
   category: string;
+  /** 区块所属科室；公共区域没有 */
+  department_id?: string;
   [label: `label_${string}`]: string;
 }
 
 export type IndoorCollection<G extends Geometry = Geometry> = FeatureCollection<G, IndoorProperties>;
+
+/** 科室：一组区块，物理范围是这些区块的并集 */
+export interface DepartmentModel {
+  id: string;
+  code: string;
+  name: LabelMap;
+  unitIds: string[];
+}
 
 export interface VenueModel {
   id: string;
@@ -134,6 +156,7 @@ export interface VenueModel {
   bounds: [[number, number], [number, number]];
   buildings: { id: string; name: LabelMap }[];
   levels: LevelModel[];
+  departments: DepartmentModel[];
   features: {
     levels: IndoorCollection<Polygon | MultiPolygon>;
     units: IndoorCollection<Polygon | MultiPolygon>;
@@ -188,6 +211,14 @@ export function buildVenueModel(input: ImdfArchive): VenueModel {
     }))
     .sort((a, b) => a.ordinal - b.ordinal);
 
+  const departments = (archive.department?.features ?? []).map<DepartmentModel>((d) => ({
+    id: d.id,
+    code: d.properties.code,
+    name: d.properties.name,
+    unitIds: d.properties.unit_ids,
+  }));
+  const departmentOf = new Map(departments.flatMap((d) => d.unitIds.map((id) => [id, d.id] as const)));
+
   const bounds: [number, number, number, number] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const l of archive.level.features) extendBounds(bounds, (l.geometry as Polygon).coordinates);
   extendBounds(bounds, (venue.geometry as Polygon).coordinates);
@@ -202,9 +233,17 @@ export function buildVenueModel(input: ImdfArchive): VenueModel {
     ],
     buildings: archive.building.features.map((b) => ({ id: b.id, name: b.properties.name ?? {} })),
     levels,
+    departments,
     features: {
       levels: collect(archive.level.features.map((l) => flatten(l, l.id))),
-      units: collect(archive.unit.features.map((u) => flatten(u, u.properties.level_id))),
+      units: collect(
+        archive.unit.features.map((u) => {
+          const f = flatten(u, u.properties.level_id);
+          const department = departmentOf.get(u.id);
+          if (department) f.properties.department_id = department;
+          return f;
+        }),
+      ),
       fixtures: collect((archive.fixture?.features ?? []).map((x) => flatten(x, x.properties.level_id))),
       openings: collect(archive.opening.features.map((o) => flatten(o, o.properties.level_id))),
       amenities: collect(

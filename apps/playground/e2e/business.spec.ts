@@ -126,6 +126,8 @@ test.describe('theme', () => {
 });
 
 test('every page title follows the language switch', async ({ page }) => {
+  // 依次打开全部五个页面
+  test.setTimeout(90_000);
   for (const demo of DEMOS) {
     await openDemo(page, demo);
     const switcher = page.getByRole('group', { name: /language|语言|言語/i });
