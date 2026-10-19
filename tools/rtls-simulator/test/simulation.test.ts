@@ -104,3 +104,79 @@ describe('createSimulation', () => {
     expect(new Set(last.map((p) => p.levelId)).size).toBeGreaterThan(1);
   });
 });
+
+describe('positioning noise', () => {
+  const [, lat0] = venue.center;
+  const meters = (a: [number, number], b: [number, number]) =>
+    Math.hypot((a[0] - b[0]) * 111_320 * Math.cos((lat0 * Math.PI) / 180), (a[1] - b[1]) * 110_540);
+  const runWith = (noiseMeters: number | undefined, steps: number, dtMs: number) => {
+    const sim = createSimulation(venue, { seed: 'noise', tags: 60, noiseMeters });
+    const frames: TagPosition[][] = [sim.positions()];
+    for (let i = 0; i < steps; i++) frames.push(sim.step(dtMs));
+    return frames;
+  };
+  const exact = runWith(0, 300, 1000);
+  const noisy = runWith(undefined, 300, 1000);
+
+  it('reports the exact path when noise is off', () => {
+    const sim = createSimulation(venue, { seed: 'noise', tags: 60, noiseMeters: 0 });
+    for (const frame of exact.slice(1, 20)) {
+      const positions = sim.step(1000);
+      expect(positions).toEqual(frame);
+      expect(sim.positions()).toEqual(positions);
+    }
+  });
+
+  it('scatters reports around the true position by default, never further than twice the noise', () => {
+    let scattered = 0;
+    const problems: string[] = [];
+    for (let i = 0; i < exact.length; i++) {
+      for (let k = 0; k < exact[i]!.length; k++) {
+        const truth = exact[i]![k]!;
+        const report = noisy[i]![k]!;
+        expect(report.levelId).toBe(truth.levelId);
+        const d = meters(report.coord, truth.coord);
+        if (d > 0.05) scattered++;
+        if (d > 2 + 1e-6) problems.push(`${truth.id} reported ${d.toFixed(2)} m away`);
+      }
+    }
+    expect(problems.slice(0, 5)).toEqual([]);
+    expect(scattered / (exact.length * exact[0]!.length)).toBeGreaterThan(0.9);
+  });
+
+  it('jitters a tag that stands still between reports', () => {
+    let still = 0;
+    let jittered = 0;
+    for (let i = 1; i < exact.length; i++) {
+      for (let k = 0; k < exact[i]!.length; k++) {
+        const before = exact[i - 1]![k]!;
+        const after = exact[i]![k]!;
+        if (before.coord[0] !== after.coord[0] || before.coord[1] !== after.coord[1]) continue;
+        still++;
+        const a = noisy[i - 1]![k]!.coord;
+        const b = noisy[i]![k]!.coord;
+        if (a[0] !== b[0] || a[1] !== b[1]) jittered++;
+      }
+    }
+    expect(still).toBeGreaterThan(0);
+    expect(jittered).toBe(still);
+  });
+
+  it('keeps each report inside a unit that contains the true position', () => {
+    const problems: string[] = [];
+    for (let i = 0; i < exact.length; i++) {
+      for (let k = 0; k < exact[i]!.length; k++) {
+        const truth = unitAt(exact[i]![k]!);
+        const report = noisy[i]![k]!;
+        if (!truth.some((u) => within(u.box, report.coord))) {
+          problems.push(`${report.id} at ${report.coord} left its unit`);
+        }
+      }
+    }
+    expect(problems.slice(0, 5)).toEqual([]);
+  });
+
+  it('rejects a negative noise', () => {
+    expect(() => createSimulation(venue, { seed: 'n', tags: 1, noiseMeters: -1 })).toThrow(/noiseMeters/);
+  });
+});

@@ -18,6 +18,8 @@ export interface SimulationOptions {
   tags: number;
   /** 设备数，默认 0 */
   assets?: number;
+  /** 定位误差的标准差（米），默认 0.8；误差不超过两倍标准差，0 表示不加误差 */
+  noiseMeters?: number;
 }
 
 export interface Simulation {
@@ -55,6 +57,8 @@ interface Tag {
   goal: Unit | null;
   levelId: string;
   pos: Vec;
+  /** 上报的位置：真实位置加上定位误差 */
+  reported: Vec;
   speed: number;
   unit: Unit;
   path: Vec[];
@@ -77,6 +81,9 @@ const STAY: Record<Role, number> = {
   security: 0.1,
 };
 const MOBILE_STAY = 0.5;
+const DEFAULT_NOISE = 0.8;
+/** 加误差后离单元边缘至少这么远，墙厚 0.2 m，所以不会落进墙里 */
+const NOISE_MARGIN = 0.3;
 
 function boxOf(geometry: GeoJSON.Geometry): Box {
   const ring = (geometry as GeoJSON.Polygon).coordinates[0]!;
@@ -99,7 +106,11 @@ const inBox = ([x0, y0, x1, y1]: Box, [x, y]: Vec) => x > x0 && x < x1 && y > y0
  * 只在电梯或楼梯里换层，所以不会穿墙。坐标内部用米，输出经纬度。
  */
 export function createSimulation(venue: VenueModel, options: SimulationOptions): Simulation {
+  const noise = options.noiseMeters ?? DEFAULT_NOISE;
+  if (!(noise >= 0)) throw new Error(`noiseMeters must be 0 or more, got ${options.noiseMeters}`);
   const rand = seededRandom(options.seed);
+  // 误差用单独的随机数，路线和不加误差时完全一样
+  const noiseRand = seededRandom(`${options.seed}/noise`);
   const roster = createRoster(venue, { people: options.tags, assets: options.assets ?? 0 });
   const [lng0, lat0] = venue.center;
   const mPerLng = 111_320 * Math.cos((lat0 * Math.PI) / 180);
@@ -139,6 +150,29 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     if (entry) room.door = { mid, entry, walkway };
   }
   const reachable = rooms.filter((r) => r.door);
+  const unitsByLevel = new Map<string, Unit[]>();
+  for (const u of units) unitsByLevel.set(u.levelId, [...(unitsByLevel.get(u.levelId) ?? []), u]);
+
+  /**
+   * 模拟 RTLS 的定位误差：真实位置加上截断在两倍标准差内的高斯误差，
+   * 再收回到真实位置所在单元的内侧，不会穿墙，也不会换房间。
+   */
+  const observe = (tag: Tag): Vec => {
+    if (noise === 0) return tag.pos;
+    const [x, y] = tag.pos;
+    const unit = unitsByLevel
+      .get(tag.levelId)!
+      .find((u) => onBoxEdge(u.box, tag.pos) || inBox(u.box, tag.pos));
+    if (!unit) throw new Error(`tag ${tag.id} at ${tag.pos} is outside every unit of ${tag.levelId}`);
+    const r = Math.min(noise * Math.sqrt(-2 * Math.log(1 - noiseRand())), 2 * noise);
+    const angle = noiseRand() * 2 * Math.PI;
+    const [x0, y0, x1, y1] = unit.box;
+    const clamp = (v: number, lo: number, hi: number) => {
+      if (hi - lo < 2 * NOISE_MARGIN) return (lo + hi) / 2;
+      return Math.min(Math.max(v, lo + NOISE_MARGIN), hi - NOISE_MARGIN);
+    };
+    return [clamp(x + r * Math.cos(angle), x0, x1), clamp(y + r * Math.sin(angle), y0, y1)];
+  };
 
   // 走廊之间共用一条边即相连，经过共用边的中点
   const portals = new Map<Unit, { to: Unit; at: Vec }[]>();
@@ -258,6 +292,7 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     goal: null,
     levelId: start.levelId,
     pos,
+    reported: pos,
     speed: 0.8 + rand() * 0.8,
     unit: start,
     path: [],
@@ -290,6 +325,8 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     tag.dwell = movable ? rand() * 240_000 : Infinity;
     tags.push(tag);
   }
+
+  for (const tag of tags) if (!tag.fixed) tag.reported = observe(tag);
 
   const advance = (tag: Tag, dtMs: number) => {
     let budget = dtMs;
@@ -328,7 +365,7 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
   let time = 0;
   const positions = () =>
     tags.map((t): TagPosition => {
-      const p: TagPosition = { id: t.id, levelId: t.levelId, coord: toLngLat(t.pos) };
+      const p: TagPosition = { id: t.id, levelId: t.levelId, coord: toLngLat(t.reported) };
       if (t.asset) p.status = statusAt(t.asset, dayTime(time));
       else if (t.person && sosActive(t.person, dayTime(time))) p.status = 'sos';
       return p;
@@ -340,7 +377,11 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     positions,
     step(dtMs) {
       time += dtMs;
-      for (const tag of tags) if (!tag.fixed) advance(tag, dtMs);
+      for (const tag of tags) {
+        if (tag.fixed) continue;
+        advance(tag, dtMs);
+        tag.reported = observe(tag);
+      }
       return positions();
     },
   };
