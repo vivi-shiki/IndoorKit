@@ -443,6 +443,16 @@ a {
   gap: 6px;
 }
 
+.rows li[data-testid="busy-row"] .name {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.rows li[data-testid="busy-row"] .count {
+  white-space: nowrap;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -475,6 +485,8 @@ a {
 .rows li[data-testid="busy-row"] {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   padding: 6px 4px;
   border-bottom: 1px solid var(--border);
 }
