@@ -32,6 +32,6 @@ test('no title mentions playground or demo', async ({ page }) => {
   await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
   for (const demo of DEMOS) {
     await openDemo(page, demo);
-    expect(await page.title()).not.toMatch(/playground|demo|vivi-map/i);
+    expect(await page.title()).not.toMatch(/playground|demo|vivi/i);
   }
 });

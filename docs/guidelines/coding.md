@@ -12,7 +12,7 @@
 
 ## Fail loudly, but validate input
 
-vivi-map is an SDK other people will call, so the rule depends on where the problem comes from.
+IndoorKit is an SDK other people will call, so the rule depends on where the problem comes from.
 
 - **Internal invariants** (a plugin dependency must be loaded, a level id produced by the SDK must exist, `resources.size` is 0 after `destroy()`): when one is violated, throw. Do not skip silently, log a warning and carry on, or add "just in case" null checks for values that cannot be missing. A crash shows the bug; a fallback hides it. Fix the cause instead of tolerating the impossible state.
 - **External input** (IMDF data, options and arguments passed by callers): validate explicitly, with zod where a schema fits, and fail with an error that names the bad field. These are expected failures, so they belong in the function's signature or documented behavior.

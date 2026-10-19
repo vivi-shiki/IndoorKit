@@ -6,7 +6,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   retries: process.env.CI ? 1 : 0,
   use: {
-    baseURL: `http://localhost:${PORT}/vivi-map/`,
+    baseURL: `http://localhost:${PORT}/IndoorKit/`,
     ...devices['Desktop Chrome'],
     launchOptions: {
       args: ['--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
@@ -18,7 +18,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'pnpm --filter playground run preview',
-    url: `http://localhost:${PORT}/vivi-map/`,
+    url: `http://localhost:${PORT}/IndoorKit/`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
   },

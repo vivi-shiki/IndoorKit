@@ -17,7 +17,7 @@ test('switching on the gallery translates the page and is remembered after reloa
     'aria-pressed',
     'true',
   );
-  expect(await page.evaluate(() => localStorage.getItem('vivi-map.locale'))).toBe('ja');
+  expect(await page.evaluate(() => localStorage.getItem('indoorkit.locale'))).toBe('ja');
 
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
@@ -53,7 +53,7 @@ test('switching on a map page translates UI and map labels together', async ({ p
 
 test('a map page opens in the saved language', async ({ page }) => {
   // 模拟上次会话保存的语言：页面脚本运行前写入 localStorage
-  await page.addInitScript(() => localStorage.setItem('vivi-map.locale', 'zh'));
+  await page.addInitScript(() => localStorage.setItem('indoorkit.locale', 'zh'));
   await openDemo(page, 'occupancy');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(TITLES.occupancy.zh);
   await expect(page.getByTestId('venue-name')).toHaveText('樱花综合医院');

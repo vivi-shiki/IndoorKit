@@ -1,17 +1,17 @@
-# vivi-map — 院内位置情報管理システム
+# IndoorKit — 院内位置情報管理システム
 
 [English](README.md) | [简体中文](README.zh-CN.md) | **日本語**
 
 ブラウザだけで動く、病院向けの屋内測位（RTLS）・資産管理のデモです。土台には、MapLibre GL JS の上に TypeScript でゼロから作った屋内地図 SDK を使っています。
 
-**オンラインデモ：<https://vivi-shiki.github.io/vivi-map/>**
+**オンラインデモ：<https://vivi-shiki.github.io/IndoorKit/>**
 
 | ページ | リンク |
 | --- | --- |
-| リアルタイム位置監視 | <https://vivi-shiki.github.io/vivi-map/#/tracking> |
-| 医療機器の分布 | <https://vivi-shiki.github.io/vivi-map/#/assets> |
-| 立入制限エリア警報 | <https://vivi-shiki.github.io/vivi-map/#/alerts> |
-| 混雑状況ヒートマップ | <https://vivi-shiki.github.io/vivi-map/#/occupancy> |
+| リアルタイム位置監視 | <https://vivi-shiki.github.io/IndoorKit/#/tracking> |
+| 医療機器の分布 | <https://vivi-shiki.github.io/IndoorKit/#/assets> |
+| 立入制限エリア警報 | <https://vivi-shiki.github.io/IndoorKit/#/alerts> |
+| 混雑状況ヒートマップ | <https://vivi-shiki.github.io/IndoorKit/#/occupancy> |
 
 人物・機器・建物はすべて架空です。施設は「さくら総合病院」で、5 階建ての 3 棟が各フロアの連絡通路でつながっています。
 
@@ -87,4 +87,4 @@ pnpm build
 pnpm --filter playground preview
 ```
 
-<http://localhost:4173/vivi-map/> を開いてください。
+<http://localhost:4173/IndoorKit/> を開いてください。

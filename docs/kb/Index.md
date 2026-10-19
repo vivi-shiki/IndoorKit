@@ -1,6 +1,6 @@
 # Knowledge base
 
-Notes for working on vivi-map that the code alone does not make obvious: which API to reach for, and why the core is shaped the way it is. Check here before making design or API decisions.
+Notes for working on IndoorKit that the code alone does not make obvious: which API to reach for, and why the core is shaped the way it is. Check here before making design or API decisions.
 
 How pages are written:
 - Every claim points to the code that backs it, by file and function or class name.

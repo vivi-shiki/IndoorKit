@@ -1,8 +1,8 @@
-# vivi-map Development Roadmap
+# IndoorKit Development Roadmap
 
 [中文](roadmap.zh-CN.md) · [English](roadmap.en.md) · [日本語](roadmap.ja.md)
 
-vivi-map is an open-source TypeScript indoor map SDK (working name IndoorKit), with a demo gallery, a real-time location dashboard, and an AI assistant that operates the map through natural language. All map data describes a fictional hospital, "Sakura General Hospital" (さくら総合病院), and every dependency is a public package or open data.
+IndoorKit is an open-source TypeScript indoor map SDK, with a demo gallery, a real-time location dashboard, and an AI assistant that operates the map through natural language. All map data describes a fictional hospital, "Sakura General Hospital" (さくら総合病院), and every dependency is a public package or open data.
 
 The roadmap has 7 levels, numbered 0 to 6. Level 1 is the **minimum demonstrable version (MVP)**. Each later level adds capabilities on top of a working previous level, and Level 6 completes every planned feature. A level's "gate" must be fully passed before work moves to the next level.
 

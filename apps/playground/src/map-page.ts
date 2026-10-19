@@ -68,7 +68,7 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
 ) {
   root.innerHTML = `
     <header class="bar">
-      <a href="#/" class="back">← vivi-map</a>
+      <a href="#/" class="back">← IndoorKit</a>
       <h1 data-i18n="${options.title}"></h1>
       ${options.controls}
     </header>

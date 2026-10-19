@@ -60,7 +60,7 @@ function lowContrast(page: Page, selectors: string[], minRatio: number) {
 
 for (const theme of ['light', 'dark'] as const) {
   test(`text on map pages is readable in the ${theme} theme`, async ({ page }) => {
-    await page.addInitScript((t) => localStorage.setItem('vivi-map.theme', t), theme);
+    await page.addInitScript((t) => localStorage.setItem('indoorkit.theme', t), theme);
     for (const demo of ['tracking', 'occupancy'] as const) {
       await openDemo(page, demo);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
@@ -72,7 +72,7 @@ for (const theme of ['light', 'dark'] as const) {
 
 for (const theme of ['light', 'dark'] as const) {
   test(`links on the gallery are readable in the ${theme} theme`, async ({ page }) => {
-    await page.addInitScript((t) => localStorage.setItem('vivi-map.theme', t), theme);
+    await page.addInitScript((t) => localStorage.setItem('indoorkit.theme', t), theme);
     await page.goto('./');
     await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
     await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();

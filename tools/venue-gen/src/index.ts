@@ -295,7 +295,7 @@ export function generateVenue(options: VenueGenOptions): ImdfArchive {
       version: '1.0.0',
       created: '2026-01-01T00:00:00Z',
       language: 'ja',
-      generator: 'vivi-map venue-gen',
+      generator: 'indoorkit venue-gen',
     },
     venue: fc([venue]),
     building: fc(buildings),

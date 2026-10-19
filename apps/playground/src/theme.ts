@@ -2,7 +2,7 @@ import { type Choice, createChoice, readChoice, type StorageLike } from './setti
 
 export const THEMES = ['light', 'dark'] as const;
 export type ThemeName = (typeof THEMES)[number];
-export const THEME_STORAGE_KEY = 'vivi-map.theme';
+export const THEME_STORAGE_KEY = 'indoorkit.theme';
 
 /** 保存的主题优先，其次跟随系统深色设置，最后为亮色 */
 export function createThemeSetting(options: {

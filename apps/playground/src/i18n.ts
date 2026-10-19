@@ -4,7 +4,7 @@ export const LOCALES = ['zh', 'en', 'ja'] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', en: 'English', ja: '日本語' };
-export const STORAGE_KEY = 'vivi-map.locale';
+export const STORAGE_KEY = 'indoorkit.locale';
 const DEFAULT_LOCALE: Locale = 'en';
 
 const zh = {

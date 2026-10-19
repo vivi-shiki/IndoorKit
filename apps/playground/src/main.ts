@@ -47,7 +47,7 @@ function mountGallery(root: HTMLElement): Unmount {
       <h1 data-i18n="app.name"></h1>
       <p data-i18n="gallery.subtitle"></p>
       <ul class="cards">${cards}</ul>
-      <p class="note"><span data-i18n="gallery.note"></span> <a href="https://github.com/vivi-shiki/vivi-map">GitHub</a></p>
+      <p class="note"><span data-i18n="gallery.note"></span> <a href="https://github.com/vivi-shiki/IndoorKit">GitHub</a></p>
     </main>`;
   setPageTitle(null);
   translate(root);
