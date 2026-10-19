@@ -1,16 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { openDemo, pollHook } from './helpers';
+import { DEMOS, openDemo, pollHook, TITLES } from './helpers';
 
-test('gallery links to all six demos', async ({ page }) => {
-  await page.goto('./');
-  for (const name of [/Basic map/, /Memory lab/, /Live location/, /Clustering/, /Geofence/, /Heatmap/]) {
-    await expect(page.getByRole('link', { name })).toBeVisible();
-  }
-});
-
-test.describe('Demo 3 live location', () => {
+test.describe('Real-time Tracking', () => {
   test('renders moving tags on the current floor only', async ({ page }) => {
-    await openDemo(page, 'realtime');
+    await openDemo(page, 'tracking');
     await pollHook(page, () => window.__vivi!.renderedCount('indoor-positions')).toBeGreaterThan(0);
     const ground = await page.evaluate(() => window.__vivi!.levelIdOf('1F'));
     await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-positions')).toEqual([ground]);
@@ -21,11 +14,11 @@ test.describe('Demo 3 live location', () => {
   });
 
   test('changes the number of simulated tags', async ({ page }) => {
-    await openDemo(page, 'realtime');
+    await openDemo(page, 'tracking');
     await page.getByRole('radio', { name: '500' }).check();
     // 换数量会重新进入页面，等新页面就绪
     await page.waitForFunction(
-      () => location.hash.includes('tags=500') && window.__vivi?.demo === 'realtime' && window.__vivi.ready,
+      () => location.hash.includes('tags=500') && window.__vivi?.demo === 'tracking' && window.__vivi.ready,
       undefined,
       { timeout: 30_000 },
     );
@@ -40,7 +33,7 @@ test.describe('Demo 3 live location', () => {
   });
 
   test('clicking a tag replays its trail', async ({ page }) => {
-    await openDemo(page, 'realtime');
+    await openDemo(page, 'tracking');
     // 先等标签至少上报两次，轨迹才有线段
     await pollHook(page, () => window.__vivi!.tagScreenPoint()?.samples ?? 0).toBeGreaterThan(1);
     const point = await page.evaluate(() => window.__vivi!.tagScreenPoint()!);
@@ -50,7 +43,7 @@ test.describe('Demo 3 live location', () => {
   });
 
   test('the performance overlay shows the numbers the hooks report', async ({ page }) => {
-    await openDemo(page, 'realtime');
+    await openDemo(page, 'tracking');
     await pollHook(page, () => window.__vivi!.perf().fps).toBeGreaterThan(0);
     // 同一时刻读取浮层文字和钩子，避免两次读取之间数值刷新
     const { shown, perf } = await page.evaluate(() => {
@@ -65,24 +58,31 @@ test.describe('Demo 3 live location', () => {
   });
 });
 
-test.describe('Demo 4 clustering', () => {
-  test('runs both algorithms on the same points and renders the clusters', async ({ page }) => {
-    await openDemo(page, 'cluster');
-    await page.getByRole('radio', { name: '10,000' }).check();
-    await page.getByRole('button', { name: /Run comparison/ }).click();
-    await pollHook(page, () => window.__vivi!.clusterRun()?.points).toBe(10_000);
-    const run = await page.evaluate(() => window.__vivi!.clusterRun()!);
-    expect(run.match).toBe(true);
-    expect(run.clusters).toBeGreaterThan(0);
-    await expect(page.getByTestId('naive-ms')).toHaveText(/\d+(\.\d+)? ms/);
-    await expect(page.getByTestId('indexed-ms')).toHaveText(/\d+(\.\d+)? ms/);
+test.describe('Asset Distribution', () => {
+  test('shows live positions as cluster points on the current floor', async ({ page }) => {
+    await openDemo(page, 'assets');
+    await pollHook(page, () => window.__vivi!.clusterCount()).toBeGreaterThan(0);
     await pollHook(page, () => window.__vivi!.renderedCount('indoor-clusters')).toBeGreaterThan(0);
+    const ground = await page.evaluate(() => window.__vivi!.levelIdOf('1F'));
+    await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-clusters')).toEqual([ground]);
+
+    await page.getByRole('button', { name: '4F' }).click();
+    const fourth = await page.evaluate(() => window.__vivi!.levelIdOf('4F'));
+    await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-clusters')).toEqual([fourth]);
+  });
+
+  test('has no algorithm comparison any more', async ({ page }) => {
+    await openDemo(page, 'assets');
+    await expect(page.getByRole('button', { name: /Run comparison|运行对比|比較を実行/ })).toHaveCount(0);
+    await expect(page.getByRole('radio')).toHaveCount(0);
+    for (const id of ['naive-ms', 'indexed-ms', 'speedup']) await expect(page.getByTestId(id)).toHaveCount(0);
+    await expect(page.getByText(/Double loop|Spatial index|双重循环|空间索引/)).toHaveCount(0);
+    expect(await page.evaluate(() => 'clusterRun' in window.__vivi!)).toBe(false);
   });
 });
-
-test.describe('Demo 7 geofence', () => {
+test.describe('Restricted Zone Alerts', () => {
   test('draws the preset fence and raises alerts with a popup', async ({ page }) => {
-    await openDemo(page, 'geofence');
+    await openDemo(page, 'alerts');
     expect(await page.evaluate(() => window.__vivi!.fenceIds())).toContain('icu');
     // 页面打开在围栏所在楼层，围栏和告警弹窗才可见
     expect(await page.evaluate(() => window.__vivi!.floor())).toBe('3F');
@@ -93,9 +93,9 @@ test.describe('Demo 7 geofence', () => {
   });
 });
 
-test.describe('Demo 10 heatmap', () => {
+test.describe('Occupancy Heatmap', () => {
   test('collects points and follows the time window and floor', async ({ page }) => {
-    await openDemo(page, 'heatmap');
+    await openDemo(page, 'occupancy');
     await pollHook(page, () => window.__vivi!.heatPointCount()).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.__vivi!.styleLayerIds())).toContain('indoor-heat');
 
@@ -110,7 +110,7 @@ test.describe('Demo 10 heatmap', () => {
 
 test.describe('theme', () => {
   test('switches UI and map to dark and keeps it after reload', async ({ page }) => {
-    await openDemo(page, 'basic');
+    await openDemo(page, 'tracking');
     const light = await page.evaluate(() => window.__vivi!.mapBackground());
     await page.getByRole('button', { name: /Dark|暗色|ダーク/ }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -123,22 +123,16 @@ test.describe('theme', () => {
   });
 });
 
-test('every new page follows the language switch', async ({ page }) => {
-  const titles = {
-    realtime: ['Live location', '实时定位', 'リアルタイム測位'],
-    cluster: ['Clustering', '聚合对比', 'クラスタリング'],
-    geofence: ['Geofence', '电子围栏', 'ジオフェンス'],
-    heatmap: ['Heatmap', '热力图', 'ヒートマップ'],
-  } as const;
-  for (const [demo, [en, zh, ja]] of Object.entries(titles)) {
-    await openDemo(page, demo as keyof typeof titles);
+test('every page title follows the language switch', async ({ page }) => {
+  for (const demo of DEMOS) {
+    await openDemo(page, demo);
     const switcher = page.getByRole('group', { name: /language|语言|言語/i });
-    await switcher.getByRole('button', { name: 'English' }).click();
-    await expect(page.getByRole('heading', { name: new RegExp(en) })).toBeVisible();
+    const heading = page.getByRole('heading', { level: 1 });
     await switcher.getByRole('button', { name: '中文' }).click();
-    await expect(page.getByRole('heading', { name: new RegExp(zh) })).toBeVisible();
+    await expect(heading).toHaveText(TITLES[demo].zh);
     await switcher.getByRole('button', { name: '日本語' }).click();
-    await expect(page.getByRole('heading', { name: new RegExp(ja) })).toBeVisible();
+    await expect(heading).toHaveText(TITLES[demo].ja);
     await switcher.getByRole('button', { name: 'English' }).click();
+    await expect(heading).toHaveText(TITLES[demo].en);
   }
 });

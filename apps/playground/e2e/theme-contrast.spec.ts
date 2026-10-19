@@ -61,7 +61,7 @@ function lowContrast(page: Page, selectors: string[], minRatio: number) {
 for (const theme of ['light', 'dark'] as const) {
   test(`text on map pages is readable in the ${theme} theme`, async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem('vivi-map.theme', t), theme);
-    for (const demo of ['basic', 'realtime'] as const) {
+    for (const demo of ['tracking', 'occupancy'] as const) {
       await openDemo(page, demo);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       // WCAG AA 普通文字要求 4.5:1
