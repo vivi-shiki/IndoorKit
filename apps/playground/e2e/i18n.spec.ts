@@ -59,3 +59,15 @@ test('a map page opens in the saved language', async ({ page }) => {
   await expect(page.getByTestId('venue-name')).toHaveText('樱花综合医院');
   expect(await page.evaluate(() => window.__vivi!.labelLanguage())).toBe('zh');
 });
+
+test('the gallery names the hospital the same way as the map in each language', async ({ page }) => {
+  await page.goto('./');
+  const note = page.locator('.gallery .note');
+  const names = { 中文: '樱花综合医院', English: 'Sakura General Hospital', 日本語: 'さくら総合病院' };
+  for (const [button, name] of Object.entries(names)) {
+    await switcher(page).getByRole('button', { name: button }).click();
+    await expect(note).toContainText(name);
+  }
+  await switcher(page).getByRole('button', { name: '中文' }).click();
+  await expect(note).not.toContainText('さくら');
+});

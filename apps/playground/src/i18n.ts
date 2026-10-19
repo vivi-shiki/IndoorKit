@@ -11,7 +11,7 @@ const zh = {
   'app.name': '医院室内地图看板',
   'language.label': '语言',
   'gallery.subtitle': '以一家虚构医院为例，从设备和人员两个角度看室内位置',
-  'gallery.note': '地图、人员与设备数据全部为虚构，场馆是虚构的「さくら総合病院」。',
+  'gallery.note': '地图、人员与设备数据全部为虚构，场馆是虚构的「樱花综合医院」。',
   'group.efficiency.title': '设备视图',
   'group.efficiency.desc': '每台设备归哪个科室、放在哪个房间、此刻状态如何、今天运行了多长时间',
   'group.people.title': '人员视图',
