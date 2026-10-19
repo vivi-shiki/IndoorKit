@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { openDemo } from './helpers';
+import { DEMOS, openDemo } from './helpers';
 
 /** 页面上需要能读清的文字控件 */
 const SELECTORS = [
@@ -11,6 +11,11 @@ const SELECTORS = [
   '.venue-name',
   '.perf',
   '.bar .back',
+  '.panel',
+  '.panel button',
+  '.drawer',
+  '.chip',
+  '.alarm-feed li',
 ];
 
 /**
@@ -61,7 +66,7 @@ function lowContrast(page: Page, selectors: string[], minRatio: number) {
 for (const theme of ['light', 'dark'] as const) {
   test(`text on map pages is readable in the ${theme} theme`, async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem('indoorkit.theme', t), theme);
-    for (const demo of ['tracking', 'occupancy'] as const) {
+    for (const demo of DEMOS) {
       await openDemo(page, demo);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       // WCAG AA 普通文字要求 4.5:1

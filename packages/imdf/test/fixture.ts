@@ -1,6 +1,6 @@
 import type { ImdfArchive } from '../src/index';
 
-/** 两层、两个房间、一扇门的最小合法 IMDF 数据 */
+/** 两层、两个区块、一扇门、一个科室的最小合法 IMDF 数据 */
 export const IDS = {
   venue: '00000000-0000-4000-8000-000000000001',
   building: '00000000-0000-4000-8000-000000000002',
@@ -10,6 +10,7 @@ export const IDS = {
   hall: '00000000-0000-4000-8000-000000000006',
   door: '00000000-0000-4000-8000-000000000007',
   wall: '00000000-0000-4000-8000-000000000008',
+  department: '00000000-0000-4000-8000-000000000009',
 };
 
 const square = (x0: number, y0: number, x1: number, y1: number) => ({
@@ -143,5 +144,21 @@ export function makeArchive(): ImdfArchive {
       ],
     },
     amenity: { type: 'FeatureCollection', features: [] },
+    department: {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: IDS.department,
+          feature_type: 'department',
+          geometry: null,
+          properties: {
+            code: 'internal',
+            name: { ja: '内科', en: 'Internal Medicine' },
+            unit_ids: [IDS.room],
+          },
+        },
+      ],
+    },
   };
 }

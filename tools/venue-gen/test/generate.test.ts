@@ -149,8 +149,60 @@ describe('generateVenue', () => {
   });
 
   it('uses unique ids across the archive', () => {
-    const files = ['venue', 'building', 'level', 'unit', 'opening', 'fixture', 'amenity'] as const;
+    const files = [
+      'venue',
+      'building',
+      'level',
+      'unit',
+      'opening',
+      'fixture',
+      'amenity',
+      'department',
+    ] as const;
     const ids = files.flatMap((f) => archive[f]?.features.map((x) => x.id) ?? []);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('departments', () => {
+  const departments = archive.department!.features;
+  const owner = new Map<string, string>();
+  for (const d of departments) for (const id of d.properties.unit_ids as string[]) owner.set(id, d.id);
+  const levelOf = new Map(archive.unit.features.map((u) => [u.id, u.properties.level_id as string]));
+  const byCode = (code: string) => departments.find((d) => d.properties.code === code)!;
+
+  it('puts every named room in exactly one department', () => {
+    const rooms = archive.unit.features.filter((u) => ['room', 'lobby'].includes(u.properties.category));
+    for (const room of rooms) expect(owner.has(room.id), room.properties.name.en).toBe(true);
+    const listed = departments.flatMap((d) => d.properties.unit_ids as string[]);
+    expect(new Set(listed).size).toBe(listed.length);
+  });
+
+  it('leaves corridors, elevators, stairs and restrooms as public areas', () => {
+    const service = archive.unit.features.filter((u) => !['room', 'lobby'].includes(u.properties.category));
+    expect(service.length).toBeGreaterThan(0);
+    for (const unit of service) expect(owner.has(unit.id)).toBe(false);
+  });
+
+  it('gives every department several units and names in three languages', () => {
+    expect(departments.length).toBeGreaterThanOrEqual(8);
+    for (const d of departments) {
+      expect((d.properties.unit_ids as string[]).length).toBeGreaterThanOrEqual(3);
+      for (const lang of ['ja', 'en', 'zh']) expect(d.properties.name[lang]).toBeTruthy();
+    }
+    expect(new Set(departments.map((d) => d.properties.code)).size).toBe(departments.length);
+  });
+
+  it('lets some departments span several floors', () => {
+    const floors = (code: string) =>
+      new Set((byCode(code).properties.unit_ids as string[]).map((id) => levelOf.get(id))).size;
+    expect(floors('internal')).toBeGreaterThan(1);
+    expect(floors('surgery')).toBeGreaterThan(1);
+  });
+
+  it('gives the ICU department every ICU room', () => {
+    const icuRooms = archive.unit.features.filter((u) => u.properties.name?.en === 'ICU').map((u) => u.id);
+    expect(icuRooms).toHaveLength(3);
+    for (const id of icuRooms) expect(owner.get(id)).toBe(byCode('icu').id);
   });
 });

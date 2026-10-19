@@ -58,17 +58,17 @@ test.describe('Real-time Tracking', () => {
   });
 });
 
-test.describe('Asset Distribution', () => {
-  test('shows live positions as cluster points on the current floor', async ({ page }) => {
+test.describe('Asset Overview', () => {
+  test('shows assets as unit clusters on the current floor', async ({ page }) => {
     await openDemo(page, 'assets');
     await pollHook(page, () => window.__vivi!.clusterCount()).toBeGreaterThan(0);
-    await pollHook(page, () => window.__vivi!.renderedCount('indoor-clusters')).toBeGreaterThan(0);
+    await pollHook(page, () => window.__vivi!.renderedCount('indoor-unit-clusters')).toBeGreaterThan(0);
     const ground = await page.evaluate(() => window.__vivi!.levelIdOf('1F'));
-    await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-clusters')).toEqual([ground]);
+    await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-unit-clusters')).toEqual([ground]);
 
-    await page.getByRole('button', { name: '4F' }).click();
+    await page.getByRole('button', { name: '4F', exact: true }).click();
     const fourth = await page.evaluate(() => window.__vivi!.levelIdOf('4F'));
-    await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-clusters')).toEqual([fourth]);
+    await pollHook(page, () => window.__vivi!.renderedLevelIds('indoor-unit-clusters')).toEqual([fourth]);
   });
 
   test('has no algorithm comparison any more', async ({ page }) => {
@@ -80,10 +80,12 @@ test.describe('Asset Distribution', () => {
     expect(await page.evaluate(() => 'clusterRun' in window.__vivi!)).toBe(false);
   });
 });
-test.describe('Restricted Zone Alerts', () => {
-  test('draws the preset fence and raises alerts with a popup', async ({ page }) => {
+test.describe('Zone Alerts', () => {
+  test('draws the preset fences and raises alerts with a popup', async ({ page }) => {
     await openDemo(page, 'alerts');
-    expect(await page.evaluate(() => window.__vivi!.fenceIds())).toContain('icu');
+    expect(await page.evaluate(() => window.__vivi!.fenceIds())).toEqual(
+      expect.arrayContaining(['icu-restricted', 'exit-antitheft', 'ward-dwell']),
+    );
     // 页面打开在围栏所在楼层，围栏和告警弹窗才可见
     expect(await page.evaluate(() => window.__vivi!.floor())).toBe('3F');
     await pollHook(page, () => window.__vivi!.renderedCount('indoor-polygons')).toBeGreaterThan(0);

@@ -69,4 +69,36 @@ describe('validateImdf', () => {
     archive.unit.features[0]!.id = 'room-1';
     expect(messages(archive).some((m) => m.startsWith('unit:'))).toBe(true);
   });
+
+  it('accepts an archive without departments', () => {
+    const archive = makeArchive();
+    delete archive.department;
+    expect(validateImdf(archive).ok).toBe(true);
+  });
+
+  it('rejects a department that points at a missing unit', () => {
+    const archive = makeArchive();
+    archive.department!.features[0]!.properties.unit_ids = ['00000000-0000-4000-8000-0000000000ff'];
+    expect(messages(archive)).toContain('department: unknown unit 00000000-0000-4000-8000-0000000000ff');
+  });
+
+  it('rejects a unit that belongs to two departments', () => {
+    const archive = makeArchive();
+    const first = archive.department!.features[0]!;
+    archive.department!.features.push({
+      ...first,
+      id: '00000000-0000-4000-8000-0000000000aa',
+      properties: { ...first.properties, code: 'surgery' },
+    });
+    expect(messages(archive)).toContain(`department: unit ${IDS.room} already belongs to ${IDS.department}`);
+  });
+
+  it('rejects a department without units or without a code', () => {
+    const archive = makeArchive();
+    archive.department!.features[0]!.properties.unit_ids = [];
+    expect(messages(archive).some((m) => m.startsWith('department:'))).toBe(true);
+    const other = makeArchive();
+    delete other.department!.features[0]!.properties.code;
+    expect(messages(other).some((m) => m.startsWith('department:'))).toBe(true);
+  });
 });

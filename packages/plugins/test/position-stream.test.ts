@@ -1,9 +1,16 @@
 import { createManualProvider } from '@indoorkit/core/testing';
 import { describe, expect, it } from 'vitest';
-import { floorPlugin, interpolatePosition, positionStreamPlugin } from '../src/index';
+import {
+  floorPlugin,
+  interpolatePosition,
+  type PositionStreamOptions,
+  positionStreamPlugin,
+} from '../src/index';
 import { batch, featureCollection, IDS, openMap, tag } from './helpers';
 
-async function open(options: { staleAfterMs?: number; historyMs?: number } = {}) {
+async function open(
+  options: Pick<PositionStreamOptions, 'staleAfterMs' | 'historyMs' | 'decorate' | 'circleColor'> = {},
+) {
   const provider = createManualProvider();
   let now = 0;
   const plugin = positionStreamPlugin({ provider, intervalMs: 1000, clock: () => now, ...options });
@@ -110,5 +117,38 @@ describe('positionStreamPlugin', () => {
     await map.destroy();
     expect(fake.sourceIds()).toEqual([]);
     expect(map.resources.size).toBe(0);
+  });
+
+  it('adds caller properties to every rendered tag', async () => {
+    const { fake, provider, stream } = await open({
+      decorate: (id) => ({ role: id === 'a' ? 'nurse' : 'visitor' }),
+    });
+    provider.emit(batch(0, [tag('a', IDS.level1, [0, 0]), tag('b', IDS.level1, [0, 0])]));
+    stream.render(0);
+    expect(rendered(fake).map((f) => f.properties!.role)).toEqual(['nurse', 'visitor']);
+  });
+
+  it('colours tags with a caller expression', async () => {
+    const { fake } = await open({ circleColor: ['match', ['get', 'role'], 'nurse', '#2563eb', '#6b7280'] });
+    expect(fake.getPaintProperty('indoor-positions', 'circle-color')).toEqual([
+      'match',
+      ['get', 'role'],
+      'nurse',
+      '#2563eb',
+      '#6b7280',
+    ]);
+  });
+
+  it('hides tags rejected by the filter and reports the latest sample of any tag', async () => {
+    const { fake, provider, stream } = await open();
+    provider.emit(batch(0, [tag('a', IDS.level1, [0, 0]), tag('b', IDS.level2, [1, 1])]));
+    stream.setFilter((id) => id !== 'a');
+    stream.render(0);
+    expect(rendered(fake)).toEqual([]);
+    stream.setFilter(null);
+    stream.render(0);
+    expect(rendered(fake).map((f) => f.properties!.id)).toEqual(['a']);
+    expect(stream.latest('b')).toEqual({ coord: [1, 1], levelId: IDS.level2, time: 0 });
+    expect(stream.latest('ghost')).toBeNull();
   });
 });
