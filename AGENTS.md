@@ -1,31 +1,47 @@
 # AGENTS.md
 
-AI 协作者与人类开发者共用的项目说明。
+Project instructions shared by AI collaborators and human developers. Claude Code loads this file through `CLAUDE.md`.
 
-## 结构
+## Layout
 
-| 路径 | 职责 |
+| Path | Responsibility |
 | --- | --- |
-| `packages/imdf` | IMDF 读取、zod 校验、转换为 `VenueModel` |
-| `packages/core` | `createIndoorMap`、插件系统、`ResourceTracker`、`EventBus`、样式生成 |
-| `packages/plugins` | 官方插件（`floor`、`marker`） |
-| `tools/venue-gen` | 生成虚构医院「さくら総合病院」的 IMDF 数据 |
-| `tools/leak-bench` | Playwright 内存回归测试 |
-| `apps/playground` | 示例画廊，部署到 GitHub Pages |
+| `packages/imdf` | Read IMDF, validate with zod, convert to `VenueModel` |
+| `packages/core` | `createIndoorMap`, plugin system, `ResourceTracker`, `EventBus`, style generation |
+| `packages/plugins` | Official plugins (`floor`, `marker`) |
+| `tools/venue-gen` | Generates IMDF data for the fictional hospital "さくら総合病院" |
+| `tools/leak-bench` | Playwright memory regression tests |
+| `apps/playground` | Demo gallery, deployed to GitHub Pages |
 
-## 唯一入口命令
+## The only entry commands
 
 ```bash
-pnpm verify   # lint + typecheck + 单元测试
-pnpm build    # 生成数据 + 构建各包 + 构建 playground
-pnpm e2e      # 端到端与内存回归（需先 pnpm build）
+pnpm verify   # lint + typecheck + unit tests
+pnpm build    # generate data + build packages + build playground
+pnpm e2e      # end-to-end and memory regression tests (run pnpm build first)
 ```
 
-不要直接调用 vite、tsc、vitest、playwright。
+Do not call vite, tsc, vitest or playwright directly. The one exception is narrowing a run while reproducing an intermittent failure, as described in [docs/guidelines/coding.md](docs/guidelines/coding.md#memory-leaks-and-intermittent-failures).
 
-## 规则
+## Read before working
 
-- 先写测试，再写实现；`pnpm verify` 和 `pnpm e2e` 全部通过才能提交。
-- 编码约束见 [docs/guidelines/coding.md](docs/guidelines/coding.md)，架构决策见 [docs/adr](docs/adr)。
-- 路线图见 [docs/roadmap.zh-CN.md](docs/roadmap.zh-CN.md)。
-- 不提交任何真实医院、公司或个人的数据。
+- Coding rules: [docs/guidelines/coding.md](docs/guidelines/coding.md). Read it before touching source code.
+- Lessons learned from past tasks: [docs/guidelines/learning.md](docs/guidelines/learning.md). Read it before touching source code.
+- Knowledge base: [docs/kb/Index.md](docs/kb/Index.md). Check it before making design or API decisions.
+- Architecture decisions: [docs/adr](docs/adr).
+- Roadmap: [docs/roadmap.en.md](docs/roadmap.en.md).
+
+## Rules
+
+- Write the test first, then the implementation. Commit only when `pnpm verify` and `pnpm e2e` both pass.
+- Do not commit data about any real hospital, company or person.
+- Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/test-hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
+
+## Workflows
+
+Slash commands in `.claude/commands/`:
+
+- `/investigate <request>`: the default for coding work (features, bug fixes, refactoring). It keeps a task document at `docs/tasks/CURRENT.md` with the success criteria, numbered proposals and their outcomes. `/investigate continue <feedback>` appends feedback to the current task; `/investigate report` summarizes the confirmed proposals.
+- `/refine`: turns archived task documents in `docs/tasks/archive/` into rules in `docs/guidelines/learning.md`. Document-only; never edits source code.
+
+Work through the request to the end without asking questions, unless the request contradicts itself in a way you cannot resolve. Stop and ask before anything that cannot be undone: publishing to npm, deleting data, or force-pushing.
