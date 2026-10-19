@@ -40,3 +40,22 @@ test('adds a marker on the current floor', async ({ page }) => {
   await page.getByRole('button', { name: '1F' }).click();
   await expect.poll(() => page.evaluate(() => window.__vivi!.renderedCount('indoor-markers'))).toBe(0);
 });
+
+test('every SDK layer uses the indoor- prefix', async ({ page }) => {
+  const ids = await page.evaluate(() => window.__vivi!.styleLayerIds());
+  // `background` belongs to the base style, not to the SDK or a plugin
+  const sdkLayers = ids.filter((id) => id !== 'background');
+  expect(sdkLayers.length).toBeGreaterThan(0);
+  expect(sdkLayers.filter((id) => !id.startsWith('indoor-'))).toEqual([]);
+});
+
+test('switching floors and adding markers registers no new resources', async ({ page }) => {
+  const before = await page.evaluate(() => window.__vivi!.resourceLabels());
+  expect(before).toContain('map');
+  for (const floor of ['2F', '3F', '1F']) {
+    await page.getByRole('button', { name: floor }).click();
+    await page.getByRole('button', { name: /添加标记|Add marker/ }).click();
+  }
+  await expect(page.getByTestId('marker-count')).toHaveText('3');
+  expect(await page.evaluate(() => window.__vivi!.resourceLabels())).toEqual(before);
+});
