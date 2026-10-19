@@ -90,6 +90,8 @@ export async function mountBasicDemo(root: HTMLElement) {
     const field = map.getLayoutProperty('indoor-labels', 'text-field') as [string, [string, string]];
     return field[1][1].replace('label_', '');
   };
+  hooks.resourceLabels = () => indoor.resources.labels();
+  hooks.styleLayerIds = () => map.getStyle().layers.map((layer) => layer.id);
 
   return () => {
     unsubscribe();

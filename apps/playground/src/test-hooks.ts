@@ -9,6 +9,10 @@ export interface ViviTestHooks {
   renderedCount(layerId: string): number;
   /** 地图内标注当前优先使用的语言 */
   labelLanguage(): string;
+  /** Labels of the resources the map has registered with its ResourceTracker */
+  resourceLabels(): string[];
+  /** Ids of every layer in the live MapLibre style, in drawing order */
+  styleLayerIds(): string[];
   // Demo 2
   cycles: number;
   unreleased: number;
@@ -33,6 +37,8 @@ export function setHooks(partial: Partial<ViviTestHooks> & Pick<ViviTestHooks, '
     renderedLevelIds: unavailable,
     renderedCount: unavailable,
     labelLanguage: unavailable,
+    resourceLabels: unavailable,
+    styleLayerIds: unavailable,
     cycles: 0,
     unreleased: 0,
     runCycles: unavailable,
