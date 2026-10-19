@@ -155,6 +155,49 @@ describe('createIndoorMap', () => {
     await expect(map.destroy()).resolves.toBeUndefined();
   });
 
+  it('releases everything and then throws when a resource fails to release', async () => {
+    const failure = new Error('dispose failed');
+    const plugin = definePlugin({
+      name: 'broken',
+      setup: (ctx) => {
+        ctx.track(
+          1,
+          () => {
+            throw failure;
+          },
+          'bad',
+        );
+        ctx.onMap('click', () => {});
+        return {};
+      },
+    });
+    const s = setup();
+    const map = await createIndoorMap({
+      container: 'map',
+      venue,
+      mapFactory: s.mapFactory,
+      plugins: [plugin],
+    });
+    const fake = s.getFake();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const error = await map.destroy().then(
+      () => undefined,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(AggregateError);
+    expect((error as AggregateError).errors).toEqual([failure]);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+    // The failure must not stop the rest of the release
+    expect(map.destroyed).toBe(true);
+    expect(map.resources.size).toBe(0);
+    expect(fake.removed).toBe(true);
+    expect(fake.listenerCount('click')).toBe(0);
+    expect(fake.layerIds()).toEqual([]);
+    expect(fake.sourceIds()).toEqual([]);
+  });
+
   it('cleans up when a plugin fails during setup', async () => {
     const bad = definePlugin({
       name: 'bad',

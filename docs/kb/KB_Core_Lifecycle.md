@@ -20,7 +20,7 @@ Nothing else is registered after `ready`. Switching floors only calls `setFilter
 
 `ResourceTracker.disposeAll` walks the entries backwards. Because the map is first and each source is registered before its layers, the result is: plugin listeners and layers, then their sources, then the core layers and sources, then the map. Removing a source before its layer would fail in MapLibre, and `FakeMap.removeSource` throws in the same case so unit tests catch it.
 
-`disposeAll` keeps going if one dispose throws and returns the collected errors. `destroy()` currently logs them with `console.warn`.
+`disposeAll` keeps going if one dispose throws and returns the collected errors. `destroy()` still finishes the whole release, marks the map destroyed and clears its events, then rejects with an `AggregateError` holding those errors. A failed release is a bug (see "Fail loudly, but validate input" in [coding.md](../guidelines/coding.md)), so it is not logged and swallowed.
 
 If setup fails partway (a plugin throws), `createIndoorMap` disposes everything registered so far and rethrows, so a failed create leaves nothing behind.
 

@@ -40,6 +40,7 @@ export interface IndoorMap<P extends readonly AnyPlugin[]> {
   setLanguages(languages: readonly string[]): void;
   resources: { readonly size: number; labels(): string[] };
   readonly destroyed: boolean;
+  /** 释放全部资源；有资源释放失败时，全部释放完后以 AggregateError 拒绝 */
   destroy(): Promise<void>;
 }
 
@@ -95,7 +96,8 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
     events.emit('lifecycle', { phase: 'destroy' });
     const errors = tracker.disposeAll();
     events.clear();
-    if (errors.length > 0) console.warn('[indoorkit] errors while destroying', errors);
+    // 先释放完全部资源再报错，单个失败不会留下其余资源
+    if (errors.length > 0) throw new AggregateError(errors, `${errors.length} resource(s) failed to release`);
   };
 
   try {
