@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Project instructions shared by AI collaborators and human developers. Claude Code loads this file through `CLAUDE.md`.
+Project instructions shared by AI collaborators and human developers. Claude Code loads this file through `CLAUDE.md`; Codex reads `AGENTS.md` directly.
 
 ## Layout
 
@@ -39,9 +39,9 @@ Do not call vite, tsc, vitest or playwright directly. The one exception is narro
 
 ## Workflows
 
-Slash commands in `.claude/commands/`:
+Claude Code uses slash commands in `.claude/commands/`. Codex uses the matching repository skills in `.codex/skills/` (`$investigate` and `$refine`). The two sets follow the same task document and verification process:
 
-- `/investigate <request>`: the default for coding work (features, bug fixes, refactoring). It keeps a task document at `docs/tasks/CURRENT.md` with the success criteria, numbered proposals and their outcomes. `/investigate continue <feedback>` appends feedback to the current task; `/investigate report` summarizes the confirmed proposals.
-- `/refine`: turns archived task documents in `docs/tasks/archive/` into rules in `docs/guidelines/learning.md`. Document-only; never edits source code.
+- `/investigate <request>` or `$investigate <request>`: the default for coding work (features, bug fixes, refactoring). It keeps a task document at `docs/tasks/CURRENT.md` with the success criteria, numbered proposals and their outcomes. `investigate continue <feedback>` appends feedback to the current task; `investigate report` summarizes the confirmed proposals.
+- `/refine` or `$refine`: turns archived task documents in `docs/tasks/archive/` into rules in `docs/guidelines/learning.md`. Document-only; never edits source code.
 
 Work through the request to the end without asking questions, unless the request contradicts itself in a way you cannot resolve. Stop and ask before anything that cannot be undone: publishing to npm, deleting data, or force-pushing.
