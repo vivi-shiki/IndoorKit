@@ -9,7 +9,7 @@ import {
 import { pickLabel, type VenueModel } from '@indoorkit/imdf';
 import type { FloorApi } from '@indoorkit/plugins';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { i18n, translate } from './app-i18n';
+import { i18n, setPageTitle, translate } from './app-i18n';
 import { appTheme } from './app-theme';
 import type { MessageKey } from './i18n';
 import { setHooks, stats, type ViviTestHooks } from './test-hooks';
@@ -78,6 +78,7 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
       <div class="venue-name" data-testid="venue-name"></div>
       ${options.overlays ?? ''}
     </div>`;
+  setPageTitle(options.title);
   translate(root);
   const hooks = setHooks({ demo: options.demo });
   const cleanups: (() => void)[] = [];

@@ -1,7 +1,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css';
 import './maplibre-worker';
 import './style.css';
-import { languageSwitcher, translate } from './app-i18n';
+import { languageSwitcher, setPageTitle, translate } from './app-i18n';
 import { themeToggle } from './app-theme';
 import { mountAlertsPage } from './demos/alerts';
 import { mountAssetsPage } from './demos/assets';
@@ -44,11 +44,12 @@ function mountGallery(root: HTMLElement): Unmount {
   ).join('');
   root.innerHTML = `
     <main class="gallery">
-      <h1>vivi-map</h1>
+      <h1 data-i18n="app.name"></h1>
       <p data-i18n="gallery.subtitle"></p>
       <ul class="cards">${cards}</ul>
       <p class="note"><span data-i18n="gallery.note"></span> <a href="https://github.com/vivi-shiki/vivi-map">GitHub</a></p>
     </main>`;
+  setPageTitle(null);
   translate(root);
   setHooks({ demo: 'gallery', ready: true });
   return () => {};

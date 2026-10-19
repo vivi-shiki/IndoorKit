@@ -20,9 +20,18 @@ export const storage: StorageLike = {
 
 export const i18n = createI18n({ storage, languages: navigator.languages ?? [navigator.language] });
 
+let pageTitle: MessageKey | null = null;
+
+/** 当前页面的标题；浏览器标签页显示「页面名 | 产品名」，首页只显示产品名 */
+export function setPageTitle(key: MessageKey | null) {
+  pageTitle = key;
+  translate();
+}
+
 /** 把 data-i18n / data-i18n-aria 标记的元素翻译成当前语言 */
 export function translate(root: ParentNode = document) {
   document.documentElement.lang = i18n.locale;
+  document.title = pageTitle ? `${i18n.t(pageTitle)} | ${i18n.t('app.name')}` : i18n.t('app.name');
   for (const el of root.querySelectorAll<HTMLElement>('[data-i18n]')) {
     el.textContent = i18n.t(el.dataset.i18n as MessageKey);
   }

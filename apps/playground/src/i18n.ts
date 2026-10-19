@@ -8,6 +8,7 @@ export const STORAGE_KEY = 'vivi-map.locale';
 const DEFAULT_LOCALE: Locale = 'en';
 
 const zh = {
+  'app.name': '院内定位管理平台',
   'language.label': '语言',
   'gallery.subtitle': '医院室内定位与资产管理演示',
   'gallery.note': '地图与人员均为虚构数据，场馆为「さくら総合病院」。',
@@ -42,6 +43,7 @@ export type MessageKey = keyof typeof zh;
 type Messages = Record<MessageKey, string>;
 
 const en: Messages = {
+  'app.name': 'Hospital RTLS Console',
   'language.label': 'Language',
   'gallery.subtitle': 'Indoor positioning and asset management for hospitals',
   'gallery.note': 'All map and people data is fictional; the venue is "Sakura General Hospital".',
@@ -74,6 +76,7 @@ const en: Messages = {
 };
 
 const ja: Messages = {
+  'app.name': '院内位置情報管理システム',
   'language.label': '言語',
   'gallery.subtitle': '病院向け屋内測位・資産管理デモ',
   'gallery.note': '地図と人物はすべて架空のデータです。施設は「さくら総合病院」です。',

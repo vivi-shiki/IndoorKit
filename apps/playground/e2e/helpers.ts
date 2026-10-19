@@ -13,6 +13,13 @@ export const TITLES: Record<Demo, { en: string; zh: string; ja: string }> = {
   occupancy: { en: 'Occupancy Heatmap', zh: '人流密度分析', ja: '混雑状況ヒートマップ' },
 };
 
+/** 产品名：浏览器标签页标题和首页大标题使用 */
+export const PRODUCT = {
+  en: 'Hospital RTLS Console',
+  zh: '院内定位管理平台',
+  ja: '院内位置情報管理システム',
+};
+
 /** 打开一个页面并等它进入就绪状态 */
 export async function openDemo(page: Page, demo: Demo) {
   await page.goto(`./#/${demo}`);
