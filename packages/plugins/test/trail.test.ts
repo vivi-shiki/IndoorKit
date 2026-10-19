@@ -28,6 +28,14 @@ describe('detectStops', () => {
     expect(stops[0]!.coord).toEqual([0.0001, 0.0005]);
   });
 
+  it('places the stop where most of it happened, not at the step in from the corridor', () => {
+    const stops = detectStops([s(0, 0.0001), s(1000, 0.00012), s(2000, 0.00012), s(3000, 0.00012)], {
+      radiusMeters: 3,
+      minMs: 2000,
+    });
+    expect(stops[0]!.coord).toEqual([0.00012, 0.0005]);
+  });
+
   it('treats a floor change as leaving the place', () => {
     const stops = detectStops([s(0, 0.0005), s(1000, 0.0005), s(2000, 0.0005, L2)], {
       radiusMeters: 3,

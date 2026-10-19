@@ -38,7 +38,7 @@ export function setPageTitle(key: MessageKey | null) {
   translate();
 }
 
-/** 把 data-i18n / data-i18n-aria 标记的元素翻译成当前语言 */
+/** 把 data-i18n / data-i18n-aria / data-i18n-placeholder 标记的元素翻译成当前语言 */
 export function translate(root: ParentNode = document) {
   document.documentElement.lang = i18n.locale;
   document.title = pageTitle ? `${i18n.t(pageTitle)} | ${i18n.t('app.name')}` : i18n.t('app.name');
@@ -47,6 +47,9 @@ export function translate(root: ParentNode = document) {
   }
   for (const el of root.querySelectorAll<HTMLElement>('[data-i18n-aria]')) {
     el.setAttribute('aria-label', i18n.t(el.dataset.i18nAria as MessageKey));
+  }
+  for (const el of root.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]')) {
+    el.placeholder = i18n.t(el.dataset.i18nPlaceholder as MessageKey);
   }
 }
 

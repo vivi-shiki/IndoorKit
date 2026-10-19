@@ -1,5 +1,6 @@
 import { type DataProvider, definePlugin, type PositionBatch, type TagPosition } from '@indoorkit/core';
 import type { Feature } from 'geojson';
+import type { DataDrivenPropertyValueSpecification } from 'maplibre-gl';
 import { floorOverlay } from './overlay';
 
 export interface Sample {
@@ -35,6 +36,10 @@ export interface PositionStreamOptions {
   renderIntervalMs?: number;
   /** 逐帧调度，默认 requestAnimationFrame；没有时不自动渲染 */
   frame?: (callback: () => void) => () => void;
+  /** 给每个画出的标签加属性（如角色），供 circleColor 等表达式使用 */
+  decorate?: (id: string) => Record<string, string | number | boolean>;
+  /** 标签圆点颜色，可以是数据驱动的表达式；默认蓝色 */
+  circleColor?: DataDrivenPropertyValueSpecification<string>;
 }
 
 export interface PositionStreamApi {
@@ -47,6 +52,10 @@ export interface PositionStreamApi {
   replay(id: string): void;
   clearReplay(): void;
   replaying(): string | null;
+  /** 只画通过筛选的标签；null 取消筛选 */
+  setFilter(filter: ((id: string) => boolean) | null): void;
+  /** 标签最近一次上报（任何楼层）；没有时为 null */
+  latest(id: string): Sample | null;
 }
 
 const defaultFrame = (callback: () => void) => {
@@ -76,7 +85,7 @@ export function positionStreamPlugin(options: PositionStreamOptions) {
           type: 'circle',
           paint: {
             'circle-radius': 4,
-            'circle-color': '#2563eb',
+            'circle-color': options.circleColor ?? '#2563eb',
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 1,
           },
@@ -90,6 +99,7 @@ export function positionStreamPlugin(options: PositionStreamOptions) {
       const histories = new Map<string, Sample[]>();
       let visible: TagPosition[] = [];
       let replaying: string | null = null;
+      let filter: ((id: string) => boolean) | null = null;
 
       const drawTrail = () => {
         const samples = replaying ? (histories.get(replaying) ?? []) : [];
@@ -131,14 +141,14 @@ export function positionStreamPlugin(options: PositionStreamOptions) {
         const features: Feature[] = [];
         visible = [];
         for (const [id, tag] of tags) {
-          if (now - tag.lastSeen > staleAfterMs) continue;
+          if (now - tag.lastSeen > staleAfterMs || (filter && !filter(id))) continue;
           const p = interpolatePosition(tag.from, tag.to, now);
           if (p.levelId !== levelId) continue;
           visible.push({ id, levelId: p.levelId, coord: p.coord });
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: p.coord },
-            properties: { id, level_id: p.levelId },
+            properties: { ...options.decorate?.(id), id, level_id: p.levelId },
           });
         }
         dots.setData(features);
@@ -175,6 +185,10 @@ export function positionStreamPlugin(options: PositionStreamOptions) {
           drawTrail();
         },
         replaying: () => replaying,
+        setFilter(next) {
+          filter = next;
+        },
+        latest: (id) => histories.get(id)?.at(-1) ?? null,
       };
     },
   });

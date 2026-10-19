@@ -62,6 +62,8 @@ export interface TagPosition {
   id: string;
   levelId: string;
   coord: [number, number];
+  /** 标签随位置一起上报的状态，如设备的 running / offline、人员的 sos */
+  status?: string;
 }
 
 /** 一次上报：time 为数据源时间（毫秒） */

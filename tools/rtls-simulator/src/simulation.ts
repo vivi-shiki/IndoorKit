@@ -1,9 +1,23 @@
 import type { TagPosition } from '@indoorkit/core';
 import type { VenueModel } from '@indoorkit/imdf';
+import {
+  type Asset,
+  createRoster,
+  dayTime,
+  MOBILE_ASSET_TYPES,
+  type Person,
+  type Role,
+  seededRandom,
+  sosActive,
+  statusAt,
+} from './roster';
 
 export interface SimulationOptions {
   seed: string;
+  /** 人员数 */
   tags: number;
+  /** 设备数，默认 0 */
+  assets?: number;
 }
 
 export interface Simulation {
@@ -29,6 +43,16 @@ interface Unit {
 
 interface Tag {
   id: string;
+  person?: Person;
+  asset?: Asset;
+  /** 所属科室的房间 */
+  home: Unit[];
+  /** 下一个目的地留在本科室的概率 */
+  stay: number;
+  /** 固定设备不移动 */
+  fixed: boolean;
+  /** 跨楼层时最终要去的房间 */
+  goal: Unit | null;
   levelId: string;
   pos: Vec;
   speed: number;
@@ -43,21 +67,16 @@ interface Tag {
 const EPS = 1e-6;
 const VERTICAL = new Set(['elevator', 'stairs']);
 
-/** 由字符串种子生成的可复现随机数（mulberry32） */
-function random(seed: string) {
-  let h = 1779033703 ^ seed.length;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  let a = h >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+/** 各角色下一个目的地留在本科室的概率 */
+const STAY: Record<Role, number> = {
+  doctor: 0.7,
+  nurse: 0.8,
+  patient: 0.85,
+  visitor: 0.85,
+  caregiver: 0.6,
+  security: 0.1,
+};
+const MOBILE_STAY = 0.5;
 
 function boxOf(geometry: GeoJSON.Geometry): Box {
   const ring = (geometry as GeoJSON.Polygon).coordinates[0]!;
@@ -80,7 +99,8 @@ const inBox = ([x0, y0, x1, y1]: Box, [x, y]: Vec) => x > x0 && x < x1 && y > y0
  * 只在电梯或楼梯里换层，所以不会穿墙。坐标内部用米，输出经纬度。
  */
 export function createSimulation(venue: VenueModel, options: SimulationOptions): Simulation {
-  const rand = random(options.seed);
+  const rand = seededRandom(options.seed);
+  const roster = createRoster(venue, { people: options.tags, assets: options.assets ?? 0 });
   const [lng0, lat0] = venue.center;
   const mPerLng = 111_320 * Math.cos((lat0 * Math.PI) / 180);
   const mPerLat = 110_540;
@@ -166,15 +186,22 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     return points;
   };
 
-  const levelIds = venue.levels.map((l) => l.id);
   const pick = <T>(items: readonly T[]) => items[Math.floor(rand() * items.length)]!;
 
   const plan = (tag: Tag) => {
     const here = tag.unit;
-    const onLevel = reachable.filter((r) => r.levelId === tag.levelId && r !== here);
-    const vertical = onLevel.filter((r) => VERTICAL.has(r.category));
-    const goVertical = levelIds.length > 1 && vertical.length > 0 && rand() < 0.2;
-    const target = goVertical ? pick(vertical) : pick(onLevel.filter((r) => !VERTICAL.has(r.category)));
+    if (!tag.goal) {
+      // 本科室里优先去同一层的房间，少走楼梯
+      const others = tag.home.filter((r) => r !== here);
+      const sameLevel = others.filter((r) => r.levelId === tag.levelId);
+      const home = sameLevel.length > 0 && rand() < 0.7 ? sameLevel : others;
+      const anywhere = reachable.filter((r) => r !== here && !VERTICAL.has(r.category));
+      tag.goal = home.length > 0 && rand() < tag.stay ? pick(home) : pick(anywhere);
+    }
+    const goal = tag.goal;
+    // 目的地在别的楼层时先去本层的电梯或楼梯
+    const vertical = reachable.filter((r) => r.levelId === tag.levelId && VERTICAL.has(r.category));
+    const target = goal.levelId === tag.levelId ? goal : pick(vertical);
     const path: Vec[] = [];
     let walkway: Unit;
     if (here.door) {
@@ -187,14 +214,18 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     path.push(target.door!.entry, target.door!.mid, target.center);
     tag.path = path;
     tag.target = target;
-    tag.nextLevel = goVertical ? pick(levelIds.filter((l) => l !== tag.levelId)) : null;
+    tag.nextLevel = target === goal ? null : goal.levelId;
+    if (target === goal) tag.goal = null;
   };
 
   const arrive = (tag: Tag) => {
     tag.unit = tag.target!;
     tag.target = null;
-    // 进了电梯或楼梯先等一会儿，再换层
-    tag.dwell = tag.nextLevel ? 2000 + rand() * 3000 : 5000 + rand() * 25_000;
+    // 进了电梯或楼梯先等一会儿，再换层；被推走的设备到了之后会放一段时间
+    if (tag.nextLevel) tag.dwell = 2000 + rand() * 3000;
+    else if (tag.asset) tag.dwell = 120_000 + rand() * 240_000;
+    else if (tag.home.includes(tag.unit)) tag.dwell = 60_000 + rand() * 180_000;
+    else tag.dwell = 5000 + rand() * 25_000;
   };
 
   /** 在电梯或楼梯里换到目标楼层的同一位置，换层前后都在竖向交通间里 */
@@ -210,25 +241,54 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     tag.dwell = 1000 + rand() * 2000;
   };
 
+  const destinations = reachable.filter((r) => !VERTICAL.has(r.category));
+  const owner = new Map<string, string>();
+  for (const d of venue.departments) for (const id of d.unitIds) owner.set(id, d.id);
+  const homeOf = (departmentId: string) => destinations.filter((r) => owner.get(r.id) === departmentId);
+  /** 房间内离墙至少 0.8 m 的随机点，同一房间里的设备不会叠在一起 */
+  const spot = (u: Unit): Vec => {
+    const [x0, y0, x1, y1] = u.box;
+    return [x0 + 0.8 + rand() * (x1 - x0 - 1.6), y0 + 0.8 + rand() * (y1 - y0 - 1.6)];
+  };
+  const base = (id: string, home: Unit[], stay: number, start: Unit, pos: Vec): Tag => ({
+    id,
+    home,
+    stay,
+    fixed: false,
+    goal: null,
+    levelId: start.levelId,
+    pos,
+    speed: 0.8 + rand() * 0.8,
+    unit: start,
+    path: [],
+    target: null,
+    dwell: start.category === 'walkway' ? 0 : rand() * 10_000,
+    nextLevel: null,
+  });
+
   const tags: Tag[] = [];
-  for (let i = 0; i < options.tags; i++) {
-    const start = pick(rand() < 0.3 ? walkways : reachable);
+  for (const person of roster.people) {
+    const home = homeOf(person.departmentId);
+    const stay = STAY[person.role];
+    // 一部分人一开始就不在本科室，演示一开始就能看到科室层的报警
+    const start = home.length > 0 && rand() < stay ? pick(home) : pick(rand() < 0.3 ? walkways : reachable);
     const [x0, y0, x1, y1] = start.box;
     const pos: Vec =
       start.category === 'walkway'
         ? [x0 + 0.3 + rand() * (x1 - x0 - 0.6), y0 + 0.3 + rand() * (y1 - y0 - 0.6)]
         : [...start.center];
-    tags.push({
-      id: `tag-${String(i + 1).padStart(4, '0')}`,
-      levelId: start.levelId,
-      pos,
-      speed: 0.8 + rand() * 0.8,
-      unit: start,
-      path: [],
-      target: null,
-      dwell: start.category === 'walkway' ? 0 : rand() * 10_000,
-      nextLevel: null,
-    });
+    const tag: Tag = { ...base(person.id, home, stay, start, pos), person };
+    if (home.includes(start)) tag.dwell = rand() * 180_000;
+    tags.push(tag);
+  }
+  const mobile = new Set(MOBILE_ASSET_TYPES);
+  for (const asset of roster.assets) {
+    const home = homeOf(asset.departmentId);
+    const movable = mobile.has(asset.type);
+    const start = home.length > 0 && (!movable || rand() < 0.7) ? pick(home) : pick(destinations);
+    const tag = { ...base(asset.id, home, MOBILE_STAY, start, spot(start)), asset, fixed: !movable };
+    tag.dwell = movable ? rand() * 240_000 : Infinity;
+    tags.push(tag);
   }
 
   const advance = (tag: Tag, dtMs: number) => {
@@ -266,7 +326,13 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
   };
 
   let time = 0;
-  const positions = () => tags.map((t) => ({ id: t.id, levelId: t.levelId, coord: toLngLat(t.pos) }));
+  const positions = () =>
+    tags.map((t): TagPosition => {
+      const p: TagPosition = { id: t.id, levelId: t.levelId, coord: toLngLat(t.pos) };
+      if (t.asset) p.status = statusAt(t.asset, dayTime(time));
+      else if (t.person && sosActive(t.person, dayTime(time))) p.status = 'sos';
+      return p;
+    });
   return {
     get time() {
       return time;
@@ -274,7 +340,7 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
     positions,
     step(dtMs) {
       time += dtMs;
-      for (const tag of tags) advance(tag, dtMs);
+      for (const tag of tags) if (!tag.fixed) advance(tag, dtMs);
       return positions();
     },
   };

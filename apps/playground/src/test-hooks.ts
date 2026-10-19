@@ -1,7 +1,7 @@
 /** 端到端测试和 agent 通过 window.__vivi 读取当前页面状态 */
 export interface ViviTestHooks {
   ready: boolean;
-  demo: 'gallery' | 'tracking' | 'assets' | 'alerts' | 'occupancy';
+  demo: 'gallery' | 'tracking' | 'assets' | 'trail' | 'alerts' | 'occupancy';
   // 所有地图页
   floor(): string;
   levelIdOf(shortName: string): string;
@@ -15,21 +15,51 @@ export interface ViviTestHooks {
   styleLayerIds(): string[];
   /** 地图背景色，用于检查主题 */
   mapBackground(): string;
+  // 带科室范围的页面
+  departmentIdOf(code: string): string;
+  highlightedDepartment(): string | null;
+  departmentLayerVisible(): boolean;
   // 人员实时定位
   perf(): { fps: number; frameMs: number; tags: number };
   /** 当前楼层一个已上报多次的标签在屏幕上的位置 */
   tagScreenPoint(): { id: string; x: number; y: number; samples: number } | null;
   replaying(): string | null;
-  // 设备资产分布
-  /** 当前楼层的聚集点数量 */
+  /** 当前画出的人员角色，去重排序 */
+  renderedRoles(): string[];
+  /** 选中（跟随）的人员 */
+  selected(): string | null;
+  /** 一个不在当前楼层的人，名字为当前语言 */
+  personOnAnotherFloor(): { id: string; name: string; floor: string };
+  // 设备分布总览
+  /** 当前楼层的区块聚合点数量 */
   clusterCount(): number;
+  /** 当前楼层聚合点里设备所属科室，去重排序 */
+  groupDepartments(): string[];
+  /** 当前楼层聚合点里设备的状态，去重排序 */
+  groupStatuses(): string[];
+  /** 当前楼层一个聚合点在屏幕上的位置 */
+  clusterScreenPoint(): { unitId: string; x: number; y: number; count: number } | null;
+  drawerUnit(): string | null;
+  detailAsset(): string | null;
+  /** 一台不在当前楼层的设备 */
+  assetOnAnotherFloor(): { id: string; code: string; floor: string };
+  // 轨迹回放
+  trailPerson(): string;
+  trailRange(): [number, number];
+  trailTime(): number;
+  trailStops(): { start: number; floor: string }[];
+  trailHeadFloor(): string;
   // 禁入区域告警
   fenceIds(): string[];
   alertCount(): number;
+  alarmLayers(): string[];
+  alarmState(id: string): 'open' | 'acknowledged' | 'resolved';
+  unhandledCount(): number;
   // 人流密度分析
   heatWindow(): number;
   heatPointCount(): number;
   heatLevelIds(): string[];
+  heatGroups(): string[] | null;
 }
 
 /** 跨页面的全局统计，用来检查页面切换后是否有残留 */
@@ -64,6 +94,27 @@ export function setHooks(partial: Partial<ViviTestHooks> & Pick<ViviTestHooks, '
     resourceLabels: unavailable,
     styleLayerIds: unavailable,
     mapBackground: unavailable,
+    departmentIdOf: unavailable,
+    highlightedDepartment: unavailable,
+    departmentLayerVisible: unavailable,
+    renderedRoles: unavailable,
+    selected: unavailable,
+    personOnAnotherFloor: unavailable,
+    groupDepartments: unavailable,
+    groupStatuses: unavailable,
+    clusterScreenPoint: unavailable,
+    drawerUnit: unavailable,
+    detailAsset: unavailable,
+    assetOnAnotherFloor: unavailable,
+    trailPerson: unavailable,
+    trailRange: unavailable,
+    trailTime: unavailable,
+    trailStops: unavailable,
+    trailHeadFloor: unavailable,
+    alarmLayers: unavailable,
+    alarmState: unavailable,
+    unhandledCount: unavailable,
+    heatGroups: unavailable,
     perf: unavailable,
     tagScreenPoint: unavailable,
     replaying: unavailable,

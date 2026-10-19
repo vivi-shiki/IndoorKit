@@ -7,6 +7,7 @@
   --border: #d9dee5;
   /* 链接色取自 GitHub Primer 的 fgColor-accent（亮色 #0969da，暗色 #4493f8） */
   --link: #0969da;
+  --danger: #b91c1c;
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   color: var(--fg);
   background: var(--bg);
@@ -261,37 +262,14 @@ a {
 .perf {
   position: absolute;
   top: 16px;
-  left: 16px;
+  /* 让开左侧面板 */
+  left: 312px;
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--card);
   font-size: 13px;
   line-height: 1.6;
-}
-
-.alerts {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 260px;
-  max-height: 50%;
-  margin: 0;
-  padding: 8px 12px;
-  overflow: auto;
-  list-style: none;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  font-size: 13px;
-}
-
-.alerts li {
-  padding: 2px 0;
-}
-
-.alerts li.enter {
-  color: #dc2626;
 }
 
 .indoor-popup {
@@ -314,8 +292,378 @@ a {
   --card: #161b22;
   --border: #30363d;
   --link: #4493f8;
+  --danger: #f87171;
 }
 
 :root[data-theme="dark"] .venue-name {
   background: rgba(22, 27, 34, 0.9);
+}
+
+/* 画廊分组 */
+.gallery .group {
+  margin-top: 32px;
+}
+
+.group > h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+/* 地图上的面板：左侧列表、右侧抽屉 */
+.panel,
+.drawer {
+  position: absolute;
+  top: 16px;
+  z-index: 1;
+  max-height: calc(100% - 80px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+  font-size: 13px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.panel {
+  left: 16px;
+  width: 280px;
+}
+
+.drawer {
+  right: 80px;
+  width: 340px;
+}
+
+.panel h2,
+.drawer h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 6px;
+  font-size: 14px;
+}
+
+.drawer header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer header h2 {
+  margin: 0;
+}
+
+.drawer dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 8px 0;
+}
+
+.drawer dt {
+  color: var(--muted);
+}
+
+.drawer dd {
+  margin: 0;
+}
+
+.drawer h3 {
+  margin: 12px 0 6px;
+  font-size: 13px;
+}
+
+.close {
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.search,
+.select select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+
+.select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.select select {
+  width: auto;
+  font-size: 13px;
+}
+
+.results,
+.rows,
+.alarm-feed,
+.moves {
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sub {
+  margin: 0 0 4px 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.sub li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 4px;
+  cursor: pointer;
+}
+
+.sub li:hover {
+  background: var(--bg);
+}
+
+.name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 8px;
+  width: 100%;
+  padding: 6px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--bg);
+}
+
+.row[aria-pressed="true"] {
+  font-weight: 600;
+}
+
+.row .muted {
+  flex-basis: 100%;
+}
+
+.rows li[data-testid="busy-row"] {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.count em,
+.drawer em {
+  color: var(--danger);
+  font-style: normal;
+  font-weight: 600;
+}
+
+details summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.panel .chips {
+  margin: 8px 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* 状态徽标：色点 + 文字，文字保持正文色以保证对比度 */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.tag.warn {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.timeline {
+  display: flex;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.timeline span {
+  height: 100%;
+}
+
+.moves li {
+  padding: 2px 0;
+}
+
+/* 告警列表 */
+.alarm-panel {
+  width: 340px;
+}
+
+.alarm-feed li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  color: var(--fg);
+}
+
+.alarm-feed li.resolved {
+  opacity: 0.75;
+}
+
+.alarm-feed .line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.alarm-feed .tag {
+  margin-left: 0;
+}
+
+.level {
+  padding: 0 6px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.level.high {
+  background: #b91c1c;
+}
+
+.level.medium {
+  background: #b45309;
+}
+
+.level.low {
+  background: #475569;
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 轨迹回放的播放条 */
+.player {
+  position: absolute;
+  left: 312px;
+  right: 80px;
+  /* 让开右下角的语言和主题按钮 */
+  bottom: 64px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+}
+
+.player input[type="range"] {
+  flex: 1;
+}
+
+.clock {
+  font-variant-numeric: tabular-nums;
 }

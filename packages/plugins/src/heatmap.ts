@@ -1,4 +1,4 @@
-import { definePlugin, type PositionBatch } from '@indoorkit/core';
+import { definePlugin, type PositionBatch, type TagPosition } from '@indoorkit/core';
 import type { Feature } from 'geojson';
 import { floorOverlay, localProjection } from './overlay';
 
@@ -17,6 +17,9 @@ export interface HeatmapApi {
   data(): readonly Feature[];
   /** 内部按分钟保留的桶数，最多为最大窗口的分钟数 */
   bucketCount(): number;
+  /** 只显示这些分组的样本（分组由 groupOf 决定）；null 显示全部 */
+  setGroups(groups: readonly string[] | null): void;
+  groups(): readonly string[] | null;
 }
 
 interface Cell {
@@ -29,7 +32,7 @@ interface Cell {
  * 人员密度热力图。样本按「分钟 × 楼层 × 网格」累加计数，
  * 内存只与最大窗口的分钟数和网格数有关，与标签数和上报次数无关。
  */
-export function heatmapPlugin(options: { cellMeters: number }) {
+export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPosition) => string }) {
   return definePlugin({
     name: 'heatmap',
     deps: ['floor'],
@@ -47,8 +50,10 @@ export function heatmapPlugin(options: { cellMeters: number }) {
       ]);
       const { toMeters, toLngLat } = localProjection(ctx.venue.center);
       const cell = options.cellMeters;
-      const buckets = new Map<number, Map<string, Map<string, Cell>>>();
+      /** 分钟 → 楼层 → 分组 → 网格 */
+      const buckets = new Map<number, Map<string, Map<string, Map<string, Cell>>>>();
       let latest = 0;
+      let selected: readonly string[] | null = null;
       let window: HeatWindow = 5;
       let count = 0;
       let features: Feature[] = [];
@@ -58,10 +63,13 @@ export function heatmapPlugin(options: { cellMeters: number }) {
         const merged = new Map<string, Cell>();
         for (const [minute, levels] of buckets) {
           if (minute <= latest - window) continue;
-          for (const [key, c] of levels.get(levelId) ?? []) {
-            const m = merged.get(key);
-            if (m) m.count += c.count;
-            else merged.set(key, { ...c });
+          for (const [group, cells] of levels.get(levelId) ?? []) {
+            if (selected && !selected.includes(group)) continue;
+            for (const [key, c] of cells) {
+              const m = merged.get(key);
+              if (m) m.count += c.count;
+              else merged.set(key, { ...c });
+            }
           }
         }
         count = 0;
@@ -80,14 +88,17 @@ export function heatmapPlugin(options: { cellMeters: number }) {
       const add = (batch: PositionBatch) => {
         const minute = Math.floor(batch.time / MINUTE);
         latest = Math.max(latest, minute);
-        const levels = buckets.get(minute) ?? new Map<string, Map<string, Cell>>();
+        const levels = buckets.get(minute) ?? new Map<string, Map<string, Map<string, Cell>>>();
         buckets.set(minute, levels);
         for (const p of batch.positions) {
           const [mx, my] = toMeters(p.coord);
           const x = Math.floor(mx / cell);
           const y = Math.floor(my / cell);
-          const cells = levels.get(p.levelId) ?? new Map<string, Cell>();
-          levels.set(p.levelId, cells);
+          const groups = levels.get(p.levelId) ?? new Map<string, Map<string, Cell>>();
+          levels.set(p.levelId, groups);
+          const group = options.groupOf?.(p) ?? '';
+          const cells = groups.get(group) ?? new Map<string, Cell>();
+          groups.set(group, cells);
           const key = `${x},${y}`;
           const c = cells.get(key);
           if (c) c.count++;
@@ -112,6 +123,11 @@ export function heatmapPlugin(options: { cellMeters: number }) {
         pointCount: () => count,
         data: () => features,
         bucketCount: () => buckets.size,
+        setGroups(groups) {
+          selected = groups;
+          refresh();
+        },
+        groups: () => selected,
       };
     },
   });

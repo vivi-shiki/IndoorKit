@@ -3,6 +3,7 @@ import type { VenueModel } from '@indoorkit/imdf';
 import * as Comlink from 'comlink';
 import { createSimulation, type Simulation, type SimulationOptions } from './simulation';
 
+export * from './roster';
 export { createSimulation, type Simulation, type SimulationOptions } from './simulation';
 
 export interface ProviderOptions extends SimulationOptions {

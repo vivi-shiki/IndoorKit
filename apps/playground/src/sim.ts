@@ -5,7 +5,10 @@ import { stats } from './test-hooks';
 export const SIM_INTERVAL_MS = 1000;
 
 /** 在 Worker 里运行定位模拟；终止时更新全局 Worker 计数 */
-export function createSimProvider(venue: VenueModel, tags: number, seed = 'playground') {
+export function createSimProvider(
+  venue: VenueModel,
+  options: { people: number; assets?: number; seed: string },
+) {
   const worker = new Worker(new URL('./sim-worker.ts', import.meta.url), { type: 'module' });
   stats().activeWorkers++;
   let terminated = false;
@@ -17,5 +20,10 @@ export function createSimProvider(venue: VenueModel, tags: number, seed = 'playg
       stats().activeWorkers--;
     },
   });
-  return createWorkerProvider(tracked, venue, { seed, tags, intervalMs: SIM_INTERVAL_MS });
+  return createWorkerProvider(tracked, venue, {
+    seed: options.seed,
+    tags: options.people,
+    assets: options.assets ?? 0,
+    intervalMs: SIM_INTERVAL_MS,
+  });
 }
