@@ -10,6 +10,7 @@ const SELECTORS = [
   '.bar .metric',
   '.venue-name',
   '.perf',
+  '.bar .back',
 ];
 
 /**
@@ -66,5 +67,15 @@ for (const theme of ['light', 'dark'] as const) {
       // WCAG AA 普通文字要求 4.5:1
       expect(await lowContrast(page, SELECTORS, 4.5)).toEqual([]);
     }
+  });
+}
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`links on the gallery are readable in the ${theme} theme`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem('vivi-map.theme', t), theme);
+    await page.goto('./');
+    await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
+    await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();
+    expect(await lowContrast(page, ['.gallery a', '.gallery h1', '.gallery p'], 4.5)).toEqual([]);
   });
 }

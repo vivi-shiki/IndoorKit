@@ -5,6 +5,8 @@
   --accent: #2563eb;
   --card: #ffffff;
   --border: #d9dee5;
+  /* 链接色取自 GitHub Primer 的 fgColor-accent（亮色 #0969da，暗色 #4493f8） */
+  --link: #0969da;
   font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
   color: var(--fg);
   background: var(--bg);
@@ -17,6 +19,10 @@
 body {
   margin: 0;
   background: var(--bg);
+}
+
+a {
+  color: var(--link);
 }
 
 .page {
@@ -83,7 +89,7 @@ body {
 }
 
 .back {
-  color: var(--accent);
+  color: var(--link);
   text-decoration: none;
 }
 
@@ -315,6 +321,7 @@ body {
   --accent: #2563eb;
   --card: #161b22;
   --border: #30363d;
+  --link: #4493f8;
 }
 
 :root[data-theme="dark"] .venue-name {
