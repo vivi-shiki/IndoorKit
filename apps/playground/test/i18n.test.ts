@@ -86,3 +86,18 @@ describe('createI18n', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 });
+
+describe('language requested by a link (?lang=)', () => {
+  it('wins over the saved locale and the browser language, and is saved', () => {
+    const storage = memoryStorage({ [STORAGE_KEY]: 'en' });
+    const i18n = createI18n({ storage, languages: ['en-US'], requested: 'ja' });
+    expect(i18n.locale).toBe('ja');
+    expect(storage.data.get(STORAGE_KEY)).toBe('ja');
+  });
+
+  it('is ignored when it is not a supported language', () => {
+    const storage = memoryStorage({ [STORAGE_KEY]: 'zh' });
+    expect(createI18n({ storage, languages: ['en'], requested: 'fr' }).locale).toBe('zh');
+    expect(createI18n({ storage, languages: ['en'], requested: null }).locale).toBe('zh');
+  });
+});

@@ -4,14 +4,7 @@
 
 一个在浏览器里运行的医院室内定位（RTLS）与资产管理演示。底层是用 TypeScript 从零编写、基于 MapLibre GL JS 的室内地图 SDK。
 
-**在线演示：<https://vivi-shiki.github.io/IndoorKit/>**
-
-| 页面 | 链接 |
-| --- | --- |
-| 人员实时定位 | <https://vivi-shiki.github.io/IndoorKit/#/tracking> |
-| 设备资产分布 | <https://vivi-shiki.github.io/IndoorKit/#/assets> |
-| 禁入区域告警 | <https://vivi-shiki.github.io/IndoorKit/#/alerts> |
-| 人流密度分析 | <https://vivi-shiki.github.io/IndoorKit/#/occupancy> |
+**在线演示：<https://vivi-shiki.github.io/IndoorKit/?lang=zh>**
 
 所有人员、设备和建筑都是虚构的。场馆为「さくら総合病院」：3 栋楼、每栋 5 层，每层都有连廊相通。
 

@@ -4,14 +4,7 @@
 
 A demo of indoor positioning (RTLS) and asset management for a hospital, running entirely in the browser. It is built on an indoor map SDK written from scratch in TypeScript on top of MapLibre GL JS.
 
-**Live demo: <https://vivi-shiki.github.io/IndoorKit/>**
-
-| Page | Open it |
-| --- | --- |
-| Real-time Tracking | <https://vivi-shiki.github.io/IndoorKit/#/tracking> |
-| Asset Distribution | <https://vivi-shiki.github.io/IndoorKit/#/assets> |
-| Restricted Zone Alerts | <https://vivi-shiki.github.io/IndoorKit/#/alerts> |
-| Occupancy Heatmap | <https://vivi-shiki.github.io/IndoorKit/#/occupancy> |
+**Live demo: <https://vivi-shiki.github.io/IndoorKit/?lang=en>**
 
 All people, equipment and buildings are fictional. The venue is "Sakura General Hospital": 3 buildings with 5 floors each, connected by bridges on every floor.
 

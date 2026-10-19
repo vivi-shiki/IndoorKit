@@ -4,14 +4,7 @@
 
 ブラウザだけで動く、病院向けの屋内測位（RTLS）・資産管理のデモです。土台には、MapLibre GL JS の上に TypeScript でゼロから作った屋内地図 SDK を使っています。
 
-**オンラインデモ：<https://vivi-shiki.github.io/IndoorKit/>**
-
-| ページ | リンク |
-| --- | --- |
-| リアルタイム位置監視 | <https://vivi-shiki.github.io/IndoorKit/#/tracking> |
-| 医療機器の分布 | <https://vivi-shiki.github.io/IndoorKit/#/assets> |
-| 立入制限エリア警報 | <https://vivi-shiki.github.io/IndoorKit/#/alerts> |
-| 混雑状況ヒートマップ | <https://vivi-shiki.github.io/IndoorKit/#/occupancy> |
+**オンラインデモ：<https://vivi-shiki.github.io/IndoorKit/?lang=ja>**
 
 人物・機器・建物はすべて架空です。施設は「さくら総合病院」で、5 階建ての 3 棟が各フロアの連絡通路でつながっています。
 

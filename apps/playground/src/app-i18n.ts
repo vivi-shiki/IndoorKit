@@ -18,7 +18,17 @@ export const storage: StorageLike = {
   },
 };
 
-export const i18n = createI18n({ storage, languages: navigator.languages ?? [navigator.language] });
+const url = new URL(location.href);
+export const i18n = createI18n({
+  storage,
+  languages: navigator.languages ?? [navigator.language],
+  requested: url.searchParams.get('lang'),
+});
+// 链接上的语言用过即去掉，之后以保存的选择为准，切换按钮也不会被地址栏覆盖
+if (url.searchParams.has('lang')) {
+  url.searchParams.delete('lang');
+  history.replaceState(history.state, '', url);
+}
 
 let pageTitle: MessageKey | null = null;
 

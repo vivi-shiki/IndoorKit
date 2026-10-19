@@ -128,12 +128,22 @@ export interface I18n {
   subscribe(listener: (locale: Locale) => void): () => void;
 }
 
-export function createI18n(options: { storage: StorageLike; languages: readonly string[] }): I18n {
+/**
+ * requested 来自链接上的 ?lang=：优先于保存的语言和浏览器语言，并保存下来，
+ * 这样从三语 README 点进来就直接是对应语言。
+ */
+export function createI18n(options: {
+  storage: StorageLike;
+  languages: readonly string[];
+  requested?: string | null;
+}): I18n {
+  const requested = LOCALES.find((l) => l === options.requested);
   const choice = createChoice({
     storage: options.storage,
     key: STORAGE_KEY,
-    initial: detectLocale(options.storage, options.languages),
+    initial: requested ?? detectLocale(options.storage, options.languages),
   });
+  if (requested) options.storage.setItem(STORAGE_KEY, requested);
   return {
     get locale() {
       return choice.value;
