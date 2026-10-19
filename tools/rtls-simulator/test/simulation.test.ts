@@ -24,7 +24,10 @@ const units = venue.features.units.features.map((u) => ({
   category: u.properties.category,
   box: boxOf(u.geometry),
 }));
-const walls = venue.features.fixtures.features.map((w) => ({ level: w.properties.level_id, box: boxOf(w.geometry) }));
+const walls = venue.features.fixtures.features.map((w) => ({
+  level: w.properties.level_id,
+  box: boxOf(w.geometry),
+}));
 const unitAt = (p: TagPosition) => units.filter((u) => u.level === p.levelId && within(u.box, p.coord));
 
 function run(seed: string, tags: number, steps: number, dtMs: number) {
@@ -74,7 +77,8 @@ describe('createSimulation', () => {
         if (before.coord[0] !== after.coord[0] || before.coord[1] !== after.coord[1]) moved++;
         if (before.levelId === after.levelId) continue;
         floorChanges++;
-        const vertical = (p: TagPosition) => unitAt(p).some((u) => u.category === 'elevator' || u.category === 'stairs');
+        const vertical = (p: TagPosition) =>
+          unitAt(p).some((u) => u.category === 'elevator' || u.category === 'stairs');
         expect(vertical(before) && vertical(after)).toBe(true);
       }
     }

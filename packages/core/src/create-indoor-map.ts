@@ -3,7 +3,7 @@ import type { LayerSpecification, SourceSpecification, StyleSpecification } from
 import { EventBus } from './event-bus';
 import { sortPlugins } from './plugin';
 import { ResourceTracker } from './resource-tracker';
-import { buildIndoorStyle, labelExpression, type Theme, themes } from './style';
+import { buildIndoorStyle, labelExpression, type Theme, themePaint, themes } from './style';
 import type {
   AnyPlugin,
   IndoorEvents,
@@ -38,6 +38,10 @@ export interface IndoorMap<P extends readonly AnyPlugin[]> {
   readonly languages: readonly string[];
   /** 切换地图内标注语言，不重建地图 */
   setLanguages(languages: readonly string[]): void;
+  /** 当前主题 */
+  readonly theme: Theme;
+  /** 切换主题颜色，不重建地图 */
+  setTheme(theme: Theme): void;
   resources: { readonly size: number; labels(): string[] };
   readonly destroyed: boolean;
   /** 释放全部资源；有资源释放失败时，全部释放完后以 AggregateError 拒绝 */
@@ -60,14 +64,14 @@ function baseStyle(theme: Theme): StyleSpecification {
     version: 8,
     glyphs: GLYPHS,
     sources: {},
-    layers: [{ id: 'background', type: 'background', paint: { 'background-color': theme.background } }],
+    layers: [{ id: 'background', type: 'background', paint: { ...themePaint(theme).background } }],
   };
 }
 
 export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>(
   options: CreateIndoorMapOptions<P>,
 ): Promise<IndoorMap<P>> {
-  const theme = options.theme ?? themes.light;
+  let theme = options.theme ?? themes.light;
   let languages: readonly string[] = [...(options.languages ?? ['ja', 'en'])];
   const events = new EventBus<IndoorEvents>();
   const tracker = new ResourceTracker();
@@ -164,6 +168,16 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
         languages = [...next];
         map.setLayoutProperty('indoor-labels', 'text-field', labelExpression(languages));
         events.emit('language:change', { languages });
+      },
+      get theme() {
+        return theme;
+      },
+      setTheme(next) {
+        theme = next;
+        for (const [layerId, paint] of Object.entries(themePaint(theme))) {
+          for (const [name, value] of Object.entries(paint)) map.setPaintProperty(layerId, name, value);
+        }
+        events.emit('theme:change', { name: theme.name });
       },
       get destroyed() {
         return destroyed;

@@ -14,7 +14,10 @@ function memoryStorage(initial: Record<string, string> = {}) {
 
 describe('createThemeSetting', () => {
   it('prefers a saved theme', () => {
-    const setting = createThemeSetting({ storage: memoryStorage({ [THEME_STORAGE_KEY]: 'dark' }), prefersDark: false });
+    const setting = createThemeSetting({
+      storage: memoryStorage({ [THEME_STORAGE_KEY]: 'dark' }),
+      prefersDark: false,
+    });
     expect(setting.value).toBe('dark');
   });
 

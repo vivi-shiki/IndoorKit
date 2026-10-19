@@ -1,5 +1,5 @@
 import type { FilterSpecification, LayerSpecification, SourceSpecification } from 'maplibre-gl';
-import type { MapFactory, MapLike, MapListener } from './types';
+import type { DataProvider, MapFactory, MapLike, MapListener, PositionBatch } from './types';
 
 /** 不依赖 WebGL 的 MapLike 实现，用于单元测试 */
 export class FakeMap implements MapLike {
@@ -9,8 +9,15 @@ export class FakeMap implements MapLike {
   #layers = new Map<string, LayerSpecification>();
   #filters = new Map<string, FilterSpecification | null>();
   #listeners = new Map<string, Set<MapListener>>();
+  /** 底图样式里的图层（如 background）不计入 layerIds()，只记录 paint */
+  #basePaint = new Map<string, Record<string, unknown>>();
+  #offset = { x: 0, y: 0 };
+  #container?: HTMLElement;
 
-  constructor() {
+  constructor(baseLayers: LayerSpecification[] = []) {
+    for (const layer of baseLayers) {
+      this.#basePaint.set(layer.id, { ...('paint' in layer ? layer.paint : {}) });
+    }
     // 与真实地图一样异步触发 load
     setTimeout(() => this.fire('load'), 0);
   }
@@ -69,6 +76,32 @@ export class FakeMap implements MapLike {
   getLayoutProperty(id: string, name: string) {
     return (this.#layers.get(id) as { layout?: Record<string, unknown> } | undefined)?.layout?.[name];
   }
+  setPaintProperty(id: string, name: string, value: unknown) {
+    const base = this.#basePaint.get(id);
+    if (base) {
+      base[name] = value;
+      return;
+    }
+    const layer = this.#layers.get(id) as { paint?: Record<string, unknown> } | undefined;
+    if (!layer) throw new Error(`layer "${id}" does not exist`);
+    layer.paint = { ...layer.paint, [name]: value };
+  }
+  getPaintProperty(id: string, name: string) {
+    const base = this.#basePaint.get(id);
+    if (base) return base[name];
+    return (this.#layers.get(id) as { paint?: Record<string, unknown> } | undefined)?.paint?.[name];
+  }
+  /** 简单的线性投影：1e5 像素/度，加上可调偏移，用来模拟地图平移 */
+  project([lng, lat]: [number, number]) {
+    return { x: lng * 1e5 + this.#offset.x, y: -lat * 1e5 + this.#offset.y };
+  }
+  setProjectionOffset(x: number, y: number) {
+    this.#offset = { x, y };
+  }
+  getContainer() {
+    this.#container ??= document.createElement('div');
+    return this.#container;
+  }
   getFilter(id: string) {
     return this.#filters.get(id);
   }
@@ -109,9 +142,49 @@ export class FakeMap implements MapLike {
 }
 
 export function fakeMapFactory(onCreate?: (map: FakeMap) => void): MapFactory {
-  return () => {
-    const map = new FakeMap();
+  return (options) => {
+    const map = new FakeMap(options.style.layers);
     onCreate?.(map);
     return map;
   };
+}
+
+/** 手动推送数据的 DataProvider，记录生命周期，便于测试 */
+export function createManualProvider() {
+  const listeners = new Set<(batch: PositionBatch) => void>();
+  const state = { started: false, disposed: false };
+  const provider: DataProvider & {
+    readonly started: boolean;
+    readonly disposed: boolean;
+    emit(batch: PositionBatch): void;
+    listenerCount(): number;
+  } = {
+    get started() {
+      return state.started;
+    },
+    get disposed() {
+      return state.disposed;
+    },
+    start() {
+      if (state.disposed) throw new Error('provider is disposed');
+      state.started = true;
+    },
+    stop() {
+      state.started = false;
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    dispose() {
+      state.started = false;
+      state.disposed = true;
+      listeners.clear();
+    },
+    emit(batch) {
+      for (const l of [...listeners]) l(batch);
+    },
+    listenerCount: () => listeners.size,
+  };
+  return provider;
 }

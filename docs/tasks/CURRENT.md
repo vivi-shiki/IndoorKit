@@ -56,10 +56,23 @@ Success criteria: `pnpm verify` and `pnpm e2e` pass; GitHub Pages serves all pag
 
 Confirmed failing before implementation: 41 unit tests fail and 3 suites fail to import because the modules do not exist yet (`pnpm exec vitest run`); the two R1 generator tests fail on building and floor counts.
 
-- No.1 Implement R1–R8 and the four demos as specified by the tests
+- No.1 Implement R1–R8 and the four demos as specified by the tests [CONFIRMED]
 
 ## No.1 Implement R1–R8 and the four demos as specified by the tests
 
 ### CODE CHANGE
 
 One requirement at a time, in the order of the requirements document: R1 generator, R2 simulator and providers, R3 position-stream, R7 overlay with Demo 3, R4 cluster with Demo 4, R5 overlays and geofence with Demo 7, R6 heatmap with Demo 10, R8 theme.
+
+### CONFIRMED
+
+`pnpm verify`: 142 unit tests pass. `pnpm build && pnpm e2e`: 23 tests pass, including both leak-bench tests (50 create/destroy cycles; 2 warm-up + 8 rounds through all six pages with `activeWorkers`, `liveMaps` and `lastUnreleased` back to 0). The level 2 end-to-end file also passed `--repeat-each=3` (30/30).
+
+Problems found and fixed while making the tests pass:
+
+- Pages with live positions redraw continuously and never fire `idle`, so they never became ready. `mountMapPage` now takes `readyWhen: 'first-positions'`.
+- `position-stream` called `setData` every animation frame, which re-tiles the data each time. Automatic rendering is now limited to every 50 ms (`renderIntervalMs`).
+- The geofence demo looked up tag positions from a `positions:update` listener that ran after the geofence plugin's own listener, so the first alerts had no position for their popup. Geofence events now carry the tag's `coord`.
+- The tag-count e2e test read hooks from the old page while the new one was mounting; it now polls until the new page answers.
+
+Deviations from the requirements document: the clustering comparison uses KDBush instead of supercluster (see the test review above), and Demo 4 offers 1,000 / 5,000 / 10,000 points instead of up to 50,000, because the double loop freezes the page for more than ten seconds at 50,000.

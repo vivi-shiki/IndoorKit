@@ -21,7 +21,7 @@ describe('createSimulationProvider', () => {
     expect(batches).toHaveLength(3);
     expect(batches.map((b) => b.positions.length)).toEqual([10, 10, 10]);
     expect(batches[1]!.time).toBeGreaterThan(batches[0]!.time);
-    await provider.dispose();
+    provider.dispose();
   });
 
   it('stops emitting after stop()', async () => {
@@ -34,7 +34,7 @@ describe('createSimulationProvider', () => {
     await provider.stop();
     await vi.advanceTimersByTimeAsync(5000);
     expect(listener).toHaveBeenCalledTimes(1);
-    await provider.dispose();
+    provider.dispose();
   });
 
   it('stops delivering to an unsubscribed listener', async () => {
@@ -46,15 +46,17 @@ describe('createSimulationProvider', () => {
     await provider.start();
     await vi.advanceTimersByTimeAsync(2000);
     expect(listener).not.toHaveBeenCalled();
-    await provider.dispose();
+    provider.dispose();
   });
 });
 
 describe('createWorkerProvider', () => {
   function workerPair() {
     const channel = new MessageChannel();
-    exposeSimulation(channel.port2);
+    const exposed = exposeSimulation(channel.port2);
+    // 真实 Worker 终止时其中的定时器一起消失；这里手动停掉
     const terminate = vi.fn(() => {
+      exposed.stop();
       channel.port1.close();
       channel.port2.close();
     });
@@ -74,7 +76,7 @@ describe('createWorkerProvider', () => {
     await provider.start();
     await got;
     expect(batches[0]!.positions).toHaveLength(8);
-    await provider.dispose();
+    provider.dispose();
   });
 
   it('terminates the worker on dispose and emits nothing afterwards', async () => {
@@ -83,7 +85,7 @@ describe('createWorkerProvider', () => {
     const listener = vi.fn();
     provider.subscribe(listener);
     await provider.start();
-    await provider.dispose();
+    provider.dispose();
     expect(terminate).toHaveBeenCalledTimes(1);
     const calls = listener.mock.calls.length;
     await new Promise((r) => setTimeout(r, 100));

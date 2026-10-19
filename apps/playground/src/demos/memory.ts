@@ -1,7 +1,7 @@
-import { createIndoorMap, languageFallbacks } from '@indoorkit/core';
 import { floorPlugin, markerPlugin } from '@indoorkit/plugins';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { i18n, translate } from '../app-i18n';
+import { createTrackedMap } from '../map-page';
 import { setHooks } from '../test-hooks';
 import { loadVenue } from '../venue';
 
@@ -70,12 +70,7 @@ export async function mountMemoryDemo(root: HTMLElement) {
   };
 
   const cycle = async () => {
-    const indoor = await createIndoorMap({
-      container,
-      venue,
-      plugins: [floorPlugin, markerPlugin],
-      languages: languageFallbacks(i18n.locale),
-    });
+    const indoor = await createTrackedMap({ container, venue, plugins: [floorPlugin, markerPlugin] });
     const [lng, lat] = venue.center;
     for (let i = 0; i < 20; i++) {
       indoor.plugins.marker.add({ id: `m${i}`, coord: [lng + (i - 10) * 0.00002, lat] });

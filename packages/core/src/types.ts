@@ -20,6 +20,10 @@ export interface MapLike {
   removeLayer(id: string): unknown;
   setFilter(layerId: string, filter: FilterSpecification | null): unknown;
   setLayoutProperty(layerId: string, name: string, value: unknown): unknown;
+  setPaintProperty(layerId: string, name: string, value: unknown): unknown;
+  /** 经纬度到容器像素坐标 */
+  project(lngLat: [number, number]): { x: number; y: number };
+  getContainer(): HTMLElement;
   on(type: string, listener: MapListener): unknown;
   off(type: string, listener: MapListener): unknown;
   once(type: string, listener: MapListener): unknown;
@@ -47,6 +51,41 @@ export interface IndoorEvents {
   'floor:change': { levelId: string; previous: string | null };
   'marker:change': { count: number };
   'language:change': { languages: readonly string[] };
+  'theme:change': { name: string };
+  'positions:update': PositionBatch;
+  'geofence:enter': GeofenceEvent;
+  'geofence:exit': GeofenceEvent;
+}
+
+/** 一个定位标签在某一时刻的位置 */
+export interface TagPosition {
+  id: string;
+  levelId: string;
+  coord: [number, number];
+}
+
+/** 一次上报：time 为数据源时间（毫秒） */
+export interface PositionBatch {
+  time: number;
+  positions: TagPosition[];
+}
+
+/** 实时位置数据源；模拟器、WebSocket 等都实现这个接口 */
+export interface DataProvider {
+  start(): void | Promise<void>;
+  stop(): void | Promise<void>;
+  subscribe(listener: (batch: PositionBatch) => void): () => void;
+  /** 停止并释放全部资源（定时器、Worker），之后不能再使用 */
+  dispose(): void;
+}
+
+export interface GeofenceEvent {
+  type: 'enter' | 'exit';
+  fenceId: string;
+  tagId: string;
+  time: number;
+  /** 触发事件时标签所在位置 */
+  coord: [number, number];
 }
 
 export interface PluginContext {

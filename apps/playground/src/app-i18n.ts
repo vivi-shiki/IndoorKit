@@ -1,7 +1,7 @@
 import { createI18n, LOCALE_NAMES, LOCALES, type MessageKey, type StorageLike } from './i18n';
 
 const memoryFallback = new Map<string, string>();
-const storage: StorageLike = {
+export const storage: StorageLike = {
   getItem: (key) => {
     try {
       return localStorage.getItem(key);

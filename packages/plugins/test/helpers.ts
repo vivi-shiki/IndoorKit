@@ -19,7 +19,11 @@ export async function openMap<const P extends readonly AnyPlugin[]>(plugins: P) 
   return { map, fake };
 }
 
-export const tag = (id: string, levelId: string, coord: [number, number]): TagPosition => ({ id, levelId, coord });
+export const tag = (id: string, levelId: string, coord: [number, number]): TagPosition => ({
+  id,
+  levelId,
+  coord,
+});
 export const batch = (time: number, positions: TagPosition[]): PositionBatch => ({ time, positions });
 
 export const featureCollection = (fake: FakeMap, sourceId: string) =>

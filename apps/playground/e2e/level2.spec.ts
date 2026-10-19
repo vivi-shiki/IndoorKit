@@ -23,7 +23,20 @@ test.describe('Demo 3 live location', () => {
   test('changes the number of simulated tags', async ({ page }) => {
     await openDemo(page, 'realtime');
     await page.getByRole('radio', { name: '500' }).check();
-    await pollHook(page, () => window.__vivi!.perf().tags).toBe(500);
+    // 换数量会重新进入页面，等新页面就绪
+    await page.waitForFunction(
+      () => location.hash.includes('tags=500') && window.__vivi?.demo === 'realtime' && window.__vivi.ready,
+      undefined,
+      { timeout: 30_000 },
+    );
+    // 新页面挂载完成前，钩子仍属于旧页面或尚未就绪
+    await pollHook(page, () => {
+      try {
+        return window.__vivi!.perf().tags;
+      } catch {
+        return -1;
+      }
+    }).toBe(500);
   });
 
   test('clicking a tag replays its trail', async ({ page }) => {

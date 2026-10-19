@@ -15,5 +15,8 @@
     "@turf/boolean-point-in-polygon": "^7.4.0",
     "flatbush": "^4.6.2",
     "kdbush": "^4.1.0"
+  },
+  "devDependencies": {
+    "maplibre-gl": "^6.15.0"
   }
 }

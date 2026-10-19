@@ -6,6 +6,8 @@ vivi-map is an open-source TypeScript indoor map SDK (working name IndoorKit), w
 
 The roadmap has 7 levels, numbered 0 to 6. Level 1 is the **minimum demonstrable version (MVP)**. Each later level adds capabilities on top of a working previous level, and Level 6 completes every planned feature. A level's "gate" must be fully passed before work moves to the next level.
 
+**Progress**: levels 0, 1 and 2 are done (2026-10-19). Two changes made while building level 2: the clustering comparison uses a KDBush spatial index instead of supercluster so that both algorithms return identical results, and Demo 4 offers 1,000 / 5,000 / 10,000 points, because the double loop freezes the page for over ten seconds at 50,000.
+
 ## Overview
 
 | Level | Theme | What can be demonstrated when it is done |

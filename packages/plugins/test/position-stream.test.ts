@@ -31,7 +31,10 @@ describe('interpolatePosition', () => {
   });
 
   it('snaps to the new floor instead of sliding across floors', () => {
-    expect(interpolatePosition(from, { ...to, levelId: 'b' }, 100)).toEqual({ coord: [10, 20], levelId: 'b' });
+    expect(interpolatePosition(from, { ...to, levelId: 'b' }, 100)).toEqual({
+      coord: [10, 20],
+      levelId: 'b',
+    });
   });
 });
 

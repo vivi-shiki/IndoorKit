@@ -1,5 +1,5 @@
 import type { ImdfArchive, LabelMap, RawCollection, RawFeature } from '@indoorkit/imdf';
-import type { Polygon } from 'geojson';
+import type { MultiPolygon, Polygon } from 'geojson';
 
 export interface VenueGenOptions {
   seed: string;
@@ -19,8 +19,8 @@ export const SAKURA_HOSPITAL: VenueGenOptions = {
   name: { ja: 'さくら総合病院', en: 'Sakura General Hospital', zh: '樱花综合医院' },
   // 海上的虚构坐标，避免与任何真实医院重合
   origin: [139.9, 35.2],
-  buildings: 1,
-  floors: 3,
+  buildings: 3,
+  floors: 5,
   roomsPerSide: 6,
   roomWidth: 6,
   roomDepth: 6,
@@ -64,6 +64,28 @@ const DEPARTMENTS: LabelMap[][] = [
     { ja: 'リハビリ室', en: 'Rehabilitation', zh: '康复室' },
     { ja: 'カンファレンス室', en: 'Conference', zh: '会议室' },
     { ja: '病室 305', en: 'Ward 305', zh: '病房 305' },
+  ],
+  [
+    { ja: '病室 401', en: 'Ward 401', zh: '病房 401' },
+    { ja: '病室 402', en: 'Ward 402', zh: '病房 402' },
+    { ja: '病室 403', en: 'Ward 403', zh: '病房 403' },
+    { ja: '病室 404', en: 'Ward 404', zh: '病房 404' },
+    { ja: 'デイルーム', en: 'Day Room', zh: '活动室' },
+    { ja: 'ナースステーション', en: 'Nurse Station', zh: '护士站' },
+    { ja: '病室 405', en: 'Ward 405', zh: '病房 405' },
+    { ja: '病室 406', en: 'Ward 406', zh: '病房 406' },
+    { ja: '面会室', en: 'Visiting Room', zh: '探视室' },
+  ],
+  [
+    { ja: '手術室 1', en: 'Operating Room 1', zh: '手术室 1' },
+    { ja: '手術室 2', en: 'Operating Room 2', zh: '手术室 2' },
+    { ja: '回復室', en: 'Recovery Room', zh: '复苏室' },
+    { ja: '中央材料室', en: 'Sterile Supply', zh: '供应室' },
+    { ja: '更衣室', en: 'Locker Room', zh: '更衣室' },
+    { ja: '医局', en: 'Doctors Office', zh: '医生办公室' },
+    { ja: '会議室', en: 'Meeting Room', zh: '会议室' },
+    { ja: '倉庫', en: 'Storage', zh: '仓库' },
+    { ja: '院長室', en: 'Director Office', zh: '院长室' },
   ],
 ];
 
@@ -142,32 +164,64 @@ export function generateVenue(options: VenueGenOptions): ImdfArchive {
   const openings: RawFeature[] = [];
   const fixtures: RawFeature[] = [];
 
+  const buildingX = (b: number) => b * (buildingWidth + BUILDING_GAP);
   for (let b = 0; b < options.buildings; b++) {
-    const bx = b * (buildingWidth + BUILDING_GAP);
     const letter = String.fromCharCode(65 + b);
-    const buildingId = id(`building/${b}`);
     buildings.push(
       feature('building', `building/${b}`, null, {
         category: 'unspecified',
         name: { ja: `${letter}棟`, en: `Building ${letter}`, zh: `${letter}栋` },
       }),
     );
+  }
+  const buildingIds = buildings.map((x) => x.id);
 
+  // 每层一个 level，由各栋楼和栋间连廊组成，楼层切换对所有楼栋同时生效
+  const outline: Rect[] = [];
+  for (let b = 0; b < options.buildings; b++) {
+    outline.push([buildingX(b), 0, buildingX(b) + buildingWidth, buildingHeight]);
+    if (b > 0) outline.push([buildingX(b) - BUILDING_GAP, d, buildingX(b), d + c]);
+  }
+  const levelGeometry: MultiPolygon = {
+    type: 'MultiPolygon',
+    coordinates: outline.map((r) => polygon(r).coordinates),
+  };
+
+  for (let f = 0; f < options.floors; f++) {
+    const levelId = id(`level/f${f}`);
+    const short = `${f + 1}F`;
+    levels.push(
+      feature('level', `level/f${f}`, levelGeometry, {
+        category: 'unspecified',
+        ordinal: f,
+        outdoor: false,
+        name: { ja: `${f + 1}階`, en: `Level ${f + 1}`, zh: `${f + 1}层` },
+        short_name: { ja: short, en: short, zh: short },
+        building_ids: buildingIds,
+      }),
+    );
+    for (let b = 1; b < options.buildings; b++) {
+      units.push(
+        feature(
+          'unit',
+          `unit/f${f}/bridge${b}`,
+          polygon([buildingX(b) - BUILDING_GAP, d, buildingX(b), d + c]),
+          {
+            category: 'walkway',
+            level_id: levelId,
+            name: null,
+          },
+        ),
+      );
+    }
+  }
+
+  for (let b = 0; b < options.buildings; b++) {
+    const bx = buildingX(b);
     for (let f = 0; f < options.floors; f++) {
       const key = `b${b}/f${f}`;
-      const levelId = id(`level/${key}`);
-      const short = `${f + 1}F`;
+      const levelId = id(`level/f${f}`);
       const names = DEPARTMENTS[f % DEPARTMENTS.length]!;
-      levels.push(
-        feature('level', `level/${key}`, polygon([bx, 0, bx + buildingWidth, buildingHeight]), {
-          category: 'unspecified',
-          ordinal: f,
-          outdoor: false,
-          name: { ja: `${f + 1}階`, en: `Level ${f + 1}`, zh: `${f + 1}层` },
-          short_name: { ja: short, en: short, zh: short },
-          building_ids: [buildingId],
-        }),
-      );
 
       units.push(
         feature('unit', `unit/${key}/corridor`, polygon([bx, d, bx + buildingWidth, d + c]), {

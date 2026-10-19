@@ -8,6 +8,7 @@ export {
   labelExpression,
   languageFallbacks,
   type Theme,
+  themePaint,
   themes,
 } from './style';
 export type * from './types';

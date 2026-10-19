@@ -77,8 +77,12 @@ describe('geofencePlugin', () => {
   it('rejects duplicate fences, unknown floors and open rings', async () => {
     const { fence } = await open();
     fence.add({ id: 'f', floor: '1F', coordinates: square(0, 0, 1, 1) });
-    expect(() => fence.add({ id: 'f', floor: '1F', coordinates: square(0, 0, 1, 1) })).toThrow(/already exists/);
-    expect(() => fence.add({ id: 'g', floor: '9F', coordinates: square(0, 0, 1, 1) })).toThrow(/unknown floor/);
+    expect(() => fence.add({ id: 'f', floor: '1F', coordinates: square(0, 0, 1, 1) })).toThrow(
+      /already exists/,
+    );
+    expect(() => fence.add({ id: 'g', floor: '9F', coordinates: square(0, 0, 1, 1) })).toThrow(
+      /unknown floor/,
+    );
     expect(() =>
       fence.add({
         id: 'h',

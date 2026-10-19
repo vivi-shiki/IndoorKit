@@ -16,6 +16,17 @@ Each demo calls `setHooks` (`apps/playground/src/test-hooks.ts`) and fills in wh
 | `resourceLabels()` | basic | `indoor.resources.labels()` |
 | `styleLayerIds()` | basic | ids of every layer in the live MapLibre style |
 | `cycles`, `unreleased`, `runCycles(n)` | memory | create/destroy cycle count, `resources.size` after the last destroy, run more cycles |
+| `mapBackground()` | every map page | the live background color, to check the theme |
+| `perf()`, `tagScreenPoint()`, `replaying()` | realtime | overlay numbers (same snapshot the overlay shows); screen point of a tag with history; tag whose trail is shown |
+| `clusterRun()` | cluster | point count, both timings, whether results match, cluster count |
+| `fenceIds()`, `alertCount()` | geofence | fences on the map; enter/exit events so far |
+| `heatWindow()`, `heatPointCount()`, `heatLevelIds()` | heatmap | window in minutes; samples in the window; levels in the drawn data |
+
+The floor, render and style hooks of the basic demo are available on every map page, because `mountMapPage` (`apps/playground/src/map-page.ts`) sets them.
+
+`window.__viviStats` survives page changes: `activeWorkers` (simulation Workers not yet terminated), `liveMaps` (maps created by `createTrackedMap` and not yet destroyed) and `lastUnreleased` (`resources.size` after the last destroy). `tools/leak-bench/page-switch.spec.ts` checks all three are back to 0 after visiting every page.
+
+Pages whose map redraws continuously (live positions) never fire `idle`, so they become ready on the first rendered batch of positions instead (`readyWhen: 'first-positions'`).
 
 Prefer these over screenshots: they give exact values, they don't depend on the GPU, and an agent can check a demo without reading pixels. When a new demo or plugin adds visible state, add a hook for it in the same change.
 

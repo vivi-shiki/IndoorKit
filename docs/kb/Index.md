@@ -40,6 +40,16 @@ A plugin is a `definePlugin({ name, deps, setup })` object. `setup` receives a `
 - Use `fetchImdf` to load an archive from a URL, `validateImdf` to check it, `buildVenueModel` to convert it.
 - Use `pickLabel` to choose a label by language priority, and `languageFallbacks` (core) to build that priority from a UI locale.
 
+#### Real-time data and spatial plugins
+
+Live positions come from a `DataProvider` (`packages/core/src/types.ts`). `tools/rtls-simulator` provides one that runs `createSimulation` on a timer, either on the main thread (`createSimulationProvider`) or in a Worker through Comlink (`exposeSimulation` + `createWorkerProvider`).
+
+- Use `positionStreamPlugin({ provider, intervalMs })` to draw positions; it owns the provider, disposes it with the map, and re-broadcasts each batch as the `positions:update` event.
+- Use `geofencePlugin` (needs `polygon`), `heatmapPlugin` and `clusterPlugin` to consume positions; geofence and heatmap listen to `positions:update` themselves.
+- Use `floorOverlay` (`packages/plugins/src/overlay.ts`) for any plugin layer that follows the current floor, and `localProjection` / `distanceMeters` for metric math on lng/lat.
+- `clusterNaive` and `clusterIndexed` share one greedy rule, so their results are identical; only their cost differs.
+- Use `indoor.setTheme(themes.dark)` to recolor without recreating the map; `themePaint` is the single mapping from a theme to paint properties.
+
 #### Testing
 
 - Use `FakeMap` / `fakeMapFactory` (`packages/core/src/testing.ts`) for unit tests of core and plugins; they need no WebGL.

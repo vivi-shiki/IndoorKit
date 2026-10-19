@@ -16,7 +16,7 @@ export interface Theme {
   unitHeights: Record<string, number>;
 }
 
-export const themes: Record<'light', Theme> = {
+export const themes: Record<'light' | 'dark', Theme> = {
   light: {
     name: 'light',
     background: '#eef1f4',
@@ -38,7 +38,40 @@ export const themes: Record<'light', Theme> = {
     },
     unitHeights: { room: 0.2, elevator: 0.3, stairs: 0.3, restroom: 0.2, lobby: 0.1, walkway: 0 },
   },
+  dark: {
+    name: 'dark',
+    background: '#11161d',
+    floor: '#1c232d',
+    wall: '#56606e',
+    wallHeight: 2.4,
+    door: '#2b3440',
+    label: '#dbe3ec',
+    labelHalo: '#11161d',
+    marker: '#ff6b6f',
+    defaultUnitColor: '#2a323d',
+    unitColors: {
+      room: '#29425c',
+      walkway: '#232b35',
+      elevator: '#5c4a2c',
+      stairs: '#4c3a5a',
+      restroom: '#2f5141',
+      lobby: '#5a5230',
+    },
+    unitHeights: { room: 0.2, elevator: 0.3, stairs: 0.3, restroom: 0.2, lobby: 0.1, walkway: 0 },
+  },
 };
+
+/** 主题决定的全部颜色：图层 id → paint 属性；生成样式和切换主题都只读这里 */
+export function themePaint(theme: Theme): Record<string, Record<string, unknown>> {
+  return {
+    background: { 'background-color': theme.background },
+    'indoor-floor': { 'fill-color': theme.floor, 'fill-outline-color': theme.wall },
+    'indoor-units': { 'fill-extrusion-color': match(theme.unitColors, theme.defaultUnitColor) },
+    'indoor-walls': { 'fill-extrusion-color': theme.wall },
+    'indoor-openings': { 'line-color': theme.door },
+    'indoor-labels': { 'text-color': theme.label, 'text-halo-color': theme.labelHalo },
+  };
+}
 
 export interface IndoorStyle {
   sources: { id: string; spec: SourceSpecification }[];
@@ -81,20 +114,21 @@ export function buildIndoorStyle(venue: VenueModel, theme: Theme, languages: rea
   ] satisfies IndoorStyle['sources'];
 
   const label = labelExpression(languages);
+  const colors = themePaint(theme);
 
   const layers: LayerSpecification[] = [
     {
       id: 'indoor-floor',
       type: 'fill',
       source: 'indoor-levels',
-      paint: { 'fill-color': theme.floor, 'fill-outline-color': theme.wall },
+      paint: { ...colors['indoor-floor'] },
     },
     {
       id: 'indoor-units',
       type: 'fill-extrusion',
       source: 'indoor-units',
       paint: {
-        'fill-extrusion-color': match(theme.unitColors, theme.defaultUnitColor),
+        ...colors['indoor-units'],
         'fill-extrusion-height': match(theme.unitHeights, 0.1),
         'fill-extrusion-base': 0,
         'fill-extrusion-opacity': 0.95,
@@ -105,7 +139,7 @@ export function buildIndoorStyle(venue: VenueModel, theme: Theme, languages: rea
       type: 'fill-extrusion',
       source: 'indoor-walls',
       paint: {
-        'fill-extrusion-color': theme.wall,
+        ...colors['indoor-walls'],
         'fill-extrusion-height': theme.wallHeight,
         'fill-extrusion-base': 0,
         'fill-extrusion-opacity': 0.9,
@@ -115,7 +149,7 @@ export function buildIndoorStyle(venue: VenueModel, theme: Theme, languages: rea
       id: 'indoor-openings',
       type: 'line',
       source: 'indoor-openings',
-      paint: { 'line-color': theme.door, 'line-width': 3 },
+      paint: { ...colors['indoor-openings'], 'line-width': 3 },
     },
     {
       id: 'indoor-labels',
@@ -127,7 +161,7 @@ export function buildIndoorStyle(venue: VenueModel, theme: Theme, languages: rea
         'text-size': 12,
         'text-allow-overlap': false,
       },
-      paint: { 'text-color': theme.label, 'text-halo-color': theme.labelHalo, 'text-halo-width': 1.2 },
+      paint: { ...colors['indoor-labels'], 'text-halo-width': 1.2 },
     },
   ];
 

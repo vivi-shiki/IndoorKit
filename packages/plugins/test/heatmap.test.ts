@@ -23,7 +23,9 @@ describe('heatmapPlugin', () => {
 
   it('shows only the current floor and updates when the floor changes', async () => {
     const { map, fake, heat } = await open();
-    heat.add(batch(0, [tag('a', IDS.level1, [0, 0]), tag('b', IDS.level2, [0, 0]), tag('c', IDS.level2, [0, 0])]));
+    heat.add(
+      batch(0, [tag('a', IDS.level1, [0, 0]), tag('b', IDS.level2, [0, 0]), tag('c', IDS.level2, [0, 0])]),
+    );
     const levels = () => featureCollection(fake, 'indoor-heat').features.map((f) => f.properties!.level_id);
     expect(new Set(levels())).toEqual(new Set([IDS.level1]));
     expect(heat.pointCount()).toBe(1);
