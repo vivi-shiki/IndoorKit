@@ -1,11 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { DEMOS, openDemo, pollHook, TITLES } from './helpers';
+import { DEMOS, GROUP_TITLES, GROUPS, openDemo, pollHook, TITLES } from './helpers';
 
-test('the gallery lists exactly the four business pages', async ({ page }) => {
+test('the gallery groups the business pages into the two product lines', async ({ page }) => {
   await page.goto('./');
-  const links = page.locator('.cards a strong');
-  await expect(links).toHaveText(DEMOS.map((d) => TITLES[d].en));
-  for (const title of await links.allTextContents()) {
+  const groups = page.locator('.group');
+  await expect(groups.locator('h2')).toHaveText([GROUP_TITLES.efficiency.en, GROUP_TITLES.people.en]);
+  await expect(groups.nth(0).locator('.cards a strong')).toHaveText(
+    GROUPS.efficiency.map((d) => TITLES[d].en),
+  );
+  await expect(groups.nth(1).locator('.cards a strong')).toHaveText(GROUPS.people.map((d) => TITLES[d].en));
+  for (const title of await page.locator('.cards a strong').allTextContents()) {
     // 业务展示风格：不带「3 ·」之类的编号
     expect(title).not.toMatch(/^\d|·/);
   }

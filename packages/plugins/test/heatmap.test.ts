@@ -58,4 +58,29 @@ describe('heatmapPlugin', () => {
     const { heat } = await open();
     expect(() => heat.setWindow(7 as 5)).toThrow(/window/);
   });
+
+  it('splits samples into groups and shows only the selected groups', async () => {
+    const opened = await openMap([
+      floorPlugin,
+      heatmapPlugin({ cellMeters: 2, groupOf: (p) => (p.id.startsWith('v') ? 'visitor' : 'staff') }),
+    ]);
+    const heat = opened.map.plugins.heatmap;
+    heat.add(
+      batch(0, [tag('v1', IDS.level1, [0, 0]), tag('s1', IDS.level1, [0, 0]), tag('s2', IDS.level1, [0, 0])]),
+    );
+    expect(heat.pointCount()).toBe(3);
+    heat.setGroups(['visitor']);
+    expect(heat.pointCount()).toBe(1);
+    expect(heat.groups()).toEqual(['visitor']);
+    heat.setGroups(null);
+    expect(heat.pointCount()).toBe(3);
+  });
+
+  it('reports the samples per cell centre so callers can rank areas', async () => {
+    const { heat } = await open();
+    heat.add(batch(0, [tag('a', IDS.level1, [0, 0]), tag('b', IDS.level1, [0, 0])]));
+    const cells = heat.data();
+    expect(cells).toHaveLength(1);
+    expect(cells[0]!.properties!.weight).toBe(2);
+  });
 });
