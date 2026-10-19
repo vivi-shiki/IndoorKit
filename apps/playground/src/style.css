@@ -140,6 +140,8 @@ body {
   border: 0;
   border-bottom: 1px solid var(--border);
   background: transparent;
+  /* 按钮不继承文字颜色，必须显式跟随主题 */
+  color: var(--fg);
   font-weight: 600;
   cursor: pointer;
 }
@@ -309,7 +311,8 @@ body {
   --bg: #0d1117;
   --fg: #e6edf3;
   --muted: #9aa7b4;
-  --accent: #3b82f6;
+  /* 白字在强调色上需要 4.5:1 以上的对比度 */
+  --accent: #2563eb;
   --card: #161b22;
   --border: #30363d;
 }
