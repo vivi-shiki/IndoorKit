@@ -33,7 +33,7 @@ const PAGES: Record<string, (root: HTMLElement) => Promise<Unmount>> = {
   occupancy: mountOccupancyPage,
 };
 
-/** 两条业务线：效能定位看设备，人员定位看人 */
+/** 两个视图：设备视图看设备，人员视图看人 */
 const GROUPS = {
   efficiency: ['assets'],
   people: ['tracking', 'trail', 'alerts', 'occupancy'],

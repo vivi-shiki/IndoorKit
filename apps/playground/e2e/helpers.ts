@@ -11,24 +11,24 @@ export type Demo = (typeof DEMOS)[number];
 
 /** 两条业务线在三种语言下的名称 */
 export const GROUP_TITLES: Record<keyof typeof GROUPS, { en: string; zh: string; ja: string }> = {
-  efficiency: { en: 'Asset Efficiency', zh: '效能定位系统', ja: '設備稼働管理' },
-  people: { en: 'People Tracking', zh: '人员定位系统', ja: '人員位置管理' },
+  efficiency: { en: 'Equipment View', zh: '设备视图', ja: '機器ビュー' },
+  people: { en: 'People View', zh: '人员视图', ja: '人ビュー' },
 };
 
 /** 各页面在三种语言下的标题（业务名称，不带编号） */
 export const TITLES: Record<Demo, { en: string; zh: string; ja: string }> = {
-  assets: { en: 'Asset Overview', zh: '设备分布总览', ja: '医療機器の配置状況' },
-  tracking: { en: 'Real-time Tracking', zh: '人员实时定位', ja: 'リアルタイム位置監視' },
-  trail: { en: 'Trail Replay', zh: '轨迹回放', ja: '軌跡再生' },
-  alerts: { en: 'Zone Alerts', zh: '区域告警', ja: 'エリア警報' },
-  occupancy: { en: 'Occupancy Heatmap', zh: '人流密度分析', ja: '混雑状況ヒートマップ' },
+  assets: { en: 'Equipment Map', zh: '设备地图', ja: '機器マップ' },
+  tracking: { en: 'Live Map', zh: '实时位置', ja: '現在地マップ' },
+  trail: { en: 'Route History', zh: '路线回看', ja: '経路の振り返り' },
+  alerts: { en: 'Boundary Notices', zh: '越界提醒', ja: '境界通知' },
+  occupancy: { en: 'Crowding Heatmap', zh: '拥挤热度', ja: '混み具合ヒートマップ' },
 };
 
 /** 产品名：浏览器标签页标题和首页大标题使用 */
 export const PRODUCT = {
-  en: 'Hospital RTLS Console',
-  zh: '院内定位管理平台',
-  ja: '院内位置情報管理システム',
+  en: 'Indoor Hospital Map',
+  zh: '医院室内地图看板',
+  ja: '病院屋内マップ',
 };
 
 /** 打开一个页面（可带 ?key=value 参数）并等它进入就绪状态 */

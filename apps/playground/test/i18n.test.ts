@@ -57,7 +57,7 @@ describe('createI18n', () => {
   it('translates with parameters', () => {
     const i18n = createI18n({ storage: memoryStorage(), languages: ['en'] });
     expect(i18n.locale).toBe('en');
-    expect(i18n.t('page.tracking.title')).toBe('Real-time Tracking');
+    expect(i18n.t('page.tracking.title')).toBe('Live Map');
     expect(i18n.t('control.minutes', { value: 15 })).toBe('Last 15 min');
   });
 

@@ -1,4 +1,4 @@
-# IndoorKit — Hospital RTLS Console
+# IndoorKit — Indoor Hospital Map
 
 **English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
@@ -18,9 +18,9 @@ Alarms check the department range first, and custom fences second:
 2. **Custom fences**: a restricted ICU that only ICU staff may enter, anti-theft at the 1F exits for devices, and a visiting-time limit in a ward.
 3. **Reported status**: a device going offline, or a person pressing the SOS button.
 
-## Asset Efficiency
+## Equipment View
 
-### Asset Overview
+### Equipment Map
 
 Which devices are in which room, what state they are in and how long they have worked today. Devices report their running status (running, idle, offline, maintenance), simulated here from a schedule for each device.
 
@@ -29,11 +29,11 @@ Which devices are in which room, what state they are in and how long they have w
 - Click a room to see its devices. Click a device to see its status, how long it has been in that status, its running time today, its battery and a timeline of today's status.
 - Search by device code or type, and filter by status or type.
 
-![Asset Overview](docs/images/assets.png)
+![Equipment Map](docs/images/assets.png)
 
-## People Tracking
+## People View
 
-### Real-time Tracking
+### Live Map
 
 Where everyone is now. Tags walk along corridors, enter rooms through doors and change floors only by elevator or stairs.
 
@@ -42,9 +42,9 @@ Where everyone is now. Tags walk along corridors, enter rooms through doors and 
 - Search a name or ID to jump to the person's floor and follow them. The person card shows their department, their location and whether they are inside their own department, with a link to their trail.
 - Choose 500, 2,000 or 5,000 tags; positions are reported once per second and glide smoothly between reports. A performance panel shows frame rate, frame interval and tags online.
 
-![Real-time Tracking](docs/images/tracking.png)
+![Live Map](docs/images/tracking.png)
 
-### Trail Replay
+### Route History
 
 Where someone has been. Pick a person and a range of 15, 30 or 60 minutes, and play the trail back at 1×, 4× or 16×.
 
@@ -52,22 +52,22 @@ Where someone has been. Pick a person and a range of 15, 30 or 60 minutes, and p
 - Stops are listed with their time, room and duration, and marked when they are outside the person's own department. Click a stop to jump to that moment.
 - The alarms raised along the way are listed below the stops.
 
-![Trail Replay](docs/images/trail.png)
+![Route History](docs/images/trail.png)
 
-### Zone Alerts
+### Boundary Notices
 
 One feed for department, fence and status alarms, with who, where, which layer and how severe.
 
 - Acknowledge or resolve each alarm, and filter the feed by layer.
 - Click the person or device in an alarm to jump to its floor and position.
 
-![Zone Alerts](docs/images/alerts.png)
+![Boundary Notices](docs/images/alerts.png)
 
-### Occupancy Heatmap
+### Crowding Heatmap
 
 Crowded areas on each floor over the last 1, 5 or 15 minutes, filtered by role, with the three busiest rooms on the floor.
 
-![Occupancy Heatmap](docs/images/occupancy.png)
+![Crowding Heatmap](docs/images/occupancy.png)
 
 ### On every page
 
