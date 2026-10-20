@@ -17,6 +17,9 @@ export interface ViviTestHooks {
   mapBackground(): string;
   /** 场馆中心在视口里的位置，用来检查它没有被面板盖住 */
   venueScreenCenter(): { x: number; y: number };
+  /** 当前缩放级别；setZoom 保持中心不变直接跳到某个级别 */
+  zoom(): number;
+  setZoom(zoom: number): void;
   // 带科室范围的页面
   departmentIdOf(code: string): string;
   highlightedDepartment(): string | null;
@@ -97,6 +100,8 @@ export function setHooks(partial: Partial<ViviTestHooks> & Pick<ViviTestHooks, '
     styleLayerIds: unavailable,
     mapBackground: unavailable,
     venueScreenCenter: unavailable,
+    zoom: unavailable,
+    setZoom: unavailable,
     departmentIdOf: unavailable,
     highlightedDepartment: unavailable,
     departmentLayerVisible: unavailable,

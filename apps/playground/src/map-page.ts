@@ -174,6 +174,8 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   hooks.resourceLabels = () => indoor.resources.labels();
   hooks.styleLayerIds = () => map.getStyle().layers.map((layer) => layer.id);
   hooks.mapBackground = () => String(map.getPaintProperty('background', 'background-color'));
+  hooks.zoom = () => map.getZoom();
+  hooks.setZoom = (zoom) => map.jumpTo({ zoom });
   hooks.venueScreenCenter = () => {
     const [[west, south], [east, north]] = venue.bounds;
     const point = map.project([(west + east) / 2, (south + north) / 2]);

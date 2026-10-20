@@ -2,61 +2,30 @@
 
 # PROBLEM DESCRIPTION
 
-先写测试，而后修复这些问题
+学mapbox示例，在视角较高处显示热力图，在较低处涂色
+
+先写测试，后改功能
 
 验收标准：
-1、这些修复现在正常推送到主分支
-2、测试通过
-
-("这些问题" are the issues summarized in the previous task (docs/tasks/archive, phone layout): four intermittent e2e failures, of which three were already fixed and pushed (clusterScreenPoint, tagScreenPoint, contrast-test timeout); still open are the MapLibre `feature index out of bounds` race in `queryRenderedFeatures`, and CRLF working copies on Windows that make `pnpm verify` fail.)
+1、高度不一致时应该有两套热力图显示方案，随着显示高度切换
+2、功能和mapbox官方方案一致
+3、测试通过
+4、github存在该提交
+5、page已经更新上去
 
 # UPDATES
 
 # TEST [CONFIRMED]
 
-1. `packages/plugins/test/overlays.test.ts` "floor overlay updates" (Vitest, FakeMap): while a source update is still loading, further `setData` calls are held and only the latest is sent once the source has loaded; a `sourcedata` event for another source does not release it; with nothing loading, updates go out at once. `FakeMap` gains a loading model for this (`holdSourceLoads`, `finishSourceLoad`, `isSourceLoaded`, `sourceUpdates`). Before the fix: 3 updates sent instead of 1.
-2. `apps/playground/e2e/streaming-query.spec.ts` (Playwright): on the assets and tracking pages, query the live layers every frame for 15 s while data streams and floors switch every 100 ms; no query may throw. Before the fix the assets page throws `feature index out of bounds` in 2 of 5 runs. Success: 20/20 runs pass.
-3. `test/repo.test.ts` (Vitest, root `test/` added to `vitest.config.ts`): every tracked text file has `eol=lf` in its git attributes, and none is checked out with CRLF. Before the fix: 19 files checked out CRLF here, no file declares `eol=lf`.
-4. `pnpm verify`, `pnpm build`, `pnpm e2e` pass; the fixes are on `origin/main`.
+Reference: the Mapbox GL JS example "Create a heatmap layer" (earthquakes). A `heatmap` layer with `maxzoom`, whose weight follows a data property, whose radius and intensity grow with zoom, and whose opacity fades to 0 over the last zoom levels. A `circle` layer on the same source with `minzoom`, colored by the same property with the same palette, sized by zoom and property, with a white 1 px stroke, fading in over the first zoom level. Mapbox fades over zoom 7–9 for a world map. On the hospital the 2 m grid shows through the fixed 25 px radius from about zoom 19.5 (screenshots at 18–21), and the page opens at 18.5 (desktop) / 16.8 (phone), so the band here is 19–21.
+
+1. `packages/plugins/test/heatmap.test.ts` "heatmap display by zoom" (Vitest, FakeMap):
+   - `indoor-heat` is a heatmap with `maxzoom` 21 and opacity 1 at zoom 19 → 0 at 21; radius and intensity increase with zoom; weight follows `weight`; color follows `heatmap-density`.
+   - `indoor-heat-point` is a circle layer on the same source with `minzoom` 19, opacity 0 at 19 → 1 at 20, white 1 px stroke; color by `weight` using the heatmap's palette; radius by zoom, and within each zoom by weight.
+   - every cell feature has its own `id`.
+2. `apps/playground/e2e/heat-zoom.spec.ts` (Playwright, `renderedCount` respects each layer's zoom range): crowding page opens below 19 with only the heatmap; at 19.5 both are drawn; at 21.5 only the colored cells; back at 18 only the heatmap. New hooks `zoom()` / `setZoom(z)` on every map page.
+3. `pnpm verify`, `pnpm build`, `pnpm e2e` pass; the commit is on GitHub `main`; the CI deploy job has published the new playground to GitHub Pages.
+
+Before the change: the 3 unit tests fail (no `maxzoom`, no point layer, no `id`), and the e2e test fails at zoom 19.5 (no colored cells).
 
 # PROPOSALS
-
-- No.1 `.gitattributes` declares LF for every text file [CONFIRMED]
-- No.2 `floorOverlay` sends `setData` only after the previous update has loaded [DENIED]
-- No.3 Filter overlays by floor in the data, so every change is one queued `setData` [CONFIRMED]
-
-## No.1 `.gitattributes` declares LF for every text file
-
-### CODE CHANGE
-
-Add `.gitattributes` with `* text=auto eol=lf`. `git add --renormalize .` changes nothing (the index was already LF). The 19 CRLF working copies were checked to differ only in line endings (`git diff --ignore-cr-at-eol`) and checked out again.
-
-### CONFIRMED
-
-`test/repo.test.ts` passes: 0 CRLF working copies, every text file has `text=auto eol=lf`, and the 5 binary files stay `-text`. `pnpm verify` lint and typecheck pass on the full repo without any manual line-ending conversion. Only the overlay test from No.2 still fails, as expected.
-
-## No.2 `floorOverlay` sends `setData` only after the previous update has loaded
-
-### CODE CHANGE
-
-- `MapLike.isSourceLoaded(id)` (MapLibre's `Map.isSourceLoaded`; FakeMap implements it).
-- `floorOverlay.setData` stores the features as pending; it sends them right away only if no update is loading. A `sourcedata` listener (`ctx.onMap`) for this source sends the latest pending data once `isSourceLoaded` is true. Intermediate data is dropped.
-- Why: MapLibre `TileManager.reload` calls `loadTile` again without waiting for or cancelling a reload of the same tile that is still running; on the worker, `GeoJSONWorkerSource._parseWorkerTile` keys the parse state by tile uid, so overlapping parses swap raw tile data and the tile pairs one parse's feature index with the other's data.
-
-### DENIED
-
-The unit tests pass, but `streaming-query.spec.ts` (assets) still fails 3/20 (it was about 8/20 before). Floor switches call `setFilter` on the overlay layers; MapLibre reloads the source's tiles on the next frame, outside the `setData` queue. If that reload parses the previous data while a data reload parses the new data, the same mismatch follows. Data updates alone are not the only trigger.
-
-## No.3 Filter overlays by floor in the data, so every change is one queued `setData`
-
-### CODE CHANGE
-
-Keep No.2's queue. Drop the layer filter on overlay layers: `floorOverlay` keeps all features, sends only those whose `level_id` is the current floor, and on `floor:change` queues a resend. Overlay sources then never reload tiles for any reason other than their own serialized `setData`. The polygon test asserted the layer filter; it now asserts the data sent to the source.
-
-### CONFIRMED
-
-- Unit tests: the queue tests and the new "queues a floor switch" test pass. The polygon, marker and trail tests that asserted a layer filter, or both floors' features in the source, now assert that only the current floor's features are sent and that a switch sends the other floor's. 155/155 pass.
-- `streaming-query.spec.ts` (assets, floors switching every 100 ms) passes 20/20; it failed about 8/20 before and 3/20 with No.2 alone. The original flaky `business.spec.ts` "unit clusters" passes 40/40.
-- `pnpm verify` 225/225, `pnpm build`, `pnpm e2e` 81/81 (leak-bench included).
-- KB: `docs/kb/Index.md` (floorOverlay) and `KB_Core_Lifecycle.md` (what a floor switch calls) updated.
-- Trade-off: when updates arrive faster than MapLibre reloads tiles, intermediate data is dropped and the latest is drawn. Live positions only need the latest.
