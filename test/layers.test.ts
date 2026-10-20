@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
  * 四层边界（docs/adr/0002-sdk-and-domain-layers.md）：
  * 地图引擎 maplibre-gl 只由 core 封装；SDK（packages/*）不认识任何业务；
  * 医院业务（domains/hospital）不碰地图和 DOM；页面只用 SDK 的公开接口。
+ * React 只出现在应用里：SDK 和业务层是不依赖框架的 TypeScript。
  */
 const ROOT = join(import.meta.dirname, '..');
 
@@ -16,7 +17,7 @@ function sourceFiles(dir: string): string[] {
     if (name === 'node_modules' || name === 'dist') return [];
     const path = join(abs, name);
     if (statSync(path).isDirectory()) return sourceFiles(relative(ROOT, path));
-    return /\.ts$/.test(name) ? [relative(ROOT, path)] : [];
+    return /\.tsx?$/.test(name) ? [relative(ROOT, path)] : [];
   });
 }
 
@@ -50,6 +51,7 @@ describe('layer directories', () => {
     'apps/playground/src/engine',
     'apps/playground/src/adapters',
     'apps/playground/src/presentation',
+    'apps/playground/src/app',
     'apps/playground/src/pages',
     'apps/playground/src/testing',
     'docs/adr/0002-sdk-and-domain-layers.md',
@@ -105,6 +107,11 @@ describe('SDK layer', () => {
     expect(hits).toEqual([]);
   });
 
+  it('is plain TypeScript without React or a UI framework', () => {
+    expect(packages.filter((f) => f.endsWith('.tsx'))).toEqual([]);
+    expect(offending(packages, (m) => /^(react|react-dom|@mui\/|@emotion\/)/.test(m))).toEqual([]);
+  });
+
   it('core declares no positioning types or events', () => {
     const types = read('packages/core/src/types.ts');
     expect(types).not.toMatch(/TagPosition|PositionBatch|DataProvider|positions:update|geofence/);
@@ -130,6 +137,11 @@ describe('business layer', () => {
     ).toEqual([]);
   });
 
+  it('is plain TypeScript without React or a UI framework', () => {
+    expect(domains.filter((f) => f.endsWith('.tsx'))).toEqual([]);
+    expect(offending(domains, (m) => /^(react|react-dom|@mui\/|@emotion\/)/.test(m))).toEqual([]);
+  });
+
   it('does not touch the DOM', () => {
     const hits = domains.filter((f) => /\b(document|window)\./.test(read(f)));
     expect(hits).toEqual([]);
@@ -137,11 +149,18 @@ describe('business layer', () => {
 });
 
 describe('page layer', () => {
-  it('has a folder per page with its view', () => {
-    for (const page of ['assets', 'tracking', 'trail', 'alerts', 'occupancy']) {
-      expect(pages).toContain(`apps/playground/src/pages/${page}/index.ts`);
-      expect(pages).toContain(`apps/playground/src/pages/${page}/view.ts`);
+  it('has a folder per page with its React component and view', () => {
+    for (const page of ['home', 'assets', 'tracking', 'trail', 'alerts', 'occupancy']) {
+      expect(pages).toContain(`apps/playground/src/pages/${page}/index.tsx`);
+      expect(pages).toContain(`apps/playground/src/pages/${page}/view.tsx`);
     }
+  });
+
+  it('renders with React instead of writing HTML strings', () => {
+    const hits = pages.filter((f) =>
+      /innerHTML|insertAdjacentHTML|\bdocument\.createElement\(/.test(read(f)),
+    );
+    expect(hits).toEqual([]);
   });
 
   it('uses only SDK public APIs', () => {

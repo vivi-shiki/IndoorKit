@@ -11,6 +11,7 @@ interface Box {
 
 /** 地图页上浮在地图上的组件，以及它们周围的标题栏和右下角按钮 */
 const FLOATING = [
+  '.nav-appbar',
   '.bar',
   '.panel',
   '.panel-toggle',

@@ -1,18 +1,18 @@
 import { expect, type Page, test } from '@playwright/test';
-import { openDemo, TITLES } from './helpers';
+import { openDemo, openHome, TAGLINES, TITLES } from './helpers';
 
 const switcher = (page: Page) => page.getByRole('group', { name: /language|语言|言語/i });
 
-test('the gallery offers Chinese, English and Japanese', async ({ page }) => {
-  await page.goto('./');
+test('the home page offers Chinese, English and Japanese', async ({ page }) => {
+  await openHome(page);
   await expect(switcher(page).getByRole('button')).toHaveText(['中文', 'English', '日本語']);
 });
 
-test('switching on the gallery translates the page and is remembered after reload', async ({ page }) => {
-  await page.goto('./');
+test('switching on the home page translates the page and is remembered after reload', async ({ page }) => {
+  await openHome(page);
   await switcher(page).getByRole('button', { name: '日本語' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
-  await expect(page.getByRole('link', { name: new RegExp(TITLES.tracking.ja) })).toBeVisible();
+  await expect(page.getByTestId('home-tagline')).toHaveText(TAGLINES.ja);
   await expect(switcher(page).getByRole('button', { name: '日本語' })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -21,7 +21,7 @@ test('switching on the gallery translates the page and is remembered after reloa
 
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
-  await expect(page.getByRole('link', { name: new RegExp(TITLES.tracking.ja) })).toBeVisible();
+  await expect(page.getByTestId('home-tagline')).toHaveText(TAGLINES.ja);
 });
 
 test('switching on a map page translates UI and map labels together', async ({ page }) => {
@@ -60,34 +60,18 @@ test('a map page opens in the saved language', async ({ page }) => {
   expect(await page.evaluate(() => window.__vivi!.labelLanguage())).toBe('zh');
 });
 
-test('the gallery names the hospital the same way as the map in each language', async ({ page }) => {
-  await page.goto('./');
-  // 日文的说明写在副标题里，其他语言写在底部说明里
-  const note = page.locator('.gallery');
+test('the home page names the hospital the same way as the map in each language', async ({ page }) => {
+  await openHome(page);
+  await page.getByTestId('carousel-dot').first().click();
+  // 日文的说明写在医院场景的介绍里，其他语言另外写在底部说明里
+  const home = page.locator('.home');
   const names = { 中文: '樱花综合医院', English: 'Sakura General Hospital', 日本語: 'さくら総合病院' };
   for (const [button, name] of Object.entries(names)) {
     await switcher(page).getByRole('button', { name: button }).click();
-    await expect(note).toContainText(name);
+    await expect(home).toContainText(name);
   }
   await switcher(page).getByRole('button', { name: '中文' }).click();
-  await expect(note).not.toContainText('さくら');
-  await switcher(page).getByRole('button', { name: '日本語' }).click();
-  await expect(page.locator('.gallery > p').first()).toHaveText(
-    '架空の「さくら総合病院」を舞台に、院内の機器の配置と稼働状況、人の位置と移動履歴を確認できるデモです。',
-  );
-});
-
-test('the gallery uses the reviewed Chinese and English copy', async ({ page }) => {
-  await page.goto('./');
-  const subtitle = page.locator('.gallery > p').first();
-  await switcher(page).getByRole('button', { name: '中文' }).click();
-  await expect(subtitle).toHaveText(
-    '以虚构的“樱花综合医院”为例，展示院内设备的位置与运行状态，以及人员的位置与移动轨迹。',
-  );
-  await switcher(page).getByRole('button', { name: 'English' }).click();
-  await expect(subtitle).toHaveText(
-    'Explore equipment locations and operating status, along with people’s locations and movement history, in the fictional Sakura General Hospital.',
-  );
+  await expect(home).not.toContainText('さくら');
 });
 
 test('the alert popup on the map follows a language switch', async ({ page }) => {

@@ -1,26 +1,24 @@
 import { expect, test } from '@playwright/test';
-import { DEMOS, openDemo } from './helpers';
+import { DEMOS, openDemo, openHome } from './helpers';
 
 const REPO = 'https://github.com/vivi-shiki/IndoorKit';
 
 test('the home page links to the IndoorKit repository and never says vivi-map', async ({ page }) => {
-  await page.goto('./');
-  await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
-  await expect(page.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', REPO);
+  await openHome(page);
+  await expect(page.getByRole('link', { name: 'GitHub' }).first()).toHaveAttribute('href', REPO);
   expect(await page.locator('body').innerText()).not.toMatch(/vivi-map/i);
 });
 
 for (const demo of DEMOS) {
   test(`${demo} shows the IndoorKit name and never says vivi-map`, async ({ page }) => {
     await openDemo(page, demo);
-    await expect(page.locator('.bar .back')).toHaveText('← IndoorKit');
+    await expect(page.getByTestId('nav-sidebar').getByTestId('home-link')).toHaveText('← IndoorKit');
     expect(await page.locator('body').innerText()).not.toMatch(/vivi-map/i);
   });
 }
 
 test('settings are stored under the indoorkit prefix', async ({ page }) => {
-  await page.goto('./');
-  await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
+  await openHome(page);
   await page
     .getByRole('group', { name: /language|语言|言語/i })
     .getByRole('button', { name: '日本語' })

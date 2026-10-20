@@ -13,11 +13,11 @@ async function usedHeap(cdp: CDPSession) {
   return metrics.find((m) => m.name === 'JSHeapUsedSize')!.value;
 }
 
-/** 依次打开每个示例页，最后回到画廊，确认上一个页面已完全卸载 */
+/** 依次打开每个示例页，最后回到首页，确认上一个页面已完全卸载 */
 async function round(page: Page) {
   for (const demo of DEMOS) await openDemo(page, demo);
   await page.goto('./#/');
-  await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
+  await page.waitForFunction(() => window.__vivi?.demo === 'home');
   const stats = await page.evaluate(() => window.__viviStats!);
   expect(stats.activeWorkers).toBe(0);
   expect(stats.liveMaps).toBe(0);

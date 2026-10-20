@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { DEMOS, openDemo } from './helpers';
+import { DEMOS, openDemo, openHome } from './helpers';
 
 /** 页面上需要能读清的文字控件 */
 const SELECTORS = [
@@ -16,6 +16,9 @@ const SELECTORS = [
   '.drawer',
   '.chip',
   '.alarm-feed li',
+  '.nav-sidebar a',
+  '.nav-sidebar .MuiListSubheader-root',
+  '.nav-sidebar .nav-product',
 ];
 
 /**
@@ -78,11 +81,23 @@ for (const theme of ['light', 'dark'] as const) {
 }
 
 for (const theme of ['light', 'dark'] as const) {
-  test(`links on the gallery are readable in the ${theme} theme`, async ({ page }) => {
+  test(`text on the home page is readable in the ${theme} theme`, async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem('indoorkit.theme', t), theme);
-    await page.goto('./');
-    await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
-    await expect(page.getByRole('link', { name: 'GitHub' })).toBeVisible();
-    expect(await lowContrast(page, ['.gallery a', '.gallery h1', '.gallery p'], 4.5)).toEqual([]);
+    await openHome(page);
+    await expect(page.getByRole('link', { name: 'GitHub' }).first()).toBeVisible();
+    // 置灰的开发中场景不参与检查：它们是不可用的内容
+    expect(
+      await lowContrast(
+        page,
+        [
+          '.home a',
+          '.home h1',
+          '.home h2',
+          '.home > header p',
+          '[data-active="true"]:not([data-disabled]) p',
+        ],
+        4.5,
+      ),
+    ).toEqual([]);
   });
 }

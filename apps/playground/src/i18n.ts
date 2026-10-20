@@ -10,6 +10,34 @@ const DEFAULT_LOCALE: Locale = 'en';
 const zh = {
   'app.name': '医院室内地图看板',
   'language.label': '语言',
+  'home.tagline': 'IoT × 室内地图 SDK：把定位标签、传感器和设备状态放到同一张室内地图上。',
+  'home.intro':
+    'SDK 只负责地图、IMDF 场馆数据和实时定位，不包含任何行业概念；每个场景在其上编写自己的业务层和页面。',
+  'home.scenarios': '应用场景',
+  'home.open': '打开演示',
+  'home.comingSoon': '开发中',
+  'home.previous': '上一个场景',
+  'home.next': '下一个场景',
+  'home.slide': '第 {index} 个，共 {total} 个',
+  'scenario.hospital.title': '医院',
+  'scenario.parking.title': '停车场',
+  'scenario.parking.desc':
+    '以虚构的“港中央停车场”（4 层立体停车场加一块平面停车场，约 340 个车位）为例，把车位传感器、车牌识别相机、闸机、满空显示板和 EV 充电桩放到同一张地图上。',
+  'scenario.parking.operator.title': '运营方视图',
+  'scenario.parking.operator.desc': '查看每个车位的满空、入出库车辆、设备异常和利用率。',
+  'scenario.parking.driver.title': '司机视图',
+  'scenario.parking.driver.desc': '预约车位，并沿车道路线被引导到车位。',
+  'scenario.museum.title': '博物馆',
+  'scenario.museum.desc':
+    '以虚构的“港市立美术博物馆”（地上 3 层加地下收藏库）为例，把展示室和展柜的温湿度、照度与紫外线传感器、来馆者计数、展柜安全传感器和警卫巡逻放到同一张地图上。',
+  'scenario.museum.curator.title': '学艺员视图',
+  'scenario.museum.curator.desc': '查看展示室和展柜的温湿度、照度与累计曝光量，以及藏品所在位置。',
+  'scenario.museum.operations.title': '运营与警备视图',
+  'scenario.museum.operations.desc': '查看各展示室的来馆人数和动线、展柜安全告警和警卫巡逻。',
+  'scenario.museum.visitor.title': '来馆者视图',
+  'scenario.museum.visitor.desc': '走到展品前自动显示多语言解说，并推荐参观路线。',
+  'nav.label': '页面',
+  'nav.menu': '菜单',
   'gallery.subtitle': '以虚构的“樱花综合医院”为例，展示院内设备的位置与运行状态，以及人员的位置与移动轨迹。',
   'gallery.note': '本演示中的地图、人员和设备数据均为虚构，医院设定为“樱花综合医院”。',
   'group.efficiency.title': '设备视图',
@@ -130,6 +158,38 @@ type Messages = Record<MessageKey, string>;
 const en: Messages = {
   'app.name': 'Indoor Hospital Map',
   'language.label': 'Language',
+  'home.tagline': 'An IoT × indoor map SDK: put location tags, sensors and device status on one indoor map.',
+  'home.intro':
+    'The SDK handles the map, IMDF venue data and real-time positions, and knows nothing about any industry. Each use case adds its own business layer and pages on top.',
+  'home.scenarios': 'Use cases',
+  'home.open': 'Open demo',
+  'home.comingSoon': 'In development',
+  'home.previous': 'Previous use case',
+  'home.next': 'Next use case',
+  'home.slide': '{index} of {total}',
+  'scenario.hospital.title': 'Hospital',
+  'scenario.parking.title': 'Parking',
+  'scenario.parking.desc':
+    'Set in the fictional Minato Central Parking, a four-level garage with a surface lot and about 340 spaces: space sensors, licence plate cameras, gates, vacancy signs and EV chargers on one map.',
+  'scenario.parking.operator.title': 'Operator View',
+  'scenario.parking.operator.desc':
+    'See whether each space is free, vehicles coming in and out, device faults and utilisation.',
+  'scenario.parking.driver.title': 'Driver View',
+  'scenario.parking.driver.desc': 'Reserve a space and follow the lanes to it.',
+  'scenario.museum.title': 'Museum',
+  'scenario.museum.desc':
+    'Set in the fictional Minato City Museum of Art and History, three floors with a basement store: temperature, humidity, light and UV sensors, visitor counts, showcase security sensors and guard patrols on one map.',
+  'scenario.museum.curator.title': 'Curator View',
+  'scenario.museum.curator.desc':
+    'Track temperature, humidity, light and cumulative exposure in galleries and showcases, and where each object is.',
+  'scenario.museum.operations.title': 'Operations & Security View',
+  'scenario.museum.operations.desc':
+    'See visitor numbers and routes in each gallery, showcase security alerts and guard patrols.',
+  'scenario.museum.visitor.title': 'Visitor View',
+  'scenario.museum.visitor.desc':
+    'Read a description in your language when you reach an object, and follow a suggested route.',
+  'nav.label': 'Pages',
+  'nav.menu': 'Menu',
   'gallery.subtitle':
     'Explore equipment locations and operating status, along with people’s locations and movement history, in the fictional Sakura General Hospital.',
   'gallery.note':
@@ -255,6 +315,36 @@ const en: Messages = {
 const ja: Messages = {
   'app.name': '病院内の位置情報マップ',
   'language.label': '言語',
+  'home.tagline': 'IoT × 屋内地図 SDK：位置タグ、センサー、機器の状態を 1 枚の屋内地図にまとめます。',
+  'home.intro':
+    'SDK が担うのは地図、IMDF の施設データ、リアルタイムの位置情報だけで、業界固有の概念は持ちません。各シーンはその上に独自の業務ロジックと画面を載せます。',
+  'home.scenarios': '活用シーン',
+  'home.open': 'デモを開く',
+  'home.comingSoon': '開発中',
+  'home.previous': '前へ',
+  'home.next': '次へ',
+  'home.slide': '{total} 件中 {index} 件目',
+  'scenario.hospital.title': '病院',
+  'scenario.parking.title': '駐車場',
+  'scenario.parking.desc':
+    '架空の「みなと中央パーキング」（自走式立体 4 層と平面駐車場、約 340 台）を舞台に、車室センサー、ナンバー認識カメラ、ゲート、満空表示板、EV 充電器を 1 枚の地図にまとめます。',
+  'scenario.parking.operator.title': '運営者ビュー',
+  'scenario.parking.operator.desc': '車室ごとの満空、入出庫車両、機器の異常、稼働率を確認できます。',
+  'scenario.parking.driver.title': 'ドライバービュー',
+  'scenario.parking.driver.desc': '駐車枠を予約し、車路に沿って目的の枠まで案内します。',
+  'scenario.museum.title': '博物館',
+  'scenario.museum.desc':
+    '架空の「みなと市立美術博物館」（地上 3 層と地下収蔵庫）を舞台に、展示室・展示ケースの温湿度・照度・紫外線センサー、来館者カウント、展示ケースのセキュリティセンサー、警備巡回を 1 枚の地図にまとめます。',
+  'scenario.museum.curator.title': '学芸員ビュー',
+  'scenario.museum.curator.desc':
+    '展示室・展示ケースの温湿度、照度、累積露光量と、収蔵品の所在を確認できます。',
+  'scenario.museum.operations.title': '運営・警備ビュー',
+  'scenario.museum.operations.desc':
+    '展示室ごとの来館者数と動線、展示ケースのセキュリティアラート、警備巡回を確認できます。',
+  'scenario.museum.visitor.title': '来館者ビュー',
+  'scenario.museum.visitor.desc': '作品の前に来ると多言語の解説を表示し、おすすめの順路を案内します。',
+  'nav.label': 'ページ',
+  'nav.menu': 'メニュー',
   'gallery.subtitle':
     '架空の「さくら総合病院」を舞台に、院内の機器の配置と稼働状況、人の位置と移動履歴を確認できるデモです。',
   'gallery.note': '地図・人物・機器のデータはすべて架空のものです。',

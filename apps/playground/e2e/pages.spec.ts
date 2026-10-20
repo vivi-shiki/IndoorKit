@@ -1,27 +1,21 @@
 import { expect, test } from '@playwright/test';
-import { DEMOS, GROUP_TITLES, GROUPS, openDemo, pollHook, TITLES } from './helpers';
+import { DEMOS, openDemo, openHome, pollHook, TITLES } from './helpers';
 
-test('the gallery groups the business pages into the two product lines', async ({ page }) => {
-  await page.goto('./');
-  const groups = page.locator('.group');
-  await expect(groups.locator('h2')).toHaveText([GROUP_TITLES.efficiency.en, GROUP_TITLES.people.en]);
-  await expect(groups.nth(0).locator('.cards a strong')).toHaveText(
-    GROUPS.efficiency.map((d) => TITLES[d].en),
-  );
-  await expect(groups.nth(1).locator('.cards a strong')).toHaveText(GROUPS.people.map((d) => TITLES[d].en));
-  for (const title of await page.locator('.cards a strong').allTextContents()) {
+test('menu titles use business names without numbers', async ({ page }) => {
+  await openDemo(page, 'assets');
+  for (const title of await page.getByTestId('nav-sidebar').getByTestId('nav-link').allTextContents()) {
     // 业务展示风格：不带「3 ·」之类的编号
     expect(title).not.toMatch(/^\d|·/);
   }
 });
 
 test('the removed demo pages are gone', async ({ page }) => {
-  await page.goto('./');
+  await openHome(page);
   await expect(page.getByRole('link', { name: /Basic map|Memory lab|Clustering comparison/ })).toHaveCount(0);
   for (const old of ['basic', 'memory', 'realtime', 'cluster', 'geofence', 'heatmap']) {
     await page.goto(`./#/${old}`);
-    // 旧地址回到画廊，不再有对应页面
-    await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
+    // 旧地址回到首页，不再有对应页面
+    await page.waitForFunction(() => window.__vivi?.demo === 'home');
   }
 });
 

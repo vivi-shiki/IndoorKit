@@ -2,93 +2,44 @@
 
 # PROBLEM DESCRIPTION
 
-我发现这个项目有个问题，map的sdk和实际业务混合在一起了，其实应该是sdk是一个单独的部分，实际业务是另一个单独的部分，帮我设计一套方案，如何去耦合
+1、给这个项目引入react，用react重写现有的东西，sdk和业务层解耦，相当于sdk和mapbox是纯ts，业务层以上是react和日本较为流行的react ui框架
 
-（方案文档：https://claude.ai/code/artifact/484e23b0-2236-41be-a1ef-01e78d758588 ，按其中「迁移步骤」第 1～6 步实施）
+2、编写一个首页，介绍这个项目是iot加地图的sdk的各个应用场景，首页三个像是切换走马灯那样的三个应用场景切换：医院、停车场、博物馆
 
-1、对1到6步重新编写测试
-2、核对测试和这篇需求文档，评估是否正确
-3、根据测试编写编码
-4、进行测试与迭代
+3、后两个场景置灰开发中
 
-完成标准
-1、各个区域的行为分别解耦，mapbox层、sdk层、业务层、页面层，每一层都清晰可见
-2、通过所有测试
-3、所有更新正常提交commit记录
-4、pages页面正常更新
-5、pages各个主要页面截图正常
+4、医院场景修页面逻辑，主页面就是渲染地图，添加pc端的左侧侧栏菜单和手机端的顶栏菜单，点击两个业务场景时，相当于渲染不同页面的内容
+
+验收标准
+1、引入相关依赖，重构业务层，功能和原有完全一致
+2、更改交互逻辑，进入某个demo时直接渲染地图
+3、添加pc端和手机端两种菜单
+4、按照进度和内容模块划分commit，全部提交到github上
+5、各个页面正常显示
+6、测试全部通过
 
 # UPDATES
 
 # TEST [CONFIRMED]
 
-The four layers and where they live after the change:
+Reading of the request:
 
-| Layer | Paths | May import |
-| --- | --- | --- |
-| Map engine (MapLibre) | `maplibre-gl`, wrapped by `packages/core` only; the app loads it in `apps/playground/src/engine/` | — |
-| SDK | `packages/imdf`, `packages/core`, `packages/rtls`, `packages/plugins` | each other, downward; only `core` imports `maplibre-gl` |
-| Business (hospital domain) | `domains/hospital` (`@indoorkit/hospital`) | `@indoorkit/imdf`, `@indoorkit/rtls` (types), zod |
-| Pages | `apps/playground/src/pages/**` | SDK public APIs, the domain, `presentation/`, `adapters/`, `testing/hooks` |
+- React and MUI (the UI library most used by React teams in Japan) are used only in `apps/playground`. `packages/*` (SDK, the only place that wraps MapLibre) and `domains/hospital` (business rules, no UI at all, also runs in Workers) stay framework-free TypeScript. "业务层以上" is read as the hospital business UI: adapters, pages and app shell.
+- Home page `#/`: IndoorKit as an IoT × indoor map SDK, with a carousel of three use cases: hospital (opens the demo), parking and museum (greyed out, "in development", copy taken from the two demo plans).
+- Hospital demo `#/hospital/<page>`: entering goes straight to a map (`#/hospital` → the equipment map). Desktop has a permanent left sidebar, phones have a top app bar with a menu button that opens a top menu. Both list the two business views (Equipment View: Equipment Map; People View: Live Map, Route History, Zone Alerts, Location Report Heatmap); a click renders that page's map content. Old links `#/<page>?…` redirect.
+- Every existing feature, test hook, copy text and language/theme behaviour is unchanged.
 
-`apps/playground/src/adapters/` is the only app code that knows both the SDK plugin system and the domain; `apps/playground/src/testing/` is the only app code that may use `@indoorkit/core/testing`.
+Tests written before the implementation:
 
-Tests per step of the plan (written before the code, each must fail first):
+- `test/layers.test.ts`: scans `.tsx`; SDK and domain contain no `.tsx` and import no React/MUI/Emotion; each page folder (now including `home`) has `index.tsx` and `view.tsx`; pages never write HTML strings (`innerHTML`, `createElement`); `apps/playground/src/app` exists.
+- `apps/playground/test/routes.test.ts`: hash routes, redirects (`#/hospital`, legacy links, removed pages), the route key that remounts a page, the menu groups.
+- `apps/playground/test/scenarios.test.ts`: scenario order, only hospital opens, copy present in three languages, parking/museum venues from the plans.
+- `apps/playground/e2e/home.spec.ts`: heading/tagline/tab title, three slides, arrows and dots, autoplay that stops after manual use (Playwright clock), greyed-out slides with disabled buttons, opening the hospital demo lands on a rendered map, reviewed hospital copy in three languages, phone width.
+- `apps/playground/e2e/navigation.spec.ts`: sidebar groups and links, `aria-current`, switching pages renders new content and releases the old map, the sidebar never covers the map, language switch, home link releases maps and workers; `#/hospital` and legacy links; phone top bar, menu open/switch/close, home link.
+- Existing specs moved to the new addresses (`openDemo` → `#/hospital/<demo>`, home hook `demo: 'home'`), the home-page contrast check, `.nav-appbar` in the phone layout check, sidebar text in the contrast check.
 
-1. Boundary checks, `test/layers.test.ts` (Vitest, reads source files):
-   - `packages/*/src` imports nothing from `domains/`, `tools/`, `apps/`; only `packages/core/src` imports `maplibre-gl`.
-   - `packages/*/src` contains none of the hospital words (department, patient, nurse, doctor, visitor, caregiver, hospital, sos, offline, maintenance, infusion, 科室, 患者, 医院, 医护, 病房, 人员).
-   - `domains/*/src` imports no `maplibre-gl`, `@indoorkit/core`, `@indoorkit/plugins`, and uses no `document` / `window`.
-   - `apps/playground/src/pages/**` imports no `maplibre-gl` and no `@indoorkit/core/testing`, has no `indoor-` layer id literals, no `.map` access on the indoor map and no `as Record<string, unknown>` plugin casts.
-   - The layer directories exist: `domains/hospital/src`, `packages/rtls/src`, `apps/playground/src/{engine,adapters,presentation,pages,testing}`.
-   - `docs/adr/0002-sdk-and-domain-layers.md` exists.
-2. Domain model, `domains/hospital/test/model.test.ts`: roles, asset types and statuses, `statusSummary`, `sosActive` come from `@indoorkit/hospital`; `tools/rtls-simulator` no longer exports them (`tools/rtls-simulator/test/roster.test.ts` imports the types from the domain).
-3. Alarms, `domains/hospital/test/alarm.test.ts`: the department / fence / status layers of the alarm engine, run with plain data and a unit locator, no `FakeMap`. `apps/playground/test/alarm-adapter.test.ts`: `hospitalAlarmPlugin` checks every position update, draws its fences through `polygonPlugin`, emits `alarm:raise`.
-4. Generic plugins and IMDF extensions:
-   - `packages/plugins/test/zone.test.ts`: `zonePlugin({ zones })` draws, hides and highlights arbitrary unit groups (`indoor-zones`, `indoor-zone-outlines`), rejects unknown ids.
-   - `unit-cluster.test.ts`: `statusColors` is required, there are no built-in statuses; unknown statuses are gray.
-   - `heatmap.test.ts`: windows come from `windowsMinutes`, `setWindow` rejects others.
-   - `venue-index.test.ts`: `locate` returns only `{ unitId }`; no department methods.
-   - `packages/imdf/test/extension.test.ts`: `validateImdf` / `buildVenueModel` / `fetchImdf` take extensions (extra file, schema, cross-checks, built data under `venue.extensions[file]`); without extensions an extra file is ignored; the core model has no `departments` / `department_id`.
-   - `domains/hospital/test/departments.test.ts`: `departmentExtension` validates units, `createHospital` locates the department of a point, by code, and its floors.
-5. Core: `packages/core/test/camera-and-pick.test.ts`: `indoor.camera.focus` / `fit` drive the map, `map:click` carries the point and coordinate, `indoor.project`, `indoor.plugin(name)` throws for a missing plugin, `glyphs` / default languages come from options; `positions:update` and the position types live in `@indoorkit/rtls`. Plugins: `positionStream.setVisible`, `positionStream.pick(point, radius)`, `positionStream.rendered()`, `unitCluster.pick(point, radius)`, `unitCluster.rendered()`.
-6. Pages: the existing Playwright suite (`pnpm e2e`, 82 tests plus leak-bench) still passes with the pages split into `pages/<page>/index.ts` (state, events, SDK calls) and `pages/<page>/view.ts` (HTML); layer ids that changed (`indoor-departments` → `indoor-zones`) are updated in the specs.
+Success criteria: `pnpm verify`, `pnpm build`, `pnpm e2e` (including leak-bench) all pass; every page renders on desktop and phone (screenshots checked); commits split by module and pushed to `main`; CI deploys GitHub Pages.
 
-Success criteria:
-
-- All of the above, `pnpm verify`, `pnpm build`, `pnpm e2e` pass.
-- Commits pushed to `main`; the CI deploy job publishes the playground to GitHub Pages.
-- Screenshots of the gallery and the five pages on the deployed site look right (map drawn, panels filled, no errors).
-- `AGENTS.md` layout table, `docs/kb/` pages and ADR 0002 describe the layers.
-
-Checked against the design document (step 2 of the request):
-
-- Every coupling point in the document's table has a test: 1 alarm engine → `domains/hospital/test/alarm.test.ts`; 2 department plugin → `zone.test.ts`; 3 `DEFAULT_COLORS` → `unit-cluster.test.ts`; 4 `HEAT_WINDOWS` → `heatmap.test.ts`; 5 core events and types → `layers.test.ts` + `packages/rtls/test`; 6 IMDF `department` → `extension.test.ts` + `departments.test.ts`; 7 simulator owning the model → `roster.test.ts` + `domains/hospital/test/model.test.ts`; 8 pages using MapLibre → `layers.test.ts` page layer + the e2e suite.
-- Two deliberate changes from the document, both narrower: clicks are a core `map:click` event plus `pick(point, radius)` on the plugins that draw pickable things, instead of a core `hits` object (the core would otherwise have to know every plugin's layers); the positions layer is hidden with `setVisible` / `visible: false` instead of a `showPoints` option. Test hooks that read arbitrary layers go through `@indoorkit/core/testing` from `apps/playground/src/testing/`, as the document planned.
-- Default languages stay `['ja', 'en']` (already an option); only `glyphs` becomes a new option.
-
-Before the change: `pnpm exec vitest run` → 12 files fail to import (`@indoorkit/hospital`, `@indoorkit/rtls`, `defineImdfExtension`, `zonePlugin` … do not exist) and 33 tests fail (layer checks, camera, heatmap windows, cluster colours, venue index). Baseline e2e on `5fc0a0b`: all 82 pass.
+Before the change: `vitest run test/layers.test.ts apps/playground/test` → 3 layer checks fail (no `src/app`, no `.tsx` pages, pages write HTML strings) and both new test files fail to import (`src/app/routes`, `src/pages/home/scenarios` do not exist). Baseline e2e on `d51cd01`: 84 passed.
 
 # PROPOSALS
-
-- No.1 Four layers as planned in the design document [CONFIRMED]
-
-## No.1 Four layers as planned in the design document
-
-### CODE CHANGE
-
-- `packages/imdf`: `defineImdfExtension` and `extensions` parameters on `validateImdf`, `buildVenueModel`, `fetchImdf`; data lands in `venue.extensions[file]`. `departments`, `department_id`, `departmentFeature` removed from the standard model.
-- `packages/rtls` (new): `TagPosition`, `PositionBatch`, `DataProvider`, the `positions:update` event and `createManualProvider` (`@indoorkit/rtls/testing`), all moved out of core.
-- `packages/core`: `MapLike` gains the camera and query methods; `indoor.camera.focus` / `fit`, `indoor.project`, `indoor.idle()` / `rendered()`, `indoor.plugin(name)` / `hasPlugin`, the `map:click` event, `ctx.queryRendered`, the `glyphs` option. `FakeMap` and `inspect(indoor)` in `@indoorkit/core/testing`.
-- `packages/plugins`: `departmentPlugin` → `zonePlugin({ zones })`; `alarmPlugin` and the alarm engine moved to the domain; `unitClusterPlugin` requires `statusColors`; `heatmapPlugin` takes `windowsMinutes` and `window`; `positionStreamPlugin` gets `visible`, `setVisible`, `pick`, `rendered`; `unitClusterPlugin` gets `pick`, `rendered`; `venueIndex.locate` returns `{ unitId }` only. Geofence events are declared in `geofence.ts`.
-- `domains/hospital` (new, `@indoorkit/hospital`): `departmentExtension`, `createHospital` (department lookups, `locate`, `zones`), the roster model moved from the simulator, `DEPARTMENT_RULES` / `subjectsOf` moved from the app, the alarm engine (takes `hospital.locate` instead of the venue index).
-- `tools/rtls-simulator` and `tools/venue-gen` read departments through `departmentsOf`; venue-gen writes `department.json` as an extension file.
-- `apps/playground/src`: `engine/maplibre.ts` (CSS + worker URL), `adapters/` (`hospitalAlarmPlugin`, `loadVenue` / `placesOf`, simulator provider and roster), `presentation/` (colors, formatting, UI helpers, perf overlay), `pages/map-page.ts` and `pages/<page>/{index,view}.ts`, `testing/hooks.ts` and `testing/map-hooks.ts` (the hooks that read the MapLibre style, through `inspect`). Pages use only `indoor.camera`, `indoor.project`, `map:click`, plugin `pick` / `rendered` / `setVisible`.
-- `test/layers.test.ts`: the file walker skips `node_modules` and `dist` (workspace links made it scan dependencies).
-- Docs: ADR 0002, AGENTS.md layout, coding rule 8, KB index and testing page, README project structure in three languages.
-
-### CONFIRMED
-
-- `pnpm verify`: lint, typecheck and 287 unit tests (37 files) pass, including every boundary check in `test/layers.test.ts`. `pnpm build` passes and writes `department.json` next to the IMDF files.
-- `pnpm e2e` (full run, 2 workers): 82 passed, 2 failed on time in this sandbox: `streaming-query.spec.ts` tracking (61 queries in 15 s, needs > 100) and `titles.spec.ts` "no title mentions playground or demo" (30 s timeout while opening five live pages in a row). Both are timing limits under parallel load, not behavior: the same streaming-query test failed the same way on the unmodified baseline, and the titles test took 29.5 s there. Run alone, both pass 5/5 (`--repeat-each=5`, titles spec 40/40). CI is the final check.
-- Success criteria: each layer has its own directory and package (map engine only in `packages/core` and `apps/playground/src/engine`; SDK in `packages/*` without hospital words; business in `domains/hospital`; pages in `apps/playground/src/pages/<page>/{index,view}.ts`), and the docs describe them.

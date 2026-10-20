@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { DEMOS, openDemo, PRODUCT, TITLES } from './helpers';
+import { DEMOS, openDemo, openHome, PRODUCT, TITLES } from './helpers';
 
-test('the home page shows the product name instead of the project codename', async ({ page }) => {
-  await page.goto('./');
-  await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
-  await expect(page).toHaveTitle(PRODUCT.en);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(PRODUCT.en);
+test('the home page shows the SDK name instead of the project codename', async ({ page }) => {
+  await openHome(page);
+  await expect(page).toHaveTitle('IndoorKit');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('IndoorKit');
 });
 
 for (const demo of DEMOS) {
@@ -22,14 +21,12 @@ test('browser tab titles follow the language switch', async ({ page }) => {
   await expect(page).toHaveTitle(`${TITLES.alerts.zh} | ${PRODUCT.zh}`);
   await switcher.getByRole('button', { name: '日本語' }).click();
   await expect(page).toHaveTitle(`${TITLES.alerts.ja} | ${PRODUCT.ja}`);
-  await page.goto('./#/');
-  await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
-  await expect(page).toHaveTitle(PRODUCT.ja);
+  await openHome(page, './#/');
+  await expect(page).toHaveTitle('IndoorKit');
 });
 
 test('no title mentions playground or demo', async ({ page }) => {
-  await page.goto('./');
-  await page.waitForFunction(() => window.__vivi?.demo === 'gallery');
+  await openHome(page);
   for (const demo of DEMOS) {
     await openDemo(page, demo);
     expect(await page.title()).not.toMatch(/playground|demo|vivi/i);

@@ -33,7 +33,7 @@ test.describe('Real-time Tracking: people', () => {
     await expect(card.getByTestId('person-location')).not.toBeEmpty();
     await expect(card.getByRole('link', { name: /Trail|轨迹|軌跡/ })).toHaveAttribute(
       'href',
-      `#/trail?tag=${target.id}`,
+      `#/hospital/trail?tag=${target.id}`,
     );
   });
 
@@ -69,9 +69,9 @@ test.describe('Trail Replay', () => {
 
   test('plays back at the chosen speed and switches floors with the person', async ({ page }) => {
     await openDemo(page, 'trail', 'tag=P0001');
-    // range 输入框不能 fill，直接设值并派发 input 事件
+    // range 输入框不能 fill：用原生 setter 设值再派发 input 事件，React 才认得这次修改
     await page.getByTestId('trail-seek').evaluate((el: HTMLInputElement) => {
-      el.value = '0';
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, '0');
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await page.getByRole('radio', { name: '16×' }).check();
