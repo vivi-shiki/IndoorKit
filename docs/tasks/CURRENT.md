@@ -22,8 +22,8 @@
 # PROPOSALS
 
 - No.1 `.gitattributes` declares LF for every text file [CONFIRMED]
-- No.2 `floorOverlay` sends `setData` only after the previous update has loaded
-- No.3 `floorOverlay` also holds floor filter changes while an update is loading
+- No.2 `floorOverlay` sends `setData` only after the previous update has loaded [DENIED]
+- No.3 Filter overlays by floor in the data, so every change is one queued `setData`
 
 ## No.1 `.gitattributes` declares LF for every text file
 
@@ -34,3 +34,21 @@ Add `.gitattributes` with `* text=auto eol=lf`. `git add --renormalize .` change
 ### CONFIRMED
 
 `test/repo.test.ts` passes: 0 CRLF working copies, every text file has `text=auto eol=lf`, and the 5 binary files stay `-text`. `pnpm verify` lint and typecheck pass on the full repo without any manual line-ending conversion. Only the overlay test from No.2 still fails, as expected.
+
+## No.2 `floorOverlay` sends `setData` only after the previous update has loaded
+
+### CODE CHANGE
+
+- `MapLike.isSourceLoaded(id)` (MapLibre's `Map.isSourceLoaded`; FakeMap implements it).
+- `floorOverlay.setData` stores the features as pending; it sends them right away only if no update is loading. A `sourcedata` listener (`ctx.onMap`) for this source sends the latest pending data once `isSourceLoaded` is true. Intermediate data is dropped.
+- Why: MapLibre `TileManager.reload` calls `loadTile` again without waiting for or cancelling a reload of the same tile that is still running; on the worker, `GeoJSONWorkerSource._parseWorkerTile` keys the parse state by tile uid, so overlapping parses swap raw tile data and the tile pairs one parse's feature index with the other's data.
+
+### DENIED
+
+The unit tests pass, but `streaming-query.spec.ts` (assets) still fails 3/20 (it was about 8/20 before). Floor switches call `setFilter` on the overlay layers; MapLibre reloads the source's tiles on the next frame, outside the `setData` queue. If that reload parses the previous data while a data reload parses the new data, the same mismatch follows. Data updates alone are not the only trigger.
+
+## No.3 Filter overlays by floor in the data, so every change is one queued `setData`
+
+### CODE CHANGE
+
+Keep No.2's queue. Drop the layer filter on overlay layers: `floorOverlay` keeps all features, sends only those whose `level_id` is the current floor, and on `floor:change` queues a resend. Overlay sources then never reload tiles for any reason other than their own serialized `setData`. The polygon test asserted the layer filter; it now asserts the data sent to the source.
