@@ -78,6 +78,23 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
       <div class="venue-name" data-testid="venue-name"></div>
       ${options.overlays ?? ''}
     </div>`;
+  // 列表面板：桌面端常驻左侧；手机端收在按钮后面，点开后是底部抽屉
+  const stage = root.querySelector<HTMLElement>('.stage')!;
+  const panel = stage.querySelector<HTMLElement>('.panel');
+  const toggle = panel && document.createElement('button');
+  if (toggle) {
+    toggle.type = 'button';
+    toggle.className = 'panel-toggle';
+    toggle.dataset.testid = 'panel-toggle';
+    toggle.dataset.i18n = 'panel.toggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      toggle.setAttribute('aria-expanded', String(open));
+      stage.toggleAttribute('data-panel-open', open);
+    });
+    stage.append(toggle);
+  }
   setPageTitle(options.title);
   translate(root);
   const hooks = setHooks({ demo: options.demo });
@@ -92,10 +109,17 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   const map = indoor.map as unknown as MapLibreMap;
   const floor = (indoor.plugins as Record<string, unknown>).floor as FloorApi;
   if (options.floor) floor.set(options.floor);
-  // 左侧面板压在地图上，场馆要放在面板右边的空白里
-  if (root.querySelector('.panel')) {
+  // 场馆放在面板和按钮之外的空白里，留白按实际布局计算
+  if (panel && toggle) {
+    const shown = (el: HTMLElement) => getComputedStyle(el).display !== 'none';
+    const stageBox = stage.getBoundingClientRect();
     map.fitBounds(venue.bounds, {
-      padding: { top: 48, bottom: 72, left: 312, right: 88 },
+      padding: {
+        top: shown(toggle) ? toggle.getBoundingClientRect().bottom - stageBox.top + 16 : 48,
+        bottom: 72,
+        left: shown(panel) ? panel.getBoundingClientRect().right - stageBox.left + 16 : 24,
+        right: 88,
+      },
       pitch: map.getPitch(),
       bearing: map.getBearing(),
       duration: 0,
@@ -150,6 +174,12 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   hooks.resourceLabels = () => indoor.resources.labels();
   hooks.styleLayerIds = () => map.getStyle().layers.map((layer) => layer.id);
   hooks.mapBackground = () => String(map.getPaintProperty('background', 'background-color'));
+  hooks.venueScreenCenter = () => {
+    const [[west, south], [east, north]] = venue.bounds;
+    const point = map.project([(west + east) / 2, (south + north) / 2]);
+    const box = map.getContainer().getBoundingClientRect();
+    return { x: box.left + point.x, y: box.top + point.y };
+  };
 
   const ready = () => {
     hooks.ready = true;

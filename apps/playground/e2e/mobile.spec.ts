@@ -31,7 +31,13 @@ function visibleBoxes(page: Page) {
         const style = getComputedStyle(el);
         const rect = el.getBoundingClientRect();
         if (style.display === 'none' || style.visibility === 'hidden' || rect.width === 0) continue;
-        boxes.push({ name: selector, left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+        boxes.push({
+          name: selector,
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+        });
       }
     }
     return boxes;
@@ -52,7 +58,10 @@ async function expectNaturalLayout(page: Page) {
     expect(box.bottom, `${box.name} bottom`).toBeLessThanOrEqual(viewport.height);
   }
   const clashes = boxes.flatMap((a, i) =>
-    boxes.slice(i + 1).filter((b) => overlaps(a, b)).map((b) => `${a.name} × ${b.name}`),
+    boxes
+      .slice(i + 1)
+      .filter((b) => overlaps(a, b))
+      .map((b) => `${a.name} × ${b.name}`),
   );
   expect(clashes).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(viewport.width);
@@ -68,10 +77,7 @@ test.describe('phone layout', () => {
 
       // 地图中间留给场馆本身：场馆中心落在地图上，而不是被面板盖住
       const center = await page.evaluate(() => window.__vivi!.venueScreenCenter());
-      const hit = await page.evaluate(
-        ({ x, y }) => document.elementFromPoint(x, y)?.className ?? '',
-        center,
-      );
+      const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.className ?? '', center);
       expect(hit).toContain('maplibregl-canvas');
     });
 
@@ -80,6 +86,7 @@ test.describe('phone layout', () => {
       const toggle = page.getByTestId('panel-toggle');
       const panel = page.locator('.panel');
       await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveText('List');
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await expect(panel).toBeHidden();
 

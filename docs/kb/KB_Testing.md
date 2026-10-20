@@ -16,14 +16,19 @@ Each demo calls `setHooks` (`apps/playground/src/test-hooks.ts`) and fills in wh
 | `resourceLabels()` | every map page | `indoor.resources.labels()` |
 | `styleLayerIds()` | every map page | ids of every layer in the live MapLibre style |
 | `mapBackground()` | every map page | the live background color, to check the theme |
+| `venueScreenCenter()` | every map page | viewport position of the venue center, to check no overlay covers it |
 | `perf()`, `tagScreenPoint()`, `replaying()` | tracking | overlay numbers (same snapshot the overlay shows); screen point of a tag with history; tag whose trail is shown |
-| `clusterCount()` | assets | cluster points on the current floor |
+| `clusterCount()`, `clusterScreenPoint()` | assets | cluster points on the current floor; screen point of one that is already drawn (data reaches the plugin a frame before MapLibre draws it, so a point taken from the data alone may not be clickable yet) |
 | `fenceIds()`, `alertCount()` | alerts | fences on the map; enter/exit events so far |
 | `heatWindow()`, `heatPointCount()`, `heatLevelIds()` | occupancy | window in minutes; samples in the window; levels in the drawn data |
 
 The floor, render and style hooks are available on every map page, because `mountMapPage` (`apps/playground/src/map-page.ts`) sets them.
 
 `window.__viviStats` survives page changes: `activeWorkers` (simulation Workers not yet terminated), `liveMaps` (maps created by `createTrackedMap` and not yet destroyed) and `lastUnreleased` (`resources.size` after the last destroy). `tools/leak-bench/page-switch.spec.ts` checks all three are back to 0 after visiting every page.
+
+## Phone layout
+
+`apps/playground/e2e/mobile.spec.ts` checks the map pages at 375×812 by layout boxes, not pixels: every floating part is inside the viewport, no two overlap, and the venue center lands on the map canvas. On phones (`@media (max-width: 640px)` in `style.css`) the left list sits behind the `panel-toggle` button that `mountMapPage` adds, and the list and drawers open as bottom sheets. The initial `fitBounds` padding is read from the laid-out list and toggle, so the same code centers the venue on both layouts.
 
 Pages whose map redraws continuously (live positions) never fire `idle`, so they become ready on the first rendered batch of positions instead (`readyWhen: 'first-positions'`).
 

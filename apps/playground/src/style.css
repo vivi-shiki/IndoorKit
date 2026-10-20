@@ -679,3 +679,100 @@ details summary {
 .clock {
   font-variant-numeric: tabular-nums;
 }
+
+/* 列表按钮只在手机端出现 */
+.panel-toggle {
+  display: none;
+}
+
+/*
+ * 手机端：地图占满舞台，左上角只留场馆名和列表按钮；
+ * 列表和抽屉点开后从底部升起，停在右下角语言按钮上方，最多占舞台的 45%。
+ */
+@media (max-width: 640px) {
+  .bar {
+    padding: 8px 12px;
+  }
+
+  .venue-name {
+    top: 12px;
+    bottom: auto;
+    left: 12px;
+    /* 让开右侧的楼层按钮 */
+    max-width: calc(100% - 88px);
+    overflow: hidden;
+    font-size: 13px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .panel-toggle {
+    position: absolute;
+    top: 52px;
+    left: 12px;
+    z-index: 1;
+    display: block;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--fg);
+    font: inherit;
+    font-size: 13px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+  }
+
+  .panel-toggle[aria-expanded="true"] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .floors {
+    top: 12px;
+    right: 12px;
+  }
+
+  .perf {
+    top: 92px;
+    left: 12px;
+  }
+
+  .panel,
+  .drawer {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: 60px;
+    z-index: 2;
+    width: auto;
+    max-height: 45%;
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .stage[data-panel-open] .panel {
+    display: block;
+  }
+
+  /* 轨迹页的列表停在播放条上方 */
+  .stage:has(.player) .panel {
+    bottom: 112px;
+  }
+
+  /* 抽屉打开时列表让位 */
+  .stage:has(.drawer:not([hidden])) .panel {
+    display: none;
+  }
+
+  .player {
+    left: 12px;
+    right: 12px;
+    bottom: 60px;
+    gap: 8px;
+    padding: 6px 8px;
+  }
+}

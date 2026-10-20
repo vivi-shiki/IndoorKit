@@ -96,6 +96,7 @@ export function setHooks(partial: Partial<ViviTestHooks> & Pick<ViviTestHooks, '
     resourceLabels: unavailable,
     styleLayerIds: unavailable,
     mapBackground: unavailable,
+    venueScreenCenter: unavailable,
     departmentIdOf: unavailable,
     highlightedDepartment: unavailable,
     departmentLayerVisible: unavailable,
