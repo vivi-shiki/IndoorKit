@@ -65,6 +65,8 @@ function lowContrast(page: Page, selectors: string[], minRatio: number) {
 
 for (const theme of ['light', 'dark'] as const) {
   test(`text on map pages is readable in the ${theme} theme`, async ({ page }) => {
+    // 一个测试依次打开所有地图页，每页最多等 30 秒就绪
+    test.setTimeout(DEMOS.length * 30_000);
     await page.addInitScript((t) => localStorage.setItem('indoorkit.theme', t), theme);
     for (const demo of DEMOS) {
       await openDemo(page, demo);

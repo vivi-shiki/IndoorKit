@@ -284,10 +284,15 @@ export async function mountTrackingPage(root: HTMLElement) {
     const p = elsewhere.find((x) => names.get(personName(x)) === 1) ?? elsewhere[0]!;
     return { id: p.id, name: personName(p), floor: floorName(floor, stream.latest(p.id)!.levelId) };
   };
+  // 只从已经画出来的点里挑：数据更新后要等下一帧才能点到
   hooks.tagScreenPoint = () => {
-    const best = [...stream.visible()].sort(
-      (a, b) => stream.history(b.id).length - stream.history(a.id).length,
-    )[0];
+    const best = map
+      .queryRenderedFeatures({ layers: ['indoor-positions'] })
+      .map((f) => ({
+        id: String(f.properties.id),
+        coord: (f.geometry as GeoJSON.Point).coordinates as [number, number],
+      }))
+      .sort((a, b) => stream.history(b.id).length - stream.history(a.id).length)[0];
     if (!best) return null;
     const { x, y } = map.project(best.coord);
     return { id: best.id, x, y, samples: stream.history(best.id).length };
