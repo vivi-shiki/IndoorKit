@@ -1,4 +1,5 @@
-import { definePlugin, type TagPosition } from '@indoorkit/core';
+import { definePlugin, type ScreenPoint } from '@indoorkit/core';
+import type { TagPosition } from '@indoorkit/rtls';
 import { floorOverlay } from './overlay';
 import { createVenueIndex } from './venue-index';
 
@@ -29,33 +30,33 @@ export interface UnitClusterApi {
   position(id: string): PlacedPosition | null;
   /** 最近一次上报里不在任何区块内的标签 */
   unplaced(): string[];
+  /** 像素 point 周围 radius 以内画出的聚合点或单个标签所在的区块；没有时为 null */
+  pick(point: ScreenPoint, radius: number): string | null;
+  /** 当前画在地图上的区块（聚合点或单个标签所在），去重 */
+  rendered(): string[];
 }
 
 export interface UnitClusterOptions {
   /** 状态从严重到轻微的顺序，决定聚合点的颜色 */
   statusOrder: readonly string[];
-  /** 状态 → 颜色；未列出的用灰色 */
-  statusColors?: Record<string, string>;
+  /** 状态 → 颜色；未列出的状态（和没有状态的标签）用灰色 */
+  statusColors: Record<string, string>;
   /** 从这个缩放级别起显示单个标签而不是聚合点 */
   pointsFromZoom?: number;
 }
 
-const DEFAULT_COLORS: Record<string, string> = {
-  offline: '#dc2626',
-  maintenance: '#ea580c',
-  running: '#16a34a',
-  idle: '#6b7280',
-};
+const GRAY = '#6b7280';
+const LAYERS = ['indoor-unit-clusters', 'indoor-unit-points'];
 
 /** 按区块聚合：同一个房间里的标签合成一个点，数字是数量，颜色是最严重的状态 */
 export function unitClusterPlugin(options: UnitClusterOptions) {
-  const colors = { ...DEFAULT_COLORS, ...options.statusColors };
+  const colors = options.statusColors;
   const colorMatch = (property: string) =>
     [
       'match',
       ['coalesce', ['get', property], ''],
       ...Object.entries(colors).flat(),
-      '#6b7280',
+      GRAY,
     ] as unknown as string;
   const zoom = options.pointsFromZoom ?? 20.5;
   const rank = (status: string) => {
@@ -189,6 +190,11 @@ export function unitClusterPlugin(options: UnitClusterOptions) {
           [...latest.values()].filter((p) => p.unitId === unitId && (!filter || filter(p))),
         position: (id) => latest.get(id) ?? null,
         unplaced: () => unplaced,
+        pick(point, radius) {
+          const hit = ctx.queryRendered(LAYERS, { point, radius })[0];
+          return hit ? String(hit.properties.unit_id) : null;
+        },
+        rendered: () => [...new Set(ctx.queryRendered(LAYERS).map((f) => String(f.properties.unit_id)))],
       };
     },
   });

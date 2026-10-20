@@ -1,15 +1,14 @@
-import 'maplibre-gl/dist/maplibre-gl.css';
-import './maplibre-worker';
+import './engine/maplibre';
 import './style.css';
 import { languageSwitcher, setPageTitle, translate } from './app-i18n';
 import { themeToggle } from './app-theme';
-import { mountAlertsPage } from './demos/alerts';
-import { mountAssetsPage } from './demos/assets';
-import { mountOccupancyPage } from './demos/occupancy';
-import { mountTrackingPage } from './demos/tracking';
-import { mountTrailPage } from './demos/trail';
 import type { MessageKey } from './i18n';
-import { setHooks, stats } from './test-hooks';
+import { mountAlertsPage } from './pages/alerts';
+import { mountAssetsPage } from './pages/assets';
+import { mountOccupancyPage } from './pages/occupancy';
+import { mountTrackingPage } from './pages/tracking';
+import { mountTrailPage } from './pages/trail';
+import { setHooks, stats } from './testing/hooks';
 
 type Unmount = () => Promise<void> | void;
 

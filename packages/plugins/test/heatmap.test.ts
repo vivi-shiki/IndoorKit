@@ -5,7 +5,10 @@ import { batch, featureCollection, IDS, openMap, tag } from './helpers';
 const MIN = 60_000;
 
 async function open() {
-  const opened = await openMap([floorPlugin, heatmapPlugin({ cellMeters: 2, windowsMinutes: [1, 5, 15], window: 5 })]);
+  const opened = await openMap([
+    floorPlugin,
+    heatmapPlugin({ cellMeters: 2, windowsMinutes: [1, 5, 15], window: 5 }),
+  ]);
   return { ...opened, heat: opened.map.plugins.heatmap };
 }
 
@@ -60,7 +63,10 @@ describe('heatmapPlugin', () => {
   });
 
   it('takes its windows from the options', async () => {
-    const opened = await openMap([floorPlugin, heatmapPlugin({ cellMeters: 2, windowsMinutes: [2, 10], window: 10 })]);
+    const opened = await openMap([
+      floorPlugin,
+      heatmapPlugin({ cellMeters: 2, windowsMinutes: [2, 10], window: 10 }),
+    ]);
     const heat = opened.map.plugins.heatmap;
     expect(heat.window()).toBe(10);
     expect(heat.windows()).toEqual([2, 10]);
@@ -78,7 +84,12 @@ describe('heatmapPlugin', () => {
   it('splits samples into groups and shows only the selected groups', async () => {
     const opened = await openMap([
       floorPlugin,
-      heatmapPlugin({ cellMeters: 2, windowsMinutes: [1, 5, 15], window: 5, groupOf: (p) => (p.id.startsWith('v') ? 'visitor' : 'staff') }),
+      heatmapPlugin({
+        cellMeters: 2,
+        windowsMinutes: [1, 5, 15],
+        window: 5,
+        groupOf: (p) => (p.id.startsWith('v') ? 'visitor' : 'staff'),
+      }),
     ]);
     const heat = opened.map.plugins.heatmap;
     heat.add(

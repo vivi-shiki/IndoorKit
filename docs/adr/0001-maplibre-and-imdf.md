@@ -10,5 +10,5 @@
 
 ## 后果
 
-- maplibre-gl 6 根据自身模块地址推算 worker 路径，打包后必须调用 `setWorkerUrl`（见 `apps/playground/src/maplibre-worker.ts`）。
+- maplibre-gl 6 根据自身模块地址推算 worker 路径，打包后必须调用 `setWorkerUrl`（见 `apps/playground/src/engine/maplibre.ts`）。
 - 核心通过 `MapLike` 接口访问地图，单元测试使用 `FakeMap`，无需 WebGL。

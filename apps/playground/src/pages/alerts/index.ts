@@ -1,57 +1,44 @@
+import { type Alarm, DEPARTMENT_RULES, subjectsOf } from '@indoorkit/hospital';
 import {
-  type Alarm,
-  alarmPlugin,
-  departmentPlugin,
   floorPlugin,
   polygonPlugin,
   popupPlugin,
   positionStreamPlugin,
+  zonePlugin,
 } from '@indoorkit/plugins';
-import { createRoster, dayTime } from '@indoorkit/rtls-simulator';
-import { i18n, translate } from '../app-i18n';
-import {
-  assetName,
-  DEPARTMENT_RULES,
-  formatClock,
-  personName,
-  placeText,
-  roleColor,
-  subjectsOf,
-  t,
-} from '../business';
+import { hospitalAlarmPlugin } from '../../adapters/alarm';
+import { createRoster, createSimProvider, SIM_INTERVAL_MS } from '../../adapters/sim';
+import { placesOf } from '../../adapters/venue';
+import { i18n, translate } from '../../app-i18n';
+import { roleColor } from '../../presentation/colors';
+import { assetName, personName, placeText, t } from '../../presentation/format';
+import { chipGroup } from '../../presentation/ui';
 import { floorName, mountMapPage } from '../map-page';
-import { createSimProvider, SIM_INTERVAL_MS } from '../sim';
-import { chipGroup, escapeHtml } from '../ui';
+import { type AlarmState, alarmItem, controls, overlays } from './view';
 
 const PEOPLE = 600;
 const ASSETS = 200;
 /** 列表只显示最新的这么多条；已确认、处理中的始终显示 */
 const MAX_SHOWN = 50;
 const LAYERS = ['department', 'fence', 'status'] as const;
-type State = 'open' | 'acknowledged' | 'resolved';
 
+/** 禁入区域告警：科室范围、自定义围栏和设备状态三类告警的实时列表与处理 */
 export async function mountAlertsPage(root: HTMLElement) {
   let decorate = (_id: string): Record<string, string> => ({});
   const page = await mountMapPage(root, {
     demo: 'alerts',
     readyWhen: 'first-positions',
     title: 'page.alerts.title',
-    controls: `
-      <span class="metric"><span data-i18n="metric.alerts"></span>: <b data-testid="alert-count">0</b></span>
-      <span class="metric"><span data-i18n="metric.unhandled"></span>: <b data-testid="unhandled-count">0</b></span>
-      <span class="chips" data-chips="layer"></span>`,
-    overlays: `
-      <aside class="panel alarm-panel">
-        <ul class="alarm-feed" data-testid="alert-list"></ul>
-      </aside>`,
+    controls,
+    overlays,
     plugins: (venue) => {
       const roster = createRoster(venue, { people: PEOPLE, assets: ASSETS });
       return [
         floorPlugin,
         polygonPlugin,
         popupPlugin,
-        departmentPlugin,
-        alarmPlugin({ subjects: subjectsOf(roster), departmentRules: DEPARTMENT_RULES }),
+        zonePlugin({ zones: placesOf(venue).hospital.zones() }),
+        hospitalAlarmPlugin({ subjects: subjectsOf(roster), departmentRules: DEPARTMENT_RULES }),
         positionStreamPlugin({
           provider: createSimProvider(venue, { people: PEOPLE, assets: ASSETS, seed: 'alerts' }),
           intervalMs: SIM_INTERVAL_MS,
@@ -62,7 +49,7 @@ export async function mountAlertsPage(root: HTMLElement) {
     },
     floor: '3F',
   });
-  const { indoor, map, venue, index, floor, hooks, cleanups } = page;
+  const { indoor, venue, index, hospital, floor, hooks, cleanups } = page;
   const { alarm, popup } = indoor.plugins;
   const roster = createRoster(venue, { people: PEOPLE, assets: ASSETS });
   const people = new Map(roster.people.map((p) => [p.id, p]));
@@ -91,7 +78,7 @@ export async function mountAlertsPage(root: HTMLElement) {
       coordinates: unitOn('3F', 'ICU', 'middle'),
       rule: 'forbid' as const,
       selector: { kinds: ['person' as const] },
-      exemptDepartments: [index.departmentByCode('icu').id],
+      exemptDepartments: [hospital.departmentByCode('icu').id],
       level: 'high' as const,
       color: '#dc2626',
     },
@@ -119,8 +106,8 @@ export async function mountAlertsPage(root: HTMLElement) {
   ];
   for (const { key, ...fence } of fences) alarm.addFence({ ...fence, label: t(key) });
 
-  const states = new Map<string, State>();
-  const stateOf = (id: string): State => states.get(id) ?? 'open';
+  const states = new Map<string, AlarmState>();
+  const stateOf = (id: string): AlarmState => states.get(id) ?? 'open';
   const subjectName = (id: string) => {
     const p = people.get(id);
     if (p) return `${personName(p)} · ${t(`role.${p.role}`)}`;
@@ -154,24 +141,18 @@ export async function mountAlertsPage(root: HTMLElement) {
       } else if (stateOf(a.id) === 'acknowledged') shown.push(a);
     }
     $('[data-testid="alert-list"]').innerHTML = shown
-      .map((a) => {
-        const state = stateOf(a.id);
-        return `<li data-testid="alarm-item" data-alarm="${a.id}" data-layer="${a.layer}" data-floor="${floorName(floor, a.levelId)}" class="${state}">
-          <div class="line">
-            <span class="level ${a.level}">${t(`level.${a.level}`)}</span>
-            <strong>${escapeHtml(kindText(a))}</strong>
-            <span class="tag" data-testid="alarm-layer">${t(`layer.${a.layer}`)}</span>
-            <span class="muted">${formatClock(dayTime(a.time), true)}</span>
-          </div>
-          <button type="button" class="link" data-testid="alarm-subject">${escapeHtml(subjectName(a.subjectId))}</button>
-          <div class="muted">${escapeHtml(where(a))}</div>
-          <div class="line">
-            <span class="state">${t(`state.${state}`)}</span>
-            ${state === 'open' ? `<button type="button" class="chip" data-action="ack">${t('action.ack')}</button>` : ''}
-            ${state !== 'resolved' ? `<button type="button" class="chip" data-action="resolve">${t('action.resolve')}</button>` : ''}
-          </div>
-        </li>`;
-      })
+      .map((a) =>
+        alarmItem(
+          a,
+          {
+            floor: floorName(floor, a.levelId),
+            kind: kindText(a),
+            subject: subjectName(a.subjectId),
+            place: where(a),
+          },
+          stateOf(a.id),
+        ),
+      )
       .join('');
     $('[data-testid="alert-count"]').textContent = String(alarm.alarms().length);
     $('[data-testid="unhandled-count"]').textContent = String(unhandled());
@@ -186,7 +167,7 @@ export async function mountAlertsPage(root: HTMLElement) {
   };
   const locate = (a: Alarm) => {
     floor.set(a.levelId);
-    map.easeTo({ center: a.coord, duration: 500 });
+    indoor.camera.focus(a.coord);
     showPopup(a);
   };
   $('[data-testid="alert-list"]').addEventListener('click', (e) => {

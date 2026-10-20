@@ -1,28 +1,19 @@
-import type { PositionBatch } from '@indoorkit/core';
 import {
   type Alarm,
   createAlarmEngine,
-  departmentPlugin,
-  floorPlugin,
-  type Sample,
-  trailPlugin,
-} from '@indoorkit/plugins';
-import { createRoster, createSimulation, dayTime, type Person } from '@indoorkit/rtls-simulator';
-import { i18n, translate } from '../app-i18n';
-import {
   DEPARTMENT_RULES,
-  departmentName,
-  formatClock,
-  formatDuration,
-  personName,
-  placeText,
-  ROLE_COLORS,
+  dayTime,
+  type Person,
   subjectsOf,
-  t,
-} from '../business';
-import { floorName, mountMapPage, radioGroup, routeParam } from '../map-page';
-import { escapeHtml } from '../ui';
-import { PEOPLE_SEED } from './tracking';
+} from '@indoorkit/hospital';
+import { floorPlugin, type Sample, trailPlugin, zonePlugin } from '@indoorkit/plugins';
+import type { PositionBatch } from '@indoorkit/rtls';
+import { createRoster, createSimulation, PEOPLE_SEED } from '../../adapters/sim';
+import { placesOf } from '../../adapters/venue';
+import { i18n, translate } from '../../app-i18n';
+import { formatClock, t } from '../../presentation/format';
+import { floorName, mountMapPage, routeParam } from '../map-page';
+import { alarmList, controls, overlays, personCard, personOptions, stopList } from './view';
 
 /**
  * 名册和实时定位页相同（同一编号是同一个人），回放模拟出的前 60 分钟。
@@ -31,50 +22,27 @@ import { PEOPLE_SEED } from './tracking';
 const LISTED = 200;
 const STEP_MS = 2000;
 const HISTORY_MS = 60 * 60_000;
-const RANGES = [15, 30, 60];
-const SPEEDS = [1, 4, 16];
 /** 每次让出主线程前推进的步数 */
 const CHUNK = 60;
 
+/** 轨迹回放：一个人前 60 分钟的轨迹、停留点和途中报警 */
 export async function mountTrailPage(root: HTMLElement) {
   const page = await mountMapPage(root, {
     demo: 'trail',
     title: 'page.trail.title',
     // 轨迹要先在页面里算出来，算完才算就绪
     readyWhen: 'manual',
-    controls: `
-      <label class="select"><span data-i18n="trail.person"></span>
-        <select data-testid="trail-person"></select></label>
-      ${radioGroup(
-        'range',
-        'trail.range',
-        RANGES.map((m) => ({ value: String(m), text: `<span data-minutes="${m}"></span>` })),
-        '60',
-      )}
-      ${radioGroup(
-        'speed',
-        'trail.speed',
-        SPEEDS.map((s) => ({ value: String(s), text: `${s}×` })),
-        '4',
-      )}`,
-    overlays: `
-      <aside class="panel" data-testid="trail-panel">
-        <p class="muted" data-testid="trail-loading" data-i18n="trail.loading"></p>
-        <div data-testid="trail-person-card"></div>
-        <h2 data-i18n="trail.stops"></h2>
-        <ul class="rows" data-testid="stop-list"></ul>
-        <h2 data-i18n="trail.alarms"></h2>
-        <ul class="rows" data-testid="trail-alarms"></ul>
-      </aside>
-      <div class="player">
-        <button type="button" class="chip" data-testid="trail-play"></button>
-        <input type="range" data-testid="trail-seek" min="0" max="0" step="1000" value="0" />
-        <span class="clock" data-testid="trail-clock"></span>
-      </div>`,
-    plugins: () =>
-      [floorPlugin, departmentPlugin, trailPlugin({ stopRadiusMeters: 4, stopMinMs: 60_000 })] as const,
+    controls,
+    overlays,
+    plugins: (venue) =>
+      [
+        floorPlugin,
+        zonePlugin({ zones: placesOf(venue).hospital.zones() }),
+        trailPlugin({ stopRadiusMeters: 4, stopMinMs: 60_000 }),
+      ] as const,
   });
-  const { indoor, map, venue, index, floor, hooks, cleanups } = page;
+  const { indoor, venue, index, hospital, floor, hooks, cleanups } = page;
+  const view = { venue, index, floor, locate: hospital.locate };
   const trail = indoor.plugins.trail;
   const roster = createRoster(venue, { people: LISTED, assets: 0 });
   const listed = roster.people;
@@ -105,7 +73,7 @@ export async function mountTrailPage(root: HTMLElement) {
   // 途中报警：把这个人的轨迹交给两层报警引擎重放一遍
   const alarmsOf = (person: Person, samples: readonly Sample[]): Alarm[] => {
     const engine = createAlarmEngine({
-      index,
+      hospital,
       subjects: subjectsOf({ people: [person], assets: [] }),
       departmentRules: DEPARTMENT_RULES,
     });
@@ -127,12 +95,7 @@ export async function mountTrailPage(root: HTMLElement) {
 
   const select = $<HTMLSelectElement>('[data-testid="trail-person"]');
   const renderOptions = () => {
-    select.innerHTML = listed
-      .map(
-        (p) =>
-          `<option value="${p.id}"${p.id === personId ? ' selected' : ''}>${p.id} ${escapeHtml(personName(p))}</option>`,
-      )
-      .join('');
+    select.innerHTML = personOptions(listed, personId);
   };
 
   const load = () => {
@@ -160,32 +123,9 @@ export async function mountTrailPage(root: HTMLElement) {
 
   const renderPanel = () => {
     const person = people.get(personId)!;
-    $('[data-testid="trail-person-card"]').innerHTML = `
-      <h2><span class="dot" style="background:${ROLE_COLORS[person.role]}"></span>${escapeHtml(personName(person))} <span class="muted">${person.id}</span></h2>
-      <p class="muted">${t(`role.${person.role}`)} · ${escapeHtml(departmentName(venue, person.departmentId))}</p>`;
-    $('[data-testid="stop-list"]').innerHTML = trail
-      .stops()
-      .map((s, i) => {
-        const where = index.locate(s.levelId, s.coord);
-        const outside = where?.departmentId !== person.departmentId;
-        return `<li><button type="button" class="row" data-testid="stop-row" data-stop="${i}">
-          <span class="name">${formatClock(dayTime(s.start))} · ${floorName(floor, s.levelId)} ${escapeHtml(placeText(index, venue, where))}${
-            outside ? ` <span class="tag warn">${t('place.outsideOwn')}</span>` : ''
-          }</span>
-          <span class="muted">${formatDuration(s.durationMs)}</span>
-        </button></li>`;
-      })
-      .join('');
-    $('[data-testid="trail-alarms"]').innerHTML = alarms.length
-      ? alarms
-          .map(
-            (a) => `<li><button type="button" class="row" data-time="${a.time}">
-              <span class="name"><span class="level ${a.level}">${t(`level.${a.level}`)}</span> ${t(`alarm.${a.kind}`)}</span>
-              <span class="muted">${formatClock(dayTime(a.time))} · ${floorName(floor, a.levelId)} ${escapeHtml(placeText(index, venue, a.unitId ? { unitId: a.unitId, departmentId: a.departmentId } : null))}</span>
-            </button></li>`,
-          )
-          .join('')
-      : `<li class="muted">${t('trail.noAlarms')}</li>`;
+    $('[data-testid="trail-person-card"]').innerHTML = personCard(view, person);
+    $('[data-testid="stop-list"]').innerHTML = stopList(view, person, trail.stops());
+    $('[data-testid="trail-alarms"]').innerHTML = alarmList(view, alarms);
   };
 
   const renderPlayer = () => {
@@ -259,7 +199,7 @@ export async function mountTrailPage(root: HTMLElement) {
     if (time === null) return;
     seekTo(time);
     const head = trail.position();
-    if (head) map.easeTo({ center: head.coord, duration: 500 });
+    if (head) indoor.camera.focus(head.coord);
   });
 
   const labelMinutes = () => {
@@ -284,10 +224,9 @@ export async function mountTrailPage(root: HTMLElement) {
   hooks.trailTime = () => trail.time();
   hooks.trailStops = () => trail.stops().map((s) => ({ start: s.start, floor: floorName(floor, s.levelId) }));
   hooks.trailHeadFloor = () => floorName(floor, trail.position()!.levelId);
-  map.once('idle', () => {
+  void indoor.idle().then(() => {
     hooks.ready = true;
   });
-  map.triggerRepaint();
 
   return page.unmount;
 }

@@ -1,11 +1,26 @@
-import { definePlugin, type GeofenceEvent, type PositionBatch } from '@indoorkit/core';
+import { definePlugin } from '@indoorkit/core';
+import type { PositionBatch } from '@indoorkit/rtls';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import Flatbush from 'flatbush';
 import type { Polygon } from 'geojson';
 import type { FloorApi } from './floor';
 import type { PolygonInput, ShapeApi } from './shapes';
 
-export type { GeofenceEvent };
+export interface GeofenceEvent {
+  type: 'enter' | 'exit';
+  fenceId: string;
+  tagId: string;
+  time: number;
+  /** 触发事件时标签所在位置 */
+  coord: [number, number];
+}
+
+declare module '@indoorkit/core' {
+  interface IndoorEvents {
+    'geofence:enter': GeofenceEvent;
+    'geofence:exit': GeofenceEvent;
+  }
+}
 
 export interface Fence {
   id: string;

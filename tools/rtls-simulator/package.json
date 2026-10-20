@@ -7,8 +7,9 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@indoorkit/core": "workspace:*",
+    "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
+    "@indoorkit/rtls": "workspace:*",
     "comlink": "^4.4.2"
   },
   "devDependencies": {

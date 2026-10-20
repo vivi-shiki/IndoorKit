@@ -1,9 +1,7 @@
-import { definePlugin, type PositionBatch, type TagPosition } from '@indoorkit/core';
+import type { PositionBatch, TagPosition } from '@indoorkit/rtls';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import type { Polygon } from 'geojson';
-import type { FloorApi } from './floor';
-import type { PolygonInput, ShapeApi } from './shapes';
-import { createVenueIndex, type VenueIndex } from './venue-index';
+import type { Hospital } from './departments';
 
 /** 报警针对的对象：人员或设备，在数据上一定属于一个科室 */
 export interface AlarmSubject {
@@ -103,11 +101,12 @@ export interface AlarmEngine {
 }
 
 export function createAlarmEngine(options: {
-  index: VenueIndex;
+  /** 判断位置所在区块和科室 */
+  hospital: Pick<Hospital, 'locate'>;
   subjects: Iterable<AlarmSubject>;
   departmentRules: readonly DepartmentRule[];
 }): AlarmEngine {
-  const { index, departmentRules } = options;
+  const { hospital, departmentRules } = options;
   const subjects = new Map([...options.subjects].map((s) => [s.id, s]));
   const fences = new Map<string, FenceRule & { polygon: Polygon }>();
   const states = new Map<string, SubjectState>();
@@ -121,7 +120,7 @@ export function createAlarmEngine(options: {
   const checkOne = (p: TagPosition, time: number, out: Alarm[]) => {
     const subject = subjects.get(p.id);
     if (!subject) return;
-    const where = index.locate(p.levelId, p.coord);
+    const where = hospital.locate(p.levelId, p.coord);
     const departmentId = where?.departmentId ?? null;
     const raise = (a: Pick<Alarm, 'layer' | 'kind' | 'ruleId' | 'level'> & { fenceId?: string }) =>
       out.push({
@@ -237,78 +236,4 @@ export function createAlarmEngine(options: {
       return out;
     },
   };
-}
-
-declare module '@indoorkit/core' {
-  interface IndoorEvents {
-    'alarm:raise': Alarm;
-  }
-}
-
-export type FenceInput = Omit<FenceRule, 'levelId'> & {
-  /** 楼层 id 或简称；省略时使用当前楼层 */
-  floor?: string;
-  /** 围栏在地图上的颜色 */
-  color?: string;
-};
-
-export interface AlarmApi {
-  addFence(input: FenceInput): string;
-  removeFence(id: string): boolean;
-  fences(): readonly FenceRule[];
-  /** 打开地图以来产生的全部报警，按时间先后 */
-  alarms(): readonly Alarm[];
-  check(batch: PositionBatch): Alarm[];
-}
-
-/** 两层报警：每次位置上报先看科室范围，再看自定义围栏；围栏用 polygon 插件画出 */
-export function alarmPlugin(options: {
-  subjects: Iterable<AlarmSubject>;
-  departmentRules: readonly DepartmentRule[];
-}) {
-  return definePlugin({
-    name: 'alarm',
-    deps: ['floor', 'polygon'],
-    setup(ctx): AlarmApi {
-      const floor = ctx.get<FloorApi>('floor');
-      const polygons = ctx.get<ShapeApi<PolygonInput>>('polygon');
-      const engine = createAlarmEngine({
-        index: createVenueIndex(ctx.venue),
-        subjects: options.subjects,
-        departmentRules: options.departmentRules,
-      });
-      const raised: Alarm[] = [];
-      const check = (batch: PositionBatch) => {
-        const alarms = engine.check(batch);
-        for (const a of alarms) {
-          raised.push(a);
-          ctx.events.emit('alarm:raise', a);
-        }
-        return alarms;
-      };
-      ctx.on('positions:update', check);
-      return {
-        addFence({ floor: ref, color, ...input }) {
-          const level = ref ? floor.resolve(ref) : floor.current();
-          engine.addFence({ ...input, levelId: level.id });
-          polygons.add({
-            id: input.id,
-            coordinates: input.coordinates,
-            floor: level.id,
-            label: input.label,
-            color,
-          });
-          return input.id;
-        },
-        removeFence(id) {
-          if (!engine.removeFence(id)) return false;
-          polygons.remove(id);
-          return true;
-        },
-        fences: engine.fences,
-        alarms: () => raised,
-        check,
-      };
-    },
-  });
 }

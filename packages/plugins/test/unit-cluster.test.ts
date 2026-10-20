@@ -12,7 +12,10 @@ const withStatus = (id: string, levelId: string, coord: [number, number], status
 });
 
 async function open() {
-  const opened = await openMap([floorPlugin, unitClusterPlugin({ statusOrder: STATUS_ORDER, statusColors: STATUS_COLORS })]);
+  const opened = await openMap([
+    floorPlugin,
+    unitClusterPlugin({ statusOrder: STATUS_ORDER, statusColors: STATUS_COLORS }),
+  ]);
   return { ...opened, clusters: opened.map.plugins['unit-cluster'] };
 }
 

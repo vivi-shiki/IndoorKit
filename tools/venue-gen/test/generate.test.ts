@@ -160,7 +160,9 @@ describe('generateVenue', () => {
       'amenity',
       'department',
     ] as const;
-    const ids = files.flatMap((f) => (archive[f] as RawCollection | undefined)?.features.map((x) => x.id) ?? []);
+    const ids = files.flatMap(
+      (f) => (archive[f] as RawCollection | undefined)?.features.map((x) => x.id) ?? [],
+    );
     expect(new Set(ids).size).toBe(ids.length);
   });
 });

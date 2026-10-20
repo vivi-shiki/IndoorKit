@@ -10,6 +10,7 @@
     "generate": "tsx src/cli.ts ../../apps/playground/public/data/sakura-hospital"
   },
   "dependencies": {
+    "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*"
   }
 }

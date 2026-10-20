@@ -31,7 +31,12 @@ describe('camera', () => {
       {
         method: 'fitBounds',
         bounds: venue.bounds,
-        options: { padding: { top: 10, bottom: 20, left: 30, right: 40 }, pitch: 45, bearing: 0, duration: 0 },
+        options: {
+          padding: { top: 10, bottom: 20, left: 30, right: 40 },
+          pitch: 45,
+          bearing: 0,
+          duration: 0,
+        },
       },
     ]);
   });

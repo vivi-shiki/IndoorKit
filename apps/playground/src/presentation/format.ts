@@ -1,76 +1,10 @@
+import { type Asset, departmentsOf, type HospitalLocation, type Person } from '@indoorkit/hospital';
 import { pickLabel, type VenueModel } from '@indoorkit/imdf';
-import type { AlarmSubject, DepartmentRule, Location, VenueIndex } from '@indoorkit/plugins';
-import {
-  ASSET_STATUSES,
-  type Asset,
-  type AssetStatus,
-  type Person,
-  ROLES,
-  type Role,
-  type Roster,
-} from '@indoorkit/rtls-simulator';
-import { i18n } from './app-i18n';
-import type { MessageKey } from './i18n';
+import type { VenueIndex } from '@indoorkit/plugins';
+import { i18n } from '../app-i18n';
+import type { MessageKey } from '../i18n';
 
-/** 地图上的角色颜色；界面上的角色色点用同一组颜色 */
-export const ROLE_COLORS: Record<Role, string> = {
-  nurse: '#2563eb',
-  doctor: '#16a34a',
-  patient: '#9333ea',
-  visitor: '#64748b',
-  caregiver: '#0d9488',
-  security: '#1f2937',
-};
-
-export const STATUS_COLORS: Record<AssetStatus, string> = {
-  running: '#16a34a',
-  idle: '#6b7280',
-  offline: '#dc2626',
-  maintenance: '#ea580c',
-};
-/** 从严重到轻微，决定区块聚合点的颜色 */
-export const STATUS_ORDER: readonly AssetStatus[] = ['offline', 'maintenance', 'running', 'idle'];
-export { ASSET_STATUSES, ROLES };
-
-export const roleColor = [
-  'match',
-  ['get', 'role'],
-  ...Object.entries(ROLE_COLORS).flat(),
-  '#2563eb',
-] as unknown as string;
-
-/**
- * 第一层科室规则：设备和患者离开本科室、访客进入探视科室以外的科室会报警；
- * 医护跨科室会诊、支援是常态，不在这一层限制。
- */
-export const DEPARTMENT_RULES: DepartmentRule[] = [
-  { id: 'asset-outside', selector: { kinds: ['asset'] }, when: 'outside-own', graceMs: 60_000, level: 'low' },
-  { id: 'asset-enter-other', selector: { kinds: ['asset'] }, when: 'enter-other', level: 'medium' },
-  {
-    id: 'patient-outside',
-    selector: { roles: ['patient'] },
-    when: 'outside-own',
-    graceMs: 30_000,
-    level: 'high',
-  },
-  { id: 'visitor-enter-other', selector: { roles: ['visitor'] }, when: 'enter-other', level: 'medium' },
-];
-
-export const subjectsOf = (roster: Roster): AlarmSubject[] => [
-  ...roster.people.map((p) => ({
-    id: p.id,
-    kind: 'person' as const,
-    role: p.role,
-    departmentId: p.departmentId,
-  })),
-  ...roster.assets.map((a) => ({
-    id: a.id,
-    kind: 'asset' as const,
-    type: a.type,
-    departmentId: a.departmentId,
-  })),
-];
-
+/** 把业务数据写成界面上的文字：翻译、名称、地点、时长和时刻 */
 export const t = (key: string, params?: Record<string, string | number>) => i18n.t(key as MessageKey, params);
 const languages = () => [i18n.locale, 'en', 'ja'];
 export const label = (labels: Record<string, string> | null | undefined) =>
@@ -81,7 +15,7 @@ export const assetName = (a: Asset) => `${a.code} · ${t(`asset.${a.type}`)}`;
 
 export function departmentName(venue: VenueModel, id: string | null) {
   if (id === null) return t('place.public');
-  return label(venue.departments.find((d) => d.id === id)?.name);
+  return label(departmentsOf(venue).find((d) => d.id === id)?.name);
 }
 
 /** 同一层同名的区块按从西到东对应的楼栋编号，供显示时区分 */
@@ -114,7 +48,7 @@ export function unitLabel(index: VenueIndex, venue: VenueModel, unitId: string) 
 }
 
 /** 区块名 + 所在科室范围；不在任何区块里时只写公共区域 */
-export function placeText(index: VenueIndex, venue: VenueModel, where: Location | null) {
+export function placeText(index: VenueIndex, venue: VenueModel, where: HospitalLocation | null) {
   if (!where) return t('place.public');
   const unit = index.unit(where.unitId);
   const unitName = unit.category === 'walkway' ? t('place.public') : unitLabel(index, venue, where.unitId);

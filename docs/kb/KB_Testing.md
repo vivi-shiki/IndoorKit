@@ -2,11 +2,11 @@
 
 ## Unit tests without WebGL
 
-`FakeMap` (`packages/core/src/testing.ts`) implements `MapLike` in memory. It fires `load` asynchronously like the real map, rejects duplicate sources, and refuses to remove a source that a layer still uses. Pass `fakeMapFactory()` as `mapFactory` to `createIndoorMap`.
+`FakeMap` (`packages/core/src/testing.ts`) implements `MapLike` in memory. It fires `load` asynchronously like the real map, rejects duplicate sources, and refuses to remove a source that a layer still uses. Pass `fakeMapFactory()` as `mapFactory` to `createIndoorMap`. It also records camera calls (`cameraCalls`) and answers `queryRenderedFeatures` for point features, so `pick` and `rendered` on plugins can be unit tested. `createManualProvider` (`@indoorkit/rtls/testing`) is a `DataProvider` that emits batches when the test calls `emit`.
 
 ## Playground test hooks
 
-Each demo calls `setHooks` (`apps/playground/src/test-hooks.ts`) and fills in what it supports; everything else throws "not available in this demo". Playwright reads them with `page.evaluate(() => window.__vivi!...)` after waiting for `window.__vivi.ready`.
+Each page calls `setHooks` (`apps/playground/src/testing/hooks.ts`) and fills in what it supports; everything else throws "not available in this demo". Playwright reads them with `page.evaluate(() => window.__vivi!...)` after waiting for `window.__vivi.ready`.
 
 | Hook | Demo | Returns |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Each demo calls `setHooks` (`apps/playground/src/test-hooks.ts`) and fills in wh
 | `fenceIds()`, `alertCount()` | alerts | fences on the map; enter/exit events so far |
 | `heatWindow()`, `heatPointCount()`, `heatLevelIds()` | occupancy | window in minutes; samples in the window; levels in the drawn data |
 
-The floor, render and style hooks are available on every map page, because `mountMapPage` (`apps/playground/src/map-page.ts`) sets them.
+The floor, render and style hooks are available on every map page, because `mountMapPage` (`apps/playground/src/pages/map-page.ts`) sets them. The ones that read the MapLibre style or rendered features live in `installMapHooks` (`apps/playground/src/testing/map-hooks.ts`), which goes through `inspect` from `@indoorkit/core/testing`; pages themselves never touch the raw map. Page hooks that need rendered features use plugin APIs instead (`positionStream.rendered()`, `unitCluster.rendered()`).
 
 `window.__viviStats` survives page changes: `activeWorkers` (simulation Workers not yet terminated), `liveMaps` (maps created by `createTrackedMap` and not yet destroyed) and `lastUnreleased` (`resources.size` after the last destroy). `tools/leak-bench/page-switch.spec.ts` checks all three are back to 0 after visiting every page.
 

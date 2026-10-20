@@ -1,0 +1,18 @@
+{
+  "name": "@indoorkit/hospital",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@indoorkit/imdf": "workspace:*",
+    "@indoorkit/rtls": "workspace:*",
+    "@turf/boolean-point-in-polygon": "^7.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@indoorkit/plugins": "workspace:*"
+  }
+}

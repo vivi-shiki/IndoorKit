@@ -9,6 +9,7 @@
 5. Styles are generated from data categories plus a theme. Colors never go into the data.
 6. Map text is provided in at least `ja` and `en`.
 7. Core logic must be testable without WebGL, using `FakeMap`.
+8. Keep the four layers apart ([ADR 0002](../adr/0002-sdk-and-domain-layers.md), checked by `test/layers.test.ts`): only `@indoorkit/core` imports maplibre-gl; SDK packages contain no hospital concepts; `domains/hospital` imports no map, SDK runtime or DOM; pages use SDK public APIs only (no raw map, no `indoor-` layer ids, no plugin casts). Code that connects the domain to SDK plugins goes in `apps/playground/src/adapters`.
 
 ## Fail loudly, but validate input
 

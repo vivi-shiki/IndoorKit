@@ -95,12 +95,14 @@ TypeScript (strict) · MapLibre GL JS · IMDF · zod · Web Worker + Comlink · 
 
 | Path | Contents |
 | --- | --- |
-| `packages/core` | Map creation, plugin system, resource tracking, events, style and theme generation |
-| `packages/imdf` | IMDF loading, validation and conversion, including departments |
-| `packages/plugins` | Floor, department, position stream, room cluster, trail, alert, cluster, geofence, heatmap, polygon, line, popup and marker plugins |
+| `packages/core` | Map engine wrapper: map creation, camera, plugin system, resource tracking, events, style and theme generation. The only package that imports MapLibre |
+| `packages/imdf` | IMDF loading, validation and conversion, with extension files for data outside the standard |
+| `packages/rtls` | Real-time positioning contract: tag positions, data providers and the `positions:update` event |
+| `packages/plugins` | Floor, zone, position stream, room cluster, trail, cluster, geofence, heatmap, polygon, line, popup and marker plugins. No hospital concepts |
+| `domains/hospital` | Hospital business logic without a map: departments (an IMDF extension), roles, devices and statuses, and the two-layer alert engine |
 | `tools/venue-gen` | Generator for the fictional hospital and its departments |
 | `tools/rtls-simulator` | Roster of people and devices, movement simulator and its Worker data provider |
-| `apps/playground` | The five pages of the live demo |
+| `apps/playground` | The five pages of the live demo: `engine/` loads MapLibre, `adapters/` connects the hospital domain and the simulator to SDK plugins, `presentation/` formats text and colors, `pages/` holds each page, `testing/` holds the test hooks |
 
 ## Run locally
 

@@ -38,14 +38,25 @@ A plugin is a `definePlugin({ name, deps, setup })` object. `setup` receives a `
 `@indoorkit/imdf` validates IMDF 1.0.0 archives with zod and turns them into a `VenueModel` the core consumes.
 
 - Use `fetchImdf` to load an archive from a URL, `validateImdf` to check it, `buildVenueModel` to convert it.
+- Use `defineImdfExtension({ file, schema, check, build })` for data outside the IMDF standard; pass the extensions to `fetchImdf`, `validateImdf` and `buildVenueModel`, and read the result from `venue.extensions[file]`. Hospital departments are one (`departmentExtension` in `@indoorkit/hospital`).
+
+#### Layers
+
+Map engine, SDK, business and pages are kept apart ([ADR 0002](../adr/0002-sdk-and-domain-layers.md), checked by `test/layers.test.ts`).
+
+- Use `indoor.camera.focus` / `indoor.camera.fit`, `indoor.project`, `indoor.idle()` / `indoor.rendered()` and the `map:click` event from pages instead of MapLibre calls.
+- Use `indoor.plugin<T>(name)` / `indoor.hasPlugin(name)` for a plugin known only by name, instead of casting `indoor.plugins`.
+- Use `ctx.queryRendered(layerIds, { point, radius })` inside a plugin to answer "what is drawn here"; plugins expose it as `pick` / `rendered` (`positionStreamPlugin`, `unitClusterPlugin`). It skips layers hidden at the current zoom.
+- Put industry logic in a domain package (`domains/hospital`): it may import `@indoorkit/imdf` and `@indoorkit/rtls` types, never the map. Connect it to plugins in `apps/playground/src/adapters` (for example `hospitalAlarmPlugin`).
 - Use `pickLabel` to choose a label by language priority, and `languageFallbacks` (core) to build that priority from a UI locale.
 
 #### Real-time data and spatial plugins
 
-Live positions come from a `DataProvider` (`packages/core/src/types.ts`). `tools/rtls-simulator` provides one that runs `createSimulation` on a timer, either on the main thread (`createSimulationProvider`) or in a Worker through Comlink (`exposeSimulation` + `createWorkerProvider`).
+Live positions come from a `DataProvider` (`packages/rtls/src/index.ts`, which also declares the `positions:update` event). `tools/rtls-simulator` provides one that runs `createSimulation` on a timer, either on the main thread (`createSimulationProvider`) or in a Worker through Comlink (`exposeSimulation` + `createWorkerProvider`).
 
-- Use `positionStreamPlugin({ provider, intervalMs })` to draw positions; it owns the provider, disposes it with the map, and re-broadcasts each batch as the `positions:update` event.
-- Use `geofencePlugin` (needs `polygon`), `heatmapPlugin` and `clusterPlugin` to consume positions; geofence and heatmap listen to `positions:update` themselves.
+- Use `positionStreamPlugin({ provider, intervalMs })` to draw positions; it owns the provider, disposes it with the map, and re-broadcasts each batch as the `positions:update` event. Pass `visible: false` when a page only needs the data (clusters, heatmap).
+- Use `zonePlugin({ zones })` to tint groups of units (departments, tenants); the zones come from the caller, for example `hospital.zones()`.
+- Use `geofencePlugin` (needs `polygon`), `heatmapPlugin({ cellMeters, windowsMinutes, window })` and `clusterPlugin` to consume positions; geofence and heatmap listen to `positions:update` themselves. `unitClusterPlugin` takes its `statusOrder` and `statusColors` from the caller.
 - `heatmapPlugin` follows the Mapbox "Create a heatmap layer" example: the `indoor-heat` heatmap layer (zoom-scaled radius and intensity) fades out between zoom 19 and 21, and the `indoor-heat-point` circle layer on the same source, colored and sized by cell weight with the same palette, fades in from 19 to 20. A fixed-pixel heatmap over 2 m grid cells shows the grid as separate dots once zoomed in, which is why the display switches.
 - Use `floorOverlay` (`packages/plugins/src/overlay.ts`) for any plugin layer that follows the current floor, and `localProjection` / `distanceMeters` for metric math on lng/lat. Never call `setData` or `setFilter` on a plugin GeoJSON source yourself: `floorOverlay` filters by floor in the data and keeps at most one `setData` in flight (the next one waits for `sourcedata` with `isSourceLoaded`). MapLibre does not wait for or cancel a running reload of the same tile, and overlapping parses of different data make `queryRenderedFeatures` throw "feature index out of bounds" (`apps/playground/e2e/streaming-query.spec.ts`).
 - Use `clusterPoints` for greedy radius clustering with a KDBush index; `clusterPlugin` runs it on every `positions:update` for the current floor.
@@ -54,7 +65,7 @@ Live positions come from a `DataProvider` (`packages/core/src/types.ts`). `tools
 #### Testing
 
 - Use `FakeMap` / `fakeMapFactory` (`packages/core/src/testing.ts`) for unit tests of core and plugins; they need no WebGL.
-- Use `window.__vivi` (`apps/playground/src/test-hooks.ts`) to read playground state from Playwright tests and when an agent checks a demo.
+- Use `window.__vivi` (`apps/playground/src/testing/hooks.ts`) to read playground state from Playwright tests and when an agent checks a demo.
 - Use `tools/leak-bench` for heap-growth regressions across create/destroy cycles.
 
 [API Explanation](./KB_Testing.md)
@@ -69,4 +80,4 @@ The map is registered first so it is released last; sources are registered befor
 
 #### Bundling the MapLibre worker
 
-maplibre-gl 6 derives its worker URL from its own module URL, which breaks after bundling. The playground sets it explicitly in `apps/playground/src/maplibre-worker.ts`. See [ADR 0001](../adr/0001-maplibre-and-imdf.md).
+maplibre-gl 6 derives its worker URL from its own module URL, which breaks after bundling. The playground sets it explicitly in `apps/playground/src/engine/maplibre.ts`. See [ADR 0001](../adr/0001-maplibre-and-imdf.md).

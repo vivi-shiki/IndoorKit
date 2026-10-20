@@ -13,6 +13,7 @@ function sourceFiles(dir: string): string[] {
   const abs = join(ROOT, dir);
   if (!existsSync(abs)) return [];
   return readdirSync(abs).flatMap((name) => {
+    if (name === 'node_modules' || name === 'dist') return [];
     const path = join(abs, name);
     if (statSync(path).isDirectory()) return sourceFiles(relative(ROOT, path));
     return /\.ts$/.test(name) ? [relative(ROOT, path)] : [];
@@ -31,7 +32,11 @@ function imports(file: string): string[] {
 
 /** 违反规则的「文件: 模块」列表，方便失败时直接看到位置 */
 function offending(files: string[], bad: (module: string, file: string) => boolean) {
-  return files.flatMap((f) => imports(f).filter((m) => bad(m, f)).map((m) => `${f}: ${m}`));
+  return files.flatMap((f) =>
+    imports(f)
+      .filter((m) => bad(m, f))
+      .map((m) => `${f}: ${m}`),
+  );
 }
 
 const packages = sourceFiles('packages').filter((f) => f.includes('/src/'));
@@ -140,9 +145,9 @@ describe('page layer', () => {
   });
 
   it('uses only SDK public APIs', () => {
-    expect(
-      offending(pages, (m) => m.startsWith('maplibre-gl') || m === '@indoorkit/core/testing'),
-    ).toEqual([]);
+    expect(offending(pages, (m) => m.startsWith('maplibre-gl') || m === '@indoorkit/core/testing')).toEqual(
+      [],
+    );
     const hits = pages.flatMap((f) => {
       const text = read(f);
       return [

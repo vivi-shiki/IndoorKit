@@ -42,7 +42,14 @@ describe('hospitalAlarmPlugin', () => {
     });
     const raised: string[] = [];
     map.events.on('alarm:raise', (a) => raised.push(`${a.subjectId}:${a.kind}`));
-    map.plugins.alarm.addFence({ id: 'ward', label: 'Ward', coordinates: ring, rule: 'forbid', level: 'high', floor: '1F' });
+    map.plugins.alarm.addFence({
+      id: 'ward',
+      label: 'Ward',
+      coordinates: ring,
+      rule: 'forbid',
+      level: 'high',
+      floor: '1F',
+    });
     expect(map.plugins.polygon.count()).toBe(1);
     expect(map.plugins.alarm.fences().map((f) => f.id)).toEqual(['ward']);
 
@@ -62,7 +69,11 @@ describe('hospitalAlarmPlugin', () => {
         container: 'map',
         venue: buildVenueModel(makeArchive()),
         mapFactory: fakeMapFactory(),
-        plugins: [floorPlugin, polygonPlugin, hospitalAlarmPlugin({ subjects, departmentRules: [] })] as const,
+        plugins: [
+          floorPlugin,
+          polygonPlugin,
+          hospitalAlarmPlugin({ subjects, departmentRules: [] }),
+        ] as const,
       }),
     ).rejects.toThrow(/department extension/);
   });

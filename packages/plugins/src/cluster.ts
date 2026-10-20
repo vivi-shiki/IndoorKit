@@ -1,4 +1,5 @@
-import { definePlugin, type TagPosition } from '@indoorkit/core';
+import { definePlugin } from '@indoorkit/core';
+import type { TagPosition } from '@indoorkit/rtls';
 import KDBush from 'kdbush';
 import { distanceMeters, floorOverlay, localProjection } from './overlay';
 

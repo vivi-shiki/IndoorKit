@@ -70,3 +70,25 @@ Checked against the design document (step 2 of the request):
 Before the change: `pnpm exec vitest run` → 12 files fail to import (`@indoorkit/hospital`, `@indoorkit/rtls`, `defineImdfExtension`, `zonePlugin` … do not exist) and 33 tests fail (layer checks, camera, heatmap windows, cluster colours, venue index). Baseline e2e on `5fc0a0b`: all 82 pass.
 
 # PROPOSALS
+
+- No.1 Four layers as planned in the design document [CONFIRMED]
+
+## No.1 Four layers as planned in the design document
+
+### CODE CHANGE
+
+- `packages/imdf`: `defineImdfExtension` and `extensions` parameters on `validateImdf`, `buildVenueModel`, `fetchImdf`; data lands in `venue.extensions[file]`. `departments`, `department_id`, `departmentFeature` removed from the standard model.
+- `packages/rtls` (new): `TagPosition`, `PositionBatch`, `DataProvider`, the `positions:update` event and `createManualProvider` (`@indoorkit/rtls/testing`), all moved out of core.
+- `packages/core`: `MapLike` gains the camera and query methods; `indoor.camera.focus` / `fit`, `indoor.project`, `indoor.idle()` / `rendered()`, `indoor.plugin(name)` / `hasPlugin`, the `map:click` event, `ctx.queryRendered`, the `glyphs` option. `FakeMap` and `inspect(indoor)` in `@indoorkit/core/testing`.
+- `packages/plugins`: `departmentPlugin` → `zonePlugin({ zones })`; `alarmPlugin` and the alarm engine moved to the domain; `unitClusterPlugin` requires `statusColors`; `heatmapPlugin` takes `windowsMinutes` and `window`; `positionStreamPlugin` gets `visible`, `setVisible`, `pick`, `rendered`; `unitClusterPlugin` gets `pick`, `rendered`; `venueIndex.locate` returns `{ unitId }` only. Geofence events are declared in `geofence.ts`.
+- `domains/hospital` (new, `@indoorkit/hospital`): `departmentExtension`, `createHospital` (department lookups, `locate`, `zones`), the roster model moved from the simulator, `DEPARTMENT_RULES` / `subjectsOf` moved from the app, the alarm engine (takes `hospital.locate` instead of the venue index).
+- `tools/rtls-simulator` and `tools/venue-gen` read departments through `departmentsOf`; venue-gen writes `department.json` as an extension file.
+- `apps/playground/src`: `engine/maplibre.ts` (CSS + worker URL), `adapters/` (`hospitalAlarmPlugin`, `loadVenue` / `placesOf`, simulator provider and roster), `presentation/` (colors, formatting, UI helpers, perf overlay), `pages/map-page.ts` and `pages/<page>/{index,view}.ts`, `testing/hooks.ts` and `testing/map-hooks.ts` (the hooks that read the MapLibre style, through `inspect`). Pages use only `indoor.camera`, `indoor.project`, `map:click`, plugin `pick` / `rendered` / `setVisible`.
+- `test/layers.test.ts`: the file walker skips `node_modules` and `dist` (workspace links made it scan dependencies).
+- Docs: ADR 0002, AGENTS.md layout, coding rule 8, KB index and testing page, README project structure in three languages.
+
+### CONFIRMED
+
+- `pnpm verify`: lint, typecheck and 287 unit tests (37 files) pass, including every boundary check in `test/layers.test.ts`. `pnpm build` passes and writes `department.json` next to the IMDF files.
+- `pnpm e2e` (full run, 2 workers): 82 passed, 2 failed on time in this sandbox: `streaming-query.spec.ts` tracking (61 queries in 15 s, needs > 100) and `titles.spec.ts` "no title mentions playground or demo" (30 s timeout while opening five live pages in a row). Both are timing limits under parallel load, not behavior: the same streaming-query test failed the same way on the unmodified baseline, and the titles test took 29.5 s there. Run alone, both pass 5/5 (`--repeat-each=5`, titles spec 40/40). CI is the final check.
+- Success criteria: each layer has its own directory and package (map engine only in `packages/core` and `apps/playground/src/engine`; SDK in `packages/*` without hospital words; business in `domains/hospital`; pages in `apps/playground/src/pages/<page>/{index,view}.ts`), and the docs describe them.

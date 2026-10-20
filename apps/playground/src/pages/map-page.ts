@@ -6,14 +6,15 @@ import {
   languageFallbacks,
   themes,
 } from '@indoorkit/core';
-import { pickLabel, type VenueModel } from '@indoorkit/imdf';
-import { createVenueIndex, type DepartmentApi, type FloorApi } from '@indoorkit/plugins';
-import type { Map as MapLibreMap } from 'maplibre-gl';
-import { i18n, setPageTitle, translate } from './app-i18n';
-import { appTheme } from './app-theme';
-import type { MessageKey } from './i18n';
-import { setHooks, stats, type ViviTestHooks } from './test-hooks';
-import { loadVenue } from './venue';
+import type { HospitalVenue } from '@indoorkit/hospital';
+import { pickLabel } from '@indoorkit/imdf';
+import type { FloorApi, ZoneApi } from '@indoorkit/plugins';
+import { loadVenue, placesOf } from '../adapters/venue';
+import { i18n, setPageTitle, translate } from '../app-i18n';
+import { appTheme } from '../app-theme';
+import type { MessageKey } from '../i18n';
+import { setHooks, stats, type ViviTestHooks } from '../testing/hooks';
+import { installMapHooks } from '../testing/map-hooks';
 
 /** 创建地图并计入全局统计；销毁后记录未释放资源数 */
 export async function createTrackedMap<const P extends readonly AnyPlugin[]>(
@@ -48,7 +49,7 @@ export interface MapPageOptions<P extends readonly AnyPlugin[]> {
   controls: string;
   /** 地图上方的叠加面板（HTML） */
   overlays?: string;
-  plugins: (venue: VenueModel) => P;
+  plugins: (venue: HospitalVenue) => P;
   /** 打开时所在楼层 */
   floor?: string;
   /**
@@ -106,23 +107,20 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
     venue,
     plugins: options.plugins(venue),
   });
-  const map = indoor.map as unknown as MapLibreMap;
-  const floor = (indoor.plugins as Record<string, unknown>).floor as FloorApi;
+  const floor = indoor.plugin<FloorApi>('floor');
   if (options.floor) floor.set(options.floor);
   // 场馆放在面板和按钮之外的空白里，留白按实际布局计算
   if (panel && toggle) {
     const shown = (el: HTMLElement) => getComputedStyle(el).display !== 'none';
     const stageBox = stage.getBoundingClientRect();
-    map.fitBounds(venue.bounds, {
+    indoor.camera.fit(venue.bounds, {
       padding: {
         top: shown(toggle) ? toggle.getBoundingClientRect().bottom - stageBox.top + 16 : 48,
         bottom: 72,
         left: shown(panel) ? panel.getBoundingClientRect().right - stageBox.left + 16 : 24,
         right: 88,
       },
-      pitch: map.getPitch(),
-      bearing: map.getBearing(),
-      duration: 0,
+      durationMs: 0,
     });
   }
 
@@ -153,41 +151,17 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   renderFloors();
   indoor.events.on('floor:change', renderFloors);
 
-  const index = createVenueIndex(venue);
-  const department = (indoor.plugins as Record<string, unknown>).department as DepartmentApi | undefined;
-  if (department) {
-    hooks.departmentIdOf = (code) => index.departmentByCode(code).id;
-    hooks.highlightedDepartment = () => department.highlighted();
-    hooks.departmentLayerVisible = () => department.visible();
+  // 科室范围由医院业务给出，地图上用 SDK 的区域插件画
+  const { index, hospital } = placesOf(venue);
+  if (indoor.hasPlugin('zone')) {
+    const zone = indoor.plugin<ZoneApi>('zone');
+    hooks.departmentIdOf = (code) => hospital.departmentByCode(code).id;
+    hooks.highlightedDepartment = () => zone.highlighted();
+    hooks.departmentLayerVisible = () => zone.visible();
   }
-
-  // queryRenderedFeatures 不看图层的 minzoom / maxzoom：刚缩放时还会返回保留着的其他级别瓦片里的要素，
-  // 而绘制时会跳过当前缩放下隐藏的图层，所以这里按绘制的规则先判断一次
-  const rendered = (layerId: string) =>
-    map.getLayer(layerId)!.isHidden(map.getZoom()) ? [] : map.queryRenderedFeatures({ layers: [layerId] });
   hooks.floor = () => floor.current().shortName.en ?? '';
   hooks.levelIdOf = (short) => floor.resolve(short).id;
-  hooks.renderedLevelIds = (layerId) =>
-    [...new Set(rendered(layerId).map((f) => String(f.properties.level_id)))].sort();
-  hooks.renderedCount = (layerId) => new Set(rendered(layerId).map((f) => String(f.properties.id))).size;
-  hooks.labelLanguage = () => {
-    const field = map.getLayoutProperty('indoor-labels', 'text-field') as [string, [string, string]];
-    return field[1][1].replace('label_', '');
-  };
-  hooks.resourceLabels = () => indoor.resources.labels();
-  hooks.styleLayerIds = () => map.getStyle().layers.map((layer) => layer.id);
-  hooks.mapBackground = () => String(map.getPaintProperty('background', 'background-color'));
-  hooks.zoom = () => map.getZoom();
-  // 不返回 jumpTo 的结果：那是整个 Map 对象，page.evaluate 会去序列化它
-  hooks.setZoom = (zoom) => {
-    map.jumpTo({ zoom });
-  };
-  hooks.venueScreenCenter = () => {
-    const [[west, south], [east, north]] = venue.bounds;
-    const point = map.project([(west + east) / 2, (south + north) / 2]);
-    const box = map.getContainer().getBoundingClientRect();
-    return { x: box.left + point.x, y: box.top + point.y };
-  };
+  installMapHooks(indoor, venue, hooks);
 
   const ready = () => {
     hooks.ready = true;
@@ -195,18 +169,18 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   if (options.readyWhen === 'first-positions') {
     const off = indoor.events.on('positions:update', () => {
       off();
-      map.once('render', ready);
+      void indoor.rendered().then(ready);
     });
   } else if (options.readyWhen !== 'manual') {
-    map.once('idle', ready);
+    void indoor.idle().then(ready);
   }
 
   return {
     indoor,
-    map,
     floor,
     venue,
     index,
+    hospital,
     hooks,
     cleanups,
     unmount: async () => {

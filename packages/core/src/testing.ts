@@ -1,5 +1,19 @@
-import type { FilterSpecification, LayerSpecification, SourceSpecification } from 'maplibre-gl';
-import type { DataProvider, MapFactory, MapLike, MapListener, PositionBatch } from './types';
+import type { Feature, FeatureCollection, Point } from 'geojson';
+import type {
+  FilterSpecification,
+  LayerSpecification,
+  Map as MapLibreMap,
+  SourceSpecification,
+} from 'maplibre-gl';
+import type { IndoorMap } from './create-indoor-map';
+import type {
+  AnyPlugin,
+  MapFactory,
+  MapFactoryOptions,
+  MapLike,
+  MapListener,
+  RenderedFeature,
+} from './types';
 
 /** 不依赖 WebGL 的 MapLike 实现，用于单元测试 */
 export class FakeMap implements MapLike {
@@ -21,8 +35,21 @@ export class FakeMap implements MapLike {
    * 直到 finishSourceLoad，用来模拟真实地图在 Worker 里重新切瓦片的那段时间。
    */
   holdSourceLoads = false;
+  /** 相机调用记录 */
+  cameraCalls: { method: 'easeTo' | 'fitBounds'; bounds?: unknown; options: unknown }[] = [];
+  /** triggerRepaint 被调用的次数 */
+  repaints = 0;
+  #zoom: number;
+  #pitch: number;
+  #bearing: number;
 
-  constructor(baseLayers: LayerSpecification[] = []) {
+  constructor(
+    baseLayers: LayerSpecification[] = [],
+    view: { zoom?: number; pitch?: number; bearing?: number } = {},
+  ) {
+    this.#zoom = view.zoom ?? 18;
+    this.#pitch = view.pitch ?? 0;
+    this.#bearing = view.bearing ?? 0;
     for (const layer of baseLayers) {
       this.#basePaint.set(layer.id, { ...('paint' in layer ? layer.paint : {}) });
     }
@@ -122,6 +149,53 @@ export class FakeMap implements MapLike {
   setProjectionOffset(x: number, y: number) {
     this.#offset = { x, y };
   }
+  /**
+   * 点要素按 project 投影后落在 geometry 范围内的算命中；隐藏（visibility none）的图层不返回。
+   * 与真实地图一样不看图层的 minzoom / maxzoom。
+   */
+  queryRenderedFeatures(
+    geometry: [[number, number], [number, number]] | undefined,
+    options: { layers: string[] },
+  ): RenderedFeature[] {
+    const out: RenderedFeature[] = [];
+    for (const id of options.layers) {
+      const layer = this.#layers.get(id);
+      if (!layer) throw new Error(`layer "${id}" does not exist`);
+      if (this.getLayoutProperty(id, 'visibility') === 'none' || !('source' in layer)) continue;
+      const data = this.#sources.get(layer.source as string)?.data as FeatureCollection | undefined;
+      for (const f of (data?.features ?? []) as Feature[]) {
+        if (f.geometry.type !== 'Point') continue;
+        const { x, y } = this.project((f.geometry as Point).coordinates as [number, number]);
+        if (geometry) {
+          const [[x0, y0], [x1, y1]] = geometry;
+          if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+        }
+        out.push({ geometry: f.geometry, properties: { ...f.properties }, layer: { id } });
+      }
+    }
+    return out;
+  }
+  easeTo(options: { center: [number, number]; duration: number }) {
+    this.cameraCalls.push({ method: 'easeTo', options });
+  }
+  fitBounds(bounds: [[number, number], [number, number]], options: unknown) {
+    this.cameraCalls.push({ method: 'fitBounds', bounds, options });
+  }
+  getZoom() {
+    return this.#zoom;
+  }
+  setZoom(zoom: number) {
+    this.#zoom = zoom;
+  }
+  getPitch() {
+    return this.#pitch;
+  }
+  getBearing() {
+    return this.#bearing;
+  }
+  triggerRepaint() {
+    this.repaints++;
+  }
   getContainer() {
     this.#container ??= document.createElement('div');
     return this.#container;
@@ -165,50 +239,33 @@ export class FakeMap implements MapLike {
   }
 }
 
-export function fakeMapFactory(onCreate?: (map: FakeMap) => void): MapFactory {
+export function fakeMapFactory(onCreate?: (map: FakeMap, options: MapFactoryOptions) => void): MapFactory {
   return (options) => {
-    const map = new FakeMap(options.style.layers);
-    onCreate?.(map);
+    const map = new FakeMap(options.style.layers, options);
+    onCreate?.(map, options);
     return map;
   };
 }
 
-/** 手动推送数据的 DataProvider，记录生命周期，便于测试 */
-export function createManualProvider() {
-  const listeners = new Set<(batch: PositionBatch) => void>();
-  const state = { started: false, disposed: false };
-  const provider: DataProvider & {
-    readonly started: boolean;
-    readonly disposed: boolean;
-    emit(batch: PositionBatch): void;
-    listenerCount(): number;
-  } = {
-    get started() {
-      return state.started;
+/**
+ * 测试钩子用的只读视图：直接读真实 MapLibre 地图的样式和画出的要素。
+ * 只给测试工具用，业务代码通过 SDK 的公开接口操作地图。
+ */
+export function inspect(indoor: IndoorMap<readonly AnyPlugin[]>) {
+  const map = indoor.map as unknown as MapLibreMap;
+  // queryRenderedFeatures 不看图层的 minzoom / maxzoom：刚缩放时还会返回保留着的其他级别瓦片里的要素，
+  // 而绘制时会跳过当前缩放下隐藏的图层，所以这里按绘制的规则先判断一次
+  const rendered = (layerId: string) =>
+    map.getLayer(layerId)!.isHidden(map.getZoom()) ? [] : map.queryRenderedFeatures({ layers: [layerId] });
+  return {
+    rendered,
+    styleLayerIds: () => map.getStyle().layers.map((layer) => layer.id),
+    paint: (layerId: string, name: string) => map.getPaintProperty(layerId, name as never) as unknown,
+    layout: (layerId: string, name: string) => map.getLayoutProperty(layerId, name as never) as unknown,
+    zoom: () => map.getZoom(),
+    setZoom(zoom: number) {
+      map.jumpTo({ zoom });
     },
-    get disposed() {
-      return state.disposed;
-    },
-    start() {
-      if (state.disposed) throw new Error('provider is disposed');
-      state.started = true;
-    },
-    stop() {
-      state.started = false;
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    dispose() {
-      state.started = false;
-      state.disposed = true;
-      listeners.clear();
-    },
-    emit(batch) {
-      for (const l of [...listeners]) l(batch);
-    },
-    listenerCount: () => listeners.size,
+    container: () => map.getContainer(),
   };
-  return provider;
 }

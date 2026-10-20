@@ -1,5 +1,6 @@
 import type { Feature, FeatureCollection, Geometry, LineString, MultiPolygon, Point, Polygon } from 'geojson';
-import { archiveSchemas, IMDF_FILES, type ImdfFileName, OPTIONAL_FILES, REQUIRED_FILES } from './schema';
+import type { z } from 'zod';
+import { archiveSchemas, IMDF_FILES, OPTIONAL_FILES, REQUIRED_FILES } from './schema';
 
 export * from './schema';
 
@@ -29,19 +30,58 @@ export interface ImdfArchive {
   opening: RawCollection;
   fixture?: RawCollection;
   amenity?: RawCollection;
-  department?: RawCollection;
+  /** 扩展声明的额外文件 */
+  [file: string]: unknown;
 }
 
 export interface ValidationIssue {
-  file: ImdfFileName;
+  /** IMDF 文件名或扩展的文件名 */
+  file: string;
   path: string;
   message: string;
 }
 
+/**
+ * IMDF 扩展：标准之外的一个文件（如某个行业的分区表）。
+ * 扩展自带 zod 结构、与标准要素之间的引用检查，以及转换到 `venue.extensions[file]` 的数据。
+ */
+export interface ImdfExtension<F extends string = string, T = unknown> {
+  file: F;
+  /** 整个文件（FeatureCollection）的结构 */
+  schema: z.ZodType;
+  /** 结构通过后再做的引用检查 */
+  check?(collection: RawCollection, archive: ImdfArchive): { path: string; message: string }[];
+  build(collection: RawCollection): T;
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: 扩展数据类型由各扩展推导
+export type AnyImdfExtension = ImdfExtension<string, any>;
+
+/** 扩展文件名 → 扩展转换出的数据 */
+export type ExtensionData<E extends readonly AnyImdfExtension[]> = {
+  [K in E[number] as K['file']]: ReturnType<K['build']>;
+};
+
+export function defineImdfExtension<F extends string, T>(
+  extension: ImdfExtension<F, T>,
+): ImdfExtension<F, T> {
+  if ((IMDF_FILES as readonly string[]).includes(extension.file)) {
+    throw new Error(`extension file "${extension.file}" is a standard IMDF file`);
+  }
+  return extension;
+}
+
+const EMPTY: RawCollection = { type: 'FeatureCollection', features: [] };
+const extensionFile = (archive: Record<string, unknown>, file: string) =>
+  (archive[file] as RawCollection | undefined) ?? EMPTY;
+
 export type ValidationResult = { ok: true; archive: ImdfArchive } | { ok: false; issues: ValidationIssue[] };
 
-/** 按 IMDF 规范校验结构，并检查要素之间的引用与 id 唯一性 */
-export function validateImdf(input: unknown): ValidationResult {
+/**
+ * 按 IMDF 规范校验结构，并检查要素之间的引用与 id 唯一性。
+ * 扩展文件按各自的结构和引用检查校验；没有扩展声明的文件不看。
+ */
+export function validateImdf(input: unknown, extensions: readonly AnyImdfExtension[] = []): ValidationResult {
   const issues: ValidationIssue[] = [];
   const source = (input ?? {}) as Record<string, unknown>;
 
@@ -60,13 +100,21 @@ export function validateImdf(input: unknown): ValidationResult {
       }
     }
   }
+  for (const ext of extensions) {
+    const parsed = ext.schema.safeParse(extensionFile(source, ext.file));
+    if (!parsed.success) {
+      for (const issue of parsed.error.issues) {
+        issues.push({ file: ext.file, path: issue.path.join('.'), message: issue.message });
+      }
+    }
+  }
   if (issues.length > 0) return { ok: false, issues };
 
   const archive = source as unknown as ImdfArchive;
-  const seen = new Map<string, ImdfFileName>();
-  for (const file of IMDF_FILES) {
-    if (file === 'manifest') continue;
-    for (const f of archive[file]?.features ?? []) {
+  const seen = new Map<string, string>();
+  const featureFiles = [...IMDF_FILES.filter((f) => f !== 'manifest'), ...extensions.map((e) => e.file)];
+  for (const file of featureFiles) {
+    for (const f of extensionFile(archive, file).features) {
       const previous = seen.get(f.id);
       if (previous) issues.push({ file, path: f.id, message: `duplicate id (also in ${previous})` });
       else seen.set(f.id, file);
@@ -97,14 +145,9 @@ export function validateImdf(input: unknown): ValidationResult {
     }
   }
 
-  const owners = new Map<string, string>();
-  for (const d of archive.department?.features ?? []) {
-    for (const id of d.properties.unit_ids as string[]) {
-      if (!unitIds.has(id)) issues.push({ file: 'department', path: d.id, message: `unknown unit ${id}` });
-      const owner = owners.get(id);
-      if (owner)
-        issues.push({ file: 'department', path: d.id, message: `unit ${id} already belongs to ${owner}` });
-      else owners.set(id, d.id);
+  for (const ext of extensions) {
+    for (const issue of ext.check?.(extensionFile(archive, ext.file), archive) ?? []) {
+      issues.push({ file: ext.file, ...issue });
     }
   }
 
@@ -134,29 +177,19 @@ export interface IndoorProperties {
   id: string;
   level_id: string;
   category: string;
-  /** 区块所属科室；公共区域没有 */
-  department_id?: string;
   [label: `label_${string}`]: string;
 }
 
 export type IndoorCollection<G extends Geometry = Geometry> = FeatureCollection<G, IndoorProperties>;
 
-/** 科室：一组区块，物理范围是这些区块的并集 */
-export interface DepartmentModel {
-  id: string;
-  code: string;
-  name: LabelMap;
-  unitIds: string[];
-}
-
-export interface VenueModel {
+/** X：扩展文件名 → 扩展数据，见 ImdfExtension */
+export interface VenueModel<X extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
   name: LabelMap;
   center: [number, number];
   bounds: [[number, number], [number, number]];
   buildings: { id: string; name: LabelMap }[];
   levels: LevelModel[];
-  departments: DepartmentModel[];
   features: {
     levels: IndoorCollection<Polygon | MultiPolygon>;
     units: IndoorCollection<Polygon | MultiPolygon>;
@@ -164,6 +197,7 @@ export interface VenueModel {
     openings: IndoorCollection<LineString>;
     amenities: IndoorCollection<Point>;
   };
+  extensions: X;
 }
 
 function flatten(f: RawFeature, levelId: string): Feature<Geometry, IndoorProperties> {
@@ -189,9 +223,12 @@ function extendBounds(bounds: [number, number, number, number], coords: unknown)
   for (const c of coords as unknown[]) extendBounds(bounds, c);
 }
 
-/** 校验并转换为渲染和插件使用的内部模型 */
-export function buildVenueModel(input: ImdfArchive): VenueModel {
-  const result = validateImdf(input);
+/** 校验并转换为渲染和插件使用的内部模型；扩展数据放在 extensions 下 */
+export function buildVenueModel<const E extends readonly AnyImdfExtension[] = []>(
+  input: ImdfArchive,
+  extensions?: E,
+): VenueModel<ExtensionData<E>> {
+  const result = validateImdf(input, extensions);
   if (!result.ok) {
     const summary = result.issues
       .slice(0, 3)
@@ -211,14 +248,6 @@ export function buildVenueModel(input: ImdfArchive): VenueModel {
     }))
     .sort((a, b) => a.ordinal - b.ordinal);
 
-  const departments = (archive.department?.features ?? []).map<DepartmentModel>((d) => ({
-    id: d.id,
-    code: d.properties.code,
-    name: d.properties.name,
-    unitIds: d.properties.unit_ids,
-  }));
-  const departmentOf = new Map(departments.flatMap((d) => d.unitIds.map((id) => [id, d.id] as const)));
-
   const bounds: [number, number, number, number] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const l of archive.level.features) extendBounds(bounds, (l.geometry as Polygon).coordinates);
   extendBounds(bounds, (venue.geometry as Polygon).coordinates);
@@ -233,17 +262,9 @@ export function buildVenueModel(input: ImdfArchive): VenueModel {
     ],
     buildings: archive.building.features.map((b) => ({ id: b.id, name: b.properties.name ?? {} })),
     levels,
-    departments,
     features: {
       levels: collect(archive.level.features.map((l) => flatten(l, l.id))),
-      units: collect(
-        archive.unit.features.map((u) => {
-          const f = flatten(u, u.properties.level_id);
-          const department = departmentOf.get(u.id);
-          if (department) f.properties.department_id = department;
-          return f;
-        }),
-      ),
+      units: collect(archive.unit.features.map((u) => flatten(u, u.properties.level_id))),
       fixtures: collect((archive.fixture?.features ?? []).map((x) => flatten(x, x.properties.level_id))),
       openings: collect(archive.opening.features.map((o) => flatten(o, o.properties.level_id))),
       amenities: collect(
@@ -253,17 +274,25 @@ export function buildVenueModel(input: ImdfArchive): VenueModel {
         }),
       ),
     },
+    extensions: Object.fromEntries(
+      (extensions ?? []).map((ext) => [ext.file, ext.build(extensionFile(archive, ext.file))]),
+    ) as ExtensionData<E>,
   };
 }
 
-/** 从 `${baseUrl}/<file>.json` 读取 IMDF 目录；可选文件缺失时视为空 */
-export async function fetchImdf(baseUrl: string, fetchFn: typeof fetch = fetch): Promise<ImdfArchive> {
+/** 从 `${baseUrl}/<file>.json` 读取 IMDF 目录和扩展文件；可选文件、扩展文件缺失时视为空 */
+export async function fetchImdf(
+  baseUrl: string,
+  fetchFn: typeof fetch = fetch,
+  extensions: readonly AnyImdfExtension[] = [],
+): Promise<ImdfArchive> {
   const base = baseUrl.replace(/\/$/, '');
+  const optional = [...OPTIONAL_FILES, ...extensions.map((e) => e.file)] as readonly string[];
   const entries = await Promise.all(
-    IMDF_FILES.map(async (file) => {
+    [...IMDF_FILES, ...extensions.map((e) => e.file)].map(async (file) => {
       const res = await fetchFn(`${base}/${file}.json`);
       if (!res.ok) {
-        if ((OPTIONAL_FILES as readonly string[]).includes(file)) {
+        if (optional.includes(file)) {
           return [file, { type: 'FeatureCollection', features: [] }] as const;
         }
         throw new Error(`failed to load ${file}.json (${res.status})`);

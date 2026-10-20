@@ -95,12 +95,14 @@ TypeScript（strict）· MapLibre GL JS · IMDF · zod · Web Worker + Comlink �
 
 | 路径 | 内容 |
 | --- | --- |
-| `packages/core` | 地图创建、插件系统、资源登记、事件、样式与主题生成 |
-| `packages/imdf` | IMDF 读取、校验与转换，包括科室 |
-| `packages/plugins` | 楼层、科室、实时位置、房间聚合、轨迹、告警、聚合、电子围栏、热力图、多边形、线、弹窗、标记插件 |
+| `packages/core` | 地图引擎封装：地图创建、镜头、插件系统、资源登记、事件、样式与主题生成。唯一引入 MapLibre 的包 |
+| `packages/imdf` | IMDF 读取、校验与转换，标准之外的数据以扩展文件接入 |
+| `packages/rtls` | 实时定位的数据契约：标签位置、数据源和 `positions:update` 事件 |
+| `packages/plugins` | 楼层、区域、实时位置、房间聚合、轨迹、聚合、电子围栏、热力图、多边形、线、弹窗、标记插件，不含医院概念 |
+| `domains/hospital` | 不依赖地图的医院业务：科室（IMDF 扩展）、角色、设备与状态、两层告警引擎 |
 | `tools/venue-gen` | 虚构医院及其科室的生成器 |
 | `tools/rtls-simulator` | 人员与设备名册、移动模拟器及其 Worker 数据源 |
-| `apps/playground` | 在线演示的五个页面 |
+| `apps/playground` | 在线演示的五个页面：`engine/` 加载 MapLibre，`adapters/` 把医院业务和模拟器接到 SDK 插件上，`presentation/` 负责文字与颜色，`pages/` 是各页面，`testing/` 是测试钩子 |
 
 ## 本地运行
 

@@ -95,12 +95,14 @@ TypeScript（strict）· MapLibre GL JS · IMDF · zod · Web Worker + Comlink �
 
 | パス | 内容 |
 | --- | --- |
-| `packages/core` | 地図の生成、プラグイン機構、リソース管理、イベント、スタイルとテーマの生成 |
-| `packages/imdf` | IMDF の読み込み・検証・変換（診療科を含む） |
-| `packages/plugins` | フロア、診療科、リアルタイム位置、部屋単位の集約、軌跡、アラート、クラスタ、ジオフェンス、ヒートマップ、多角形、線、ポップアップ、マーカーの各プラグイン |
+| `packages/core` | 地図エンジンのラッパー：地図の生成、カメラ、プラグイン機構、リソース管理、イベント、スタイルとテーマの生成。MapLibre を読み込むのはこのパッケージだけ |
+| `packages/imdf` | IMDF の読み込み・検証・変換。標準外のデータは拡張ファイルとして扱う |
+| `packages/rtls` | リアルタイム測位の契約：タグの位置、データプロバイダー、`positions:update` イベント |
+| `packages/plugins` | フロア、ゾーン、リアルタイム位置、部屋単位の集約、軌跡、クラスタ、ジオフェンス、ヒートマップ、多角形、線、ポップアップ、マーカーの各プラグイン。病院の概念は含まない |
+| `domains/hospital` | 地図に依存しない病院の業務：診療科（IMDF 拡張）、役割、機器と状態、2 層のアラートエンジン |
 | `tools/venue-gen` | 架空の病院とその診療科の生成スクリプト |
 | `tools/rtls-simulator` | 人と機器の名簿、移動シミュレーター、Worker 用データプロバイダー |
-| `apps/playground` | オンラインデモの 5 ページ |
+| `apps/playground` | オンラインデモの 5 ページ。`engine/` が MapLibre を読み込み、`adapters/` が病院の業務とシミュレーターを SDK のプラグインにつなぎ、`presentation/` が文言と色、`pages/` が各ページ、`testing/` がテスト用フック |
 
 ## ローカルで動かす
 

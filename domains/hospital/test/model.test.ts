@@ -54,7 +54,11 @@ describe('hospital model', () => {
   it('reads the status of an asset at a time and summarises the day so far', () => {
     expect(statusAt(asset, 30 * MINUTE)).toBe('running');
     expect(statusAt(asset, 70 * MINUTE)).toBe('idle');
-    expect(statusSummary(asset, 100 * MINUTE)).toEqual({ status: 'running', since: 90 * MINUTE, runMs: 70 * MINUTE });
+    expect(statusSummary(asset, 100 * MINUTE)).toEqual({
+      status: 'running',
+      since: 90 * MINUTE,
+      runMs: 70 * MINUTE,
+    });
   });
 
   it('knows when a person is calling for help', () => {

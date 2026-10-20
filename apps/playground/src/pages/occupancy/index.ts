@@ -1,58 +1,47 @@
-import {
-  floorPlugin,
-  HEAT_WINDOWS,
-  type HeatWindow,
-  heatmapPlugin,
-  positionStreamPlugin,
-} from '@indoorkit/plugins';
-import { createRoster, type Role } from '@indoorkit/rtls-simulator';
-import { i18n, translate } from '../app-i18n';
-import { departmentName, ROLE_COLORS, ROLES, t, unitLabel } from '../business';
-import { mountMapPage, radioGroup } from '../map-page';
-import { createSimProvider, SIM_INTERVAL_MS } from '../sim';
-import { chipGroup, escapeHtml, throttle } from '../ui';
-import { PEOPLE_SEED } from './tracking';
+import type { Role } from '@indoorkit/hospital';
+import { floorPlugin, heatmapPlugin, positionStreamPlugin } from '@indoorkit/plugins';
+import { createRoster, createSimProvider, PEOPLE_SEED, SIM_INTERVAL_MS } from '../../adapters/sim';
+import { i18n, translate } from '../../app-i18n';
+import { ROLE_COLORS, ROLES } from '../../presentation/colors';
+import { t } from '../../presentation/format';
+import { chipGroup, throttle } from '../../presentation/ui';
+import { mountMapPage } from '../map-page';
+import { busyList, controls, DEFAULT_WINDOW, HEAT_WINDOWS, overlays } from './view';
 
 const PEOPLE = 2000;
 const BUSIEST = 3;
 
+/** 人流密度分析：按时间窗口和角色统计的热力图，以及最忙的区块 */
 export async function mountOccupancyPage(root: HTMLElement) {
   let roleOf = (_id: string): Role => 'nurse';
   const page = await mountMapPage(root, {
     demo: 'occupancy',
     readyWhen: 'first-positions',
     title: 'page.occupancy.title',
-    controls: `
-      ${radioGroup(
-        'window',
-        'control.window',
-        HEAT_WINDOWS.map((m) => ({ value: String(m), text: `<span data-minutes="${m}"></span>` })),
-        '5',
-      )}
-      <span class="metric"><span data-i18n="metric.heatPoints"></span>: <b data-testid="heat-points">0</b></span>
-      <span class="chips" data-chips="role"></span>`,
-    overlays: `
-      <aside class="panel">
-        <h2 data-i18n="busy.title"></h2>
-        <ol class="rows" data-testid="busy-list"></ol>
-      </aside>`,
+    controls,
+    overlays,
     plugins: (venue) =>
       [
         floorPlugin,
-        heatmapPlugin({ cellMeters: 2, groupOf: (p) => roleOf(p.id) }),
+        heatmapPlugin({
+          cellMeters: 2,
+          windowsMinutes: HEAT_WINDOWS,
+          window: DEFAULT_WINDOW,
+          groupOf: (p) => roleOf(p.id),
+        }),
         positionStreamPlugin({
           provider: createSimProvider(venue, { people: PEOPLE, seed: PEOPLE_SEED }),
           intervalMs: SIM_INTERVAL_MS,
+          // 热力图页只看密度，不画单个标签
+          visible: false,
         }),
       ] as const,
   });
-  const { indoor, map, venue, index, hooks, cleanups } = page;
+  const { indoor, venue, index, hospital, hooks, cleanups } = page;
   const heat = indoor.plugins.heatmap;
   const roles = new Map(createRoster(venue, { people: PEOPLE, assets: 0 }).people.map((p) => [p.id, p.role]));
   roleOf = (id) => roles.get(id)!;
   const $ = <E extends HTMLElement>(selector: string) => root.querySelector<E>(selector)!;
-  // 热力图页只看密度，隐藏单个标签
-  map.setLayoutProperty('indoor-positions', 'visibility', 'none');
 
   const labelMinutes = () => {
     for (const el of root.querySelectorAll<HTMLElement>('[data-minutes]')) {
@@ -79,16 +68,10 @@ export async function mountOccupancyPage(root: HTMLElement) {
       if (!where || index.unit(where.unitId).category === 'walkway') continue;
       counts.set(where.unitId, (counts.get(where.unitId) ?? 0) + Number(f.properties!.weight));
     }
-    $('[data-testid="busy-list"]').innerHTML = [...counts]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, BUSIEST)
-      .map(([id, n]) => {
-        const unit = index.unit(id);
-        return `<li data-testid="busy-row"><span class="name">${escapeHtml(unitLabel(index, venue, id))} <span class="muted">${escapeHtml(
-          departmentName(venue, unit.departmentId),
-        )}</span></span><span class="count">${t('busy.reports', { value: n })}</span></li>`;
-      })
-      .join('');
+    $('[data-testid="busy-list"]').innerHTML = busyList(
+      { venue, index, departmentOfUnit: hospital.departmentOfUnit },
+      [...counts].sort((a, b) => b[1] - a[1]).slice(0, BUSIEST),
+    );
   };
   const busy = throttle(renderBusy, 2000);
 
@@ -103,7 +86,7 @@ export async function mountOccupancyPage(root: HTMLElement) {
 
   for (const input of root.querySelectorAll<HTMLInputElement>('input[name="window"]')) {
     input.addEventListener('change', () => {
-      heat.setWindow(Number(input.value) as HeatWindow);
+      heat.setWindow(Number(input.value));
       busy(true);
     });
   }

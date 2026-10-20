@@ -6,12 +6,17 @@ Project instructions shared by AI collaborators and human developers. Claude Cod
 
 | Path | Responsibility |
 | --- | --- |
-| `packages/imdf` | Read IMDF, validate with zod, convert to `VenueModel` |
-| `packages/core` | `createIndoorMap`, plugin system, `ResourceTracker`, `EventBus`, style generation |
-| `packages/plugins` | Official plugins (`floor`, `marker`) |
+| `packages/imdf` | Read IMDF, validate with zod, convert to `VenueModel`; extension files via `defineImdfExtension` |
+| `packages/rtls` | Real-time positioning contract: `TagPosition`, `PositionBatch`, `DataProvider`, `positions:update` |
+| `packages/core` | `createIndoorMap`, camera, plugin system, `ResourceTracker`, `EventBus`, style generation. The only package that imports maplibre-gl |
+| `packages/plugins` | Official plugins (`floor`, `zone`, `position-stream`, `unit-cluster`, `heatmap`, ...). No hospital concepts |
+| `domains/hospital` | Hospital business logic without a map or DOM: departments, roster model, alarm rules and engine |
 | `tools/venue-gen` | Generates IMDF data for the fictional hospital "さくら総合病院" |
+| `tools/rtls-simulator` | Roster and movement simulator, as a Worker data provider |
 | `tools/leak-bench` | Playwright memory regression tests |
-| `apps/playground` | Demo gallery, deployed to GitHub Pages |
+| `apps/playground` | Demo gallery, deployed to GitHub Pages: `engine/`, `adapters/`, `presentation/`, `pages/<page>/{index,view}.ts`, `testing/` |
+
+The layers and what each may import are described in [ADR 0002](docs/adr/0002-sdk-and-domain-layers.md) and checked by `test/layers.test.ts`.
 
 ## The only entry commands
 
@@ -35,7 +40,7 @@ Do not call vite, tsc, vitest or playwright directly. The one exception is narro
 
 - Write the test first, then the implementation. Commit only when `pnpm verify` and `pnpm e2e` both pass.
 - Do not commit data about any real hospital, company or person.
-- Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/test-hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
+- Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/testing/hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
 
 ## Workflows
 

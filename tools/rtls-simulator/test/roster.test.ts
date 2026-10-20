@@ -46,7 +46,15 @@ const departmentAt = (p: TagPosition) => {
 
 describe('simulator exports', () => {
   it('generates data only and leaves the hospital model to @indoorkit/hospital', () => {
-    for (const name of ['ROLES', 'ASSET_TYPES', 'ASSET_STATUSES', 'statusAt', 'statusSummary', 'sosActive', 'dayTime'])
+    for (const name of [
+      'ROLES',
+      'ASSET_TYPES',
+      'ASSET_STATUSES',
+      'statusAt',
+      'statusSummary',
+      'sosActive',
+      'dayTime',
+    ])
       expect(simulator).not.toHaveProperty(name);
   });
 });

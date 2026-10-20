@@ -108,7 +108,7 @@ describe('createIndoorMap', () => {
     const plugin = definePlugin({
       name: 'clicky',
       setup: (ctx) => {
-        ctx.onMap('click', () => {});
+        ctx.onMap('dblclick', () => {});
         return {};
       },
     });
@@ -120,9 +120,9 @@ describe('createIndoorMap', () => {
       plugins: [plugin],
     });
     const fake = s.getFake();
-    expect(fake.listenerCount('click')).toBe(1);
+    expect(fake.listenerCount('dblclick')).toBe(1);
     await map.destroy();
-    expect(fake.listenerCount('click')).toBe(0);
+    expect(fake.listenerCount('dblclick')).toBe(0);
   });
 
   it('stops delivering core events to plugin handlers after destroy', async () => {

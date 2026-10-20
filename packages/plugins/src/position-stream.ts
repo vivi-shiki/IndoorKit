@@ -1,6 +1,6 @@
-import { type DataProvider, definePlugin, type PositionBatch, type TagPosition } from '@indoorkit/core';
-import type { Feature } from 'geojson';
-import type { DataDrivenPropertyValueSpecification } from 'maplibre-gl';
+import { type DataDrivenPropertyValueSpecification, definePlugin, type ScreenPoint } from '@indoorkit/core';
+import type { DataProvider, PositionBatch, TagPosition } from '@indoorkit/rtls';
+import type { Feature, Point } from 'geojson';
 import { floorOverlay } from './overlay';
 
 export interface Sample {
@@ -40,6 +40,16 @@ export interface PositionStreamOptions {
   decorate?: (id: string) => Record<string, string | number | boolean>;
   /** 标签圆点颜色，可以是数据驱动的表达式；默认蓝色 */
   circleColor?: DataDrivenPropertyValueSpecification<string>;
+  /** 是否画出标签圆点，默认 true；不画时照样接收和广播位置 */
+  visible?: boolean;
+}
+
+/** 画在地图上的一个标签 */
+export interface RenderedTag {
+  id: string;
+  coord: [number, number];
+  /** decorate 加上的属性和 id、level_id */
+  properties: Record<string, unknown>;
 }
 
 export interface PositionStreamApi {
@@ -56,6 +66,13 @@ export interface PositionStreamApi {
   setFilter(filter: ((id: string) => boolean) | null): void;
   /** 标签最近一次上报（任何楼层）；没有时为 null */
   latest(id: string): Sample | null;
+  /** 显示或隐藏标签圆点 */
+  setVisible(visible: boolean): void;
+  visibleOnMap(): boolean;
+  /** 像素 point 周围 radius 以内画出的标签；标签在移动，精确命中一个像素不现实 */
+  pick(point: ScreenPoint, radius: number): string | null;
+  /** 当前画在地图上的标签 */
+  rendered(): RenderedTag[];
 }
 
 const defaultFrame = (callback: () => void) => {
@@ -79,10 +96,12 @@ export function positionStreamPlugin(options: PositionStreamOptions) {
     name: 'position-stream',
     deps: ['floor'],
     async setup(ctx): Promise<PositionStreamApi> {
+      let shown = options.visible ?? true;
       const dots = floorOverlay(ctx, 'indoor-positions', [
         {
           id: 'indoor-positions',
           type: 'circle',
+          layout: { visibility: shown ? 'visible' : 'none' },
           paint: {
             'circle-radius': 4,
             'circle-color': options.circleColor ?? '#2563eb',
@@ -189,6 +208,21 @@ export function positionStreamPlugin(options: PositionStreamOptions) {
           filter = next;
         },
         latest: (id) => histories.get(id)?.at(-1) ?? null,
+        setVisible(visible) {
+          shown = visible;
+          ctx.map.setLayoutProperty('indoor-positions', 'visibility', visible ? 'visible' : 'none');
+        },
+        visibleOnMap: () => shown,
+        pick(point, radius) {
+          const hit = ctx.queryRendered(['indoor-positions'], { point, radius })[0];
+          return hit ? String(hit.properties.id) : null;
+        },
+        rendered: () =>
+          ctx.queryRendered(['indoor-positions']).map((f) => ({
+            id: String(f.properties.id),
+            coord: (f.geometry as Point).coordinates as [number, number],
+            properties: f.properties,
+          })),
       };
     },
   });

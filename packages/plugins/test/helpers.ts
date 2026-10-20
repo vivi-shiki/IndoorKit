@@ -1,7 +1,7 @@
 import { type AnyPlugin, createIndoorMap } from '@indoorkit/core';
-import type { PositionBatch, TagPosition } from '@indoorkit/rtls';
 import { type FakeMap, fakeMapFactory } from '@indoorkit/core/testing';
 import { buildVenueModel } from '@indoorkit/imdf';
+import type { PositionBatch, TagPosition } from '@indoorkit/rtls';
 import { IDS, makeArchive } from '../../imdf/test/fixture';
 
 export { IDS };

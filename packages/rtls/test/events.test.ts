@@ -21,7 +21,10 @@ describe('@indoorkit/rtls', () => {
       mapFactory: fakeMapFactory(),
       plugins: [listener],
     });
-    const batch: PositionBatch = { time: 1, positions: [{ id: 'a', levelId: 'l', coord: [0, 0], status: 'x' }] };
+    const batch: PositionBatch = {
+      time: 1,
+      positions: [{ id: 'a', levelId: 'l', coord: [0, 0], status: 'x' }],
+    };
     map.events.emit('positions:update', batch);
     expect(seen).toEqual([batch]);
   });

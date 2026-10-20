@@ -42,7 +42,8 @@ describe('buildVenueModel', () => {
     const model = buildVenueModel(makeArchive());
     expect(model.extensions).toEqual({});
     expect(model).not.toHaveProperty('departments');
-    for (const u of model.features.units.features) expect(Object.keys(u.properties).sort()).not.toContain('department_id');
+    for (const u of model.features.units.features)
+      expect(Object.keys(u.properties).sort()).not.toContain('department_id');
   });
 
   it('throws on an invalid archive', () => {

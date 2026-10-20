@@ -1,6 +1,6 @@
-import type { TagPosition } from '@indoorkit/rtls';
 import { departmentExtension } from '@indoorkit/hospital';
 import { buildVenueModel } from '@indoorkit/imdf';
+import type { TagPosition } from '@indoorkit/rtls';
 import { generateVenue, SAKURA_HOSPITAL } from '@indoorkit/venue-gen';
 import { describe, expect, it } from 'vitest';
 import { createSimulation } from '../src/index';

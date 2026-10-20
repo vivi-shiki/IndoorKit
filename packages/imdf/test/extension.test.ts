@@ -26,7 +26,8 @@ const sectionExtension = defineImdfExtension({
         .map((id) => ({ path: s.id, message: `unknown unit ${id}` })),
     );
   },
-  build: (sections) => sections.features.map((s) => ({ id: s.id, unitIds: s.properties.unit_ids as string[] })),
+  build: (sections) =>
+    sections.features.map((s) => ({ id: s.id, unitIds: s.properties.unit_ids as string[] })),
 });
 
 const SECTION = '00000000-0000-4000-8000-0000000000c1';
@@ -89,7 +90,8 @@ describe('IMDF extensions', () => {
     expect((fetched.section as RawCollection).features).toHaveLength(1);
     const without = await fetchImdf(
       '/d',
-      (async (url: string) => (url.endsWith('section.json') ? respond(null, 404) : fetchFn(url))) as unknown as typeof fetch,
+      (async (url: string) =>
+        url.endsWith('section.json') ? respond(null, 404) : fetchFn(url)) as unknown as typeof fetch,
       [sectionExtension],
     );
     expect((without.section as RawCollection).features).toEqual([]);

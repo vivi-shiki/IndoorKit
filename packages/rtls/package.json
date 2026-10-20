@@ -1,0 +1,19 @@
+{
+  "name": "@indoorkit/rtls",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@indoorkit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@indoorkit/imdf": "workspace:*"
+  }
+}

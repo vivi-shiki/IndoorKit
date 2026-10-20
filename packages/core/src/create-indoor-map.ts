@@ -10,8 +10,11 @@ import type {
   MapFactory,
   MapLike,
   MapListener,
+  Padding,
   PluginApis,
   PluginContext,
+  RenderedFeature,
+  ScreenPoint,
 } from './types';
 
 export interface CreateIndoorMapOptions<P extends readonly AnyPlugin[]> {
@@ -25,10 +28,13 @@ export interface CreateIndoorMapOptions<P extends readonly AnyPlugin[]> {
   pitch?: number;
   bearing?: number;
   mapFactory?: MapFactory;
+  /** 字形（PBF）地址模板，默认 OpenFreeMap */
+  glyphs?: string;
   on?: { [K in keyof IndoorEvents]?: (payload: IndoorEvents[K]) => void };
 }
 
 export interface IndoorMap<P extends readonly AnyPlugin[]> {
+  /** 底层地图（MapLibre）。业务代码不直接使用，测试工具见 @indoorkit/core/testing */
   map: MapLike;
   venue: VenueModel;
   plugins: PluginApis<P>;
@@ -42,6 +48,24 @@ export interface IndoorMap<P extends readonly AnyPlugin[]> {
   readonly theme: Theme;
   /** 切换主题颜色，不重建地图 */
   setTheme(theme: Theme): void;
+  /** 按名字取插件 API；插件没有加载时抛错 */
+  plugin<T>(name: string): T;
+  hasPlugin(name: string): boolean;
+  camera: {
+    /** 平移到一个坐标，不改变缩放、倾斜和方向；默认动画 500 ms */
+    focus(coord: [number, number], options?: { durationMs?: number }): void;
+    /** 让一个范围充满视口（留出 padding），保持当前倾斜和方向；默认动画 500 ms */
+    fit(
+      bounds: [[number, number], [number, number]],
+      options: { padding: Padding; durationMs?: number },
+    ): void;
+  };
+  /** 经纬度到地图容器内的像素坐标 */
+  project(coord: [number, number]): ScreenPoint;
+  /** 请求重绘，地图下一次空闲（瓦片和动画都完成）时完成 */
+  idle(): Promise<void>;
+  /** 下一帧画完时完成 */
+  rendered(): Promise<void>;
   resources: { readonly size: number; labels(): string[] };
   readonly destroyed: boolean;
   /** 释放全部资源；有资源释放失败时，全部释放完后以 AggregateError 拒绝 */
@@ -59,10 +83,10 @@ const defaultMapFactory: MapFactory = async (options) => {
   }) as unknown as MapLike;
 };
 
-function baseStyle(theme: Theme): StyleSpecification {
+function baseStyle(theme: Theme, glyphs: string): StyleSpecification {
   return {
     version: 8,
-    glyphs: GLYPHS,
+    glyphs,
     sources: {},
     layers: [{ id: 'background', type: 'background', paint: { ...themePaint(theme).background } }],
   };
@@ -83,7 +107,7 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
   const factory = options.mapFactory ?? defaultMapFactory;
   const map = await factory({
     container: options.container,
-    style: baseStyle(theme),
+    style: baseStyle(theme, options.glyphs ?? GLYPHS),
     center: options.venue.center,
     zoom: options.zoom ?? 18,
     bounds: options.zoom === undefined ? options.venue.bounds : undefined,
@@ -113,11 +137,45 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
       tracker.track(id, (s) => map.getSource(s) && map.removeSource(s), `source:${id}`);
       return id;
     };
+    /** 已添加图层的缩放范围，queryRendered 用它跳过当前缩放下不显示的图层 */
+    const zoomRanges = new Map<string, [number, number]>();
     const trackLayer = (layer: LayerSpecification, beforeId?: string) => {
       map.addLayer(layer, beforeId);
-      tracker.track(layer.id, (l) => map.getLayer(l) && map.removeLayer(l), `layer:${layer.id}`);
+      zoomRanges.set(layer.id, [layer.minzoom ?? 0, layer.maxzoom ?? 24]);
+      tracker.track(
+        layer.id,
+        (l) => {
+          zoomRanges.delete(l);
+          if (map.getLayer(l)) map.removeLayer(l);
+        },
+        `layer:${layer.id}`,
+      );
       return layer.id;
     };
+    const queryRendered = (
+      layerIds: readonly string[],
+      around?: { point: ScreenPoint; radius: number },
+    ): RenderedFeature[] => {
+      const zoom = map.getZoom();
+      const shown = layerIds.filter((id) => {
+        const range = zoomRanges.get(id);
+        if (!range) throw new Error(`layer "${id}" was not added through the SDK`);
+        return zoom >= range[0] && zoom < range[1];
+      });
+      if (shown.length === 0) return [];
+      const box: [[number, number], [number, number]] | undefined = around && [
+        [around.point.x - around.radius, around.point.y - around.radius],
+        [around.point.x + around.radius, around.point.y + around.radius],
+      ];
+      return map.queryRenderedFeatures(box, { layers: shown });
+    };
+    const onClick: MapListener = (e: { point: ScreenPoint; lngLat: { lng: number; lat: number } }) =>
+      events.emit('map:click', {
+        point: { x: e.point.x, y: e.point.y },
+        coord: [e.lngLat.lng, e.lngLat.lat],
+      });
+    map.on('click', onClick);
+    tracker.track(onClick, (l) => map.off('click', l), 'map.on:click');
 
     const style = buildIndoorStyle(options.venue, theme, languages);
     for (const s of style.sources) trackSource(s.id, s.spec);
@@ -148,6 +206,7 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
           if (!(name in apis)) throw new Error(`plugin "${name}" is not available to "${plugin.name}"`);
           return apis[name] as T;
         },
+        queryRendered,
       };
       apis[plugin.name] = await plugin.setup(ctx);
     }
@@ -159,6 +218,31 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
       plugins: apis as PluginApis<P>,
       events,
       indoorLayerIds: style.levelLayerIds,
+      plugin<T>(name: string) {
+        if (!(name in apis)) throw new Error(`plugin "${name}" is not loaded`);
+        return apis[name] as T;
+      },
+      hasPlugin: (name) => name in apis,
+      camera: {
+        focus(coord, opts) {
+          map.easeTo({ center: coord, duration: opts?.durationMs ?? 500 });
+        },
+        fit(bounds, opts) {
+          map.fitBounds(bounds, {
+            padding: opts.padding,
+            pitch: map.getPitch(),
+            bearing: map.getBearing(),
+            duration: opts.durationMs ?? 500,
+          });
+        },
+      },
+      project: (coord) => map.project(coord),
+      idle() {
+        const done = new Promise<void>((resolve) => map.once('idle', () => resolve()));
+        map.triggerRepaint();
+        return done;
+      },
+      rendered: () => new Promise<void>((resolve) => map.once('render', () => resolve())),
       resources: tracker,
       get languages() {
         return languages;

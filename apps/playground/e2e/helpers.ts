@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import '../src/test-hooks';
+import '../src/testing/hooks';
 
 /** 画廊里的业务页面，按业务线分组 */
 export const GROUPS = {

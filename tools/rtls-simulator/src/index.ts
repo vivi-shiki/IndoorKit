@@ -1,5 +1,5 @@
-import type { DataProvider, PositionBatch } from '@indoorkit/core';
 import type { VenueModel } from '@indoorkit/imdf';
+import type { DataProvider, PositionBatch } from '@indoorkit/rtls';
 import * as Comlink from 'comlink';
 import { createSimulation, type Simulation, type SimulationOptions } from './simulation';
 

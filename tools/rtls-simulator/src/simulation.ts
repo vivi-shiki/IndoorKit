@@ -1,16 +1,16 @@
-import type { TagPosition } from '@indoorkit/core';
-import type { VenueModel } from '@indoorkit/imdf';
 import {
   type Asset,
-  createRoster,
   dayTime,
+  departmentsOf,
   MOBILE_ASSET_TYPES,
   type Person,
   type Role,
-  seededRandom,
   sosActive,
   statusAt,
-} from './roster';
+} from '@indoorkit/hospital';
+import type { VenueModel } from '@indoorkit/imdf';
+import type { TagPosition } from '@indoorkit/rtls';
+import { createRoster, seededRandom } from './roster';
 
 export interface SimulationOptions {
   seed: string;
@@ -277,7 +277,7 @@ export function createSimulation(venue: VenueModel, options: SimulationOptions):
 
   const destinations = reachable.filter((r) => !VERTICAL.has(r.category));
   const owner = new Map<string, string>();
-  for (const d of venue.departments) for (const id of d.unitIds) owner.set(id, d.id);
+  for (const d of departmentsOf(venue)) for (const id of d.unitIds) owner.set(id, d.id);
   const homeOf = (departmentId: string) => destinations.filter((r) => owner.get(r.id) === departmentId);
   /** 房间内离墙至少 0.8 m 的随机点，同一房间里的设备不会叠在一起 */
   const spot = (u: Unit): Vec => {

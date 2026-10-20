@@ -1,6 +1,5 @@
-import type { PluginContext } from '@indoorkit/core';
+import type { LayerSpecification, PluginContext } from '@indoorkit/core';
 import type { Feature, FeatureCollection } from 'geojson';
-import type { LayerSpecification } from 'maplibre-gl';
 import type { FloorApi } from './floor';
 
 interface GeoJsonSourceLike {

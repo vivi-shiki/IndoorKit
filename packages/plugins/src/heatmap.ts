@@ -1,21 +1,21 @@
-import { definePlugin, type PositionBatch, type TagPosition } from '@indoorkit/core';
+import { definePlugin } from '@indoorkit/core';
+import type { PositionBatch, TagPosition } from '@indoorkit/rtls';
 import type { Feature } from 'geojson';
 import { floorOverlay, localProjection } from './overlay';
 
-export const HEAT_WINDOWS = [1, 5, 15] as const;
-export type HeatWindow = (typeof HEAT_WINDOWS)[number];
-const MAX_WINDOW = Math.max(...HEAT_WINDOWS);
 const MINUTE = 60_000;
 
 export interface HeatmapApi {
   add(batch: PositionBatch): void;
-  setWindow(minutes: HeatWindow): void;
-  window(): HeatWindow;
+  /** 切换时间窗口（分钟），只能是 windowsMinutes 之一 */
+  setWindow(minutes: number): void;
+  window(): number;
+  windows(): readonly number[];
   /** 时间窗口内、当前楼层的样本数 */
   pointCount(): number;
   /** 当前画在地图上的网格点（当前楼层、时间窗口内） */
   data(): readonly Feature[];
-  /** 内部按分钟保留的桶数，最多为最大窗口的分钟数 */
+  /** 内部按分钟保留的桶数，最多为最大窗口的分钟数 + 1 */
   bucketCount(): number;
   /** 只显示这些分组的样本（分组由 groupOf 决定）；null 显示全部 */
   setGroups(groups: readonly string[] | null): void;
@@ -47,14 +47,28 @@ interface Cell {
 }
 
 /**
- * 人员密度热力图。样本按「分钟 × 楼层 × 网格」累加计数，
+ * 定位标签的密度热力图。样本按「分钟 × 楼层 × 网格」累加计数，
  * 内存只与最大窗口的分钟数和网格数有关，与标签数和上报次数无关。
  *
  * 显示按 Mapbox「Create a heatmap layer」示例：缩小时是热力图；放大后网格间距超过光斑半径，
  * 热力图会露出一个个格子中心，所以在 POINTS_FROM～HEAT_UNTIL 之间淡出，
  * 换成按权重着色、带白边的圆点（同一份数据、同一套色带）。
  */
-export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPosition) => string }) {
+export interface HeatmapOptions {
+  cellMeters: number;
+  /** 可选的时间窗口（分钟） */
+  windowsMinutes: readonly number[];
+  /** 打开时的时间窗口，必须是 windowsMinutes 之一 */
+  window: number;
+  groupOf?: (p: TagPosition) => string;
+}
+
+export function heatmapPlugin(options: HeatmapOptions) {
+  const windows = [...options.windowsMinutes];
+  const maxWindow = Math.max(...windows);
+  const checkWindow = (minutes: number) => {
+    if (!windows.includes(minutes)) throw new Error(`heatmap window must be one of ${windows.join(', ')}`);
+  };
   return definePlugin({
     name: 'heatmap',
     deps: ['floor'],
@@ -99,7 +113,8 @@ export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPo
       const buckets = new Map<number, Map<string, Map<string, Map<string, Cell>>>>();
       let latest = 0;
       let selected: readonly string[] | null = null;
-      let window: HeatWindow = 5;
+      checkWindow(options.window);
+      let window = options.window;
       let count = 0;
       let features: Feature[] = [];
 
@@ -149,7 +164,7 @@ export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPo
           if (c) c.count++;
           else cells.set(key, { x, y, count: 1 });
         }
-        for (const m of buckets.keys()) if (m <= latest - MAX_WINDOW) buckets.delete(m);
+        for (const m of buckets.keys()) if (m <= latest - maxWindow) buckets.delete(m);
         refresh();
       };
 
@@ -159,12 +174,12 @@ export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPo
       return {
         add,
         setWindow(minutes) {
-          if (!HEAT_WINDOWS.includes(minutes))
-            throw new Error(`heatmap window must be one of ${HEAT_WINDOWS.join(', ')}`);
+          checkWindow(minutes);
           window = minutes;
           refresh();
         },
         window: () => window,
+        windows: () => windows,
         pointCount: () => count,
         data: () => features,
         bucketCount: () => buckets.size,

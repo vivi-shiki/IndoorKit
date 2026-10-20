@@ -230,7 +230,10 @@ function makeUuid(seed: string, key: string): string {
 
 type Rect = [number, number, number, number];
 
-export function generateVenue(options: VenueGenOptions): ImdfArchive {
+/** 标准 IMDF 文件加上医院的科室扩展文件 department.json */
+export type HospitalArchive = ImdfArchive & { department: RawCollection };
+
+export function generateVenue(options: VenueGenOptions): HospitalArchive {
   const { seed, roomsPerSide: n, roomWidth: w, roomDepth: d, corridorWidth: c } = options;
   const id = (key: string) => makeUuid(seed, key);
   const buildingWidth = n * w;

@@ -1,22 +1,7 @@
-export {
-  type Alarm,
-  type AlarmApi,
-  type AlarmEngine,
-  type AlarmLevel,
-  type AlarmSubject,
-  alarmPlugin,
-  createAlarmEngine,
-  type DepartmentRule,
-  type FenceInput,
-  type FenceRule,
-  matchesSelector,
-  type Selector,
-} from './alarm';
 export { type Cluster, type ClusterApi, type ClusterPoint, clusterPlugin, clusterPoints } from './cluster';
-export { type DepartmentApi, departmentPlugin } from './department';
 export { type FloorApi, floorPlugin } from './floor';
 export { type Fence, type GeofenceApi, type GeofenceEvent, geofencePlugin } from './geofence';
-export { HEAT_WINDOWS, type HeatmapApi, type HeatWindow, heatmapPlugin } from './heatmap';
+export { type HeatmapApi, type HeatmapOptions, heatmapPlugin } from './heatmap';
 export { type MarkerApi, type MarkerInput, markerPlugin } from './marker';
 export { distanceMeters, localProjection } from './overlay';
 export { type PopupApi, type PopupInput, popupPlugin } from './popup';
@@ -25,6 +10,7 @@ export {
   type PositionStreamApi,
   type PositionStreamOptions,
   positionStreamPlugin,
+  type RenderedTag,
   type Sample,
 } from './position-stream';
 export { type LineInput, linePlugin, type PolygonInput, polygonPlugin, type ShapeApi } from './shapes';
@@ -37,3 +23,4 @@ export {
   unitClusterPlugin,
 } from './unit-cluster';
 export { createVenueIndex, type Location, type UnitInfo, type VenueIndex } from './venue-index';
+export { type ZoneApi, type ZoneInput, zonePlugin } from './zone';

@@ -54,7 +54,12 @@ describe('position stream picking', () => {
   it('can start hidden', async () => {
     const { fake } = await openMap([
       floorPlugin,
-      positionStreamPlugin({ provider: createManualProvider(), intervalMs: 1000, frame: () => () => {}, visible: false }),
+      positionStreamPlugin({
+        provider: createManualProvider(),
+        intervalMs: 1000,
+        frame: () => () => {},
+        visible: false,
+      }),
     ]);
     expect(fake.getLayoutProperty('indoor-positions', 'visibility')).toBe('none');
   });
@@ -62,8 +67,14 @@ describe('position stream picking', () => {
 
 describe('unit cluster picking', () => {
   async function clusters() {
-    const opened = await openMap([floorPlugin, unitClusterPlugin({ statusOrder: ['x'], statusColors: { x: '#000000' } })]);
-    opened.map.events.emit('positions:update', batch(0, [tag('a', IDS.level1, ROOM), tag('b', IDS.level1, ROOM)]));
+    const opened = await openMap([
+      floorPlugin,
+      unitClusterPlugin({ statusOrder: ['x'], statusColors: { x: '#000000' } }),
+    ]);
+    opened.map.events.emit(
+      'positions:update',
+      batch(0, [tag('a', IDS.level1, ROOM), tag('b', IDS.level1, ROOM)]),
+    );
     return { ...opened, api: opened.map.plugins['unit-cluster'] };
   }
 

@@ -21,7 +21,15 @@ describe('zonePlugin', () => {
   it('colours zones from the palette it is given', async () => {
     const { fake } = await openMap([floorPlugin, zonePlugin({ zones, palette: ['#111111', '#222222'] })]);
     const layer = fake.getLayer('indoor-zones') as { paint: Record<string, unknown> };
-    expect(layer.paint['fill-color']).toEqual(['match', ['get', 'zone_id'], 'west', '#111111', 'east', '#222222', '#94a3b8']);
+    expect(layer.paint['fill-color']).toEqual([
+      'match',
+      ['get', 'zone_id'],
+      'west',
+      '#111111',
+      'east',
+      '#222222',
+      '#94a3b8',
+    ]);
   });
 
   it('shows, hides and highlights zones', async () => {
@@ -40,9 +48,9 @@ describe('zonePlugin', () => {
   });
 
   it('rejects zones with units the venue does not have', async () => {
-    await expect(openMap([floorPlugin, zonePlugin({ zones: [{ id: 'x', unitIds: ['nope'] }] })])).rejects.toThrow(
-      /unknown unit/,
-    );
+    await expect(
+      openMap([floorPlugin, zonePlugin({ zones: [{ id: 'x', unitIds: ['nope'] }] })]),
+    ).rejects.toThrow(/unknown unit/);
   });
 
   it('releases its layers on destroy', async () => {

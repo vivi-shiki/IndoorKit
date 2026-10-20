@@ -41,12 +41,18 @@ importers:
       '@indoorkit/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@indoorkit/hospital':
+        specifier: workspace:*
+        version: link:../../domains/hospital
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../../packages/imdf
       '@indoorkit/plugins':
         specifier: workspace:*
         version: link:../../packages/plugins
+      '@indoorkit/rtls':
+        specifier: workspace:*
+        version: link:../../packages/rtls
       '@indoorkit/rtls-simulator':
         specifier: workspace:*
         version: link:../../tools/rtls-simulator
@@ -56,6 +62,25 @@ importers:
       maplibre-gl:
         specifier: ^6.15.0
         version: 6.15.0
+
+  domains/hospital:
+    dependencies:
+      '@indoorkit/imdf':
+        specifier: workspace:*
+        version: link:../../packages/imdf
+      '@indoorkit/rtls':
+        specifier: workspace:*
+        version: link:../../packages/rtls
+      '@turf/boolean-point-in-polygon':
+        specifier: ^7.4.0
+        version: 7.4.0
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@indoorkit/plugins':
+        specifier: workspace:*
+        version: link:../../packages/plugins
 
   packages/core:
     dependencies:
@@ -81,6 +106,9 @@ importers:
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../imdf
+      '@indoorkit/rtls':
+        specifier: workspace:*
+        version: link:../rtls
       '@turf/boolean-point-in-polygon':
         specifier: ^7.4.0
         version: 7.4.0
@@ -95,14 +123,27 @@ importers:
         specifier: ^6.15.0
         version: 6.15.0
 
-  tools/rtls-simulator:
+  packages/rtls:
     dependencies:
       '@indoorkit/core':
         specifier: workspace:*
-        version: link:../../packages/core
+        version: link:../core
+    devDependencies:
+      '@indoorkit/imdf':
+        specifier: workspace:*
+        version: link:../imdf
+
+  tools/rtls-simulator:
+    dependencies:
+      '@indoorkit/hospital':
+        specifier: workspace:*
+        version: link:../../domains/hospital
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../../packages/imdf
+      '@indoorkit/rtls':
+        specifier: workspace:*
+        version: link:../../packages/rtls
       comlink:
         specifier: ^4.4.2
         version: 4.4.2
@@ -113,6 +154,9 @@ importers:
 
   tools/venue-gen:
     dependencies:
+      '@indoorkit/hospital':
+        specifier: workspace:*
+        version: link:../../domains/hospital
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../../packages/imdf

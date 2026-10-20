@@ -1,6 +1,6 @@
-import type { PositionBatch } from '@indoorkit/rtls';
 import { departmentExtension } from '@indoorkit/hospital';
 import { buildVenueModel } from '@indoorkit/imdf';
+import type { PositionBatch } from '@indoorkit/rtls';
 import { generateVenue, SAKURA_HOSPITAL } from '@indoorkit/venue-gen';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSimulationProvider, createWorkerProvider, exposeSimulation } from '../src/index';
