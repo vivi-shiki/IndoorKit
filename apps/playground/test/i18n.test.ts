@@ -55,6 +55,17 @@ describe('terminology', () => {
     'status.maintenance': { zh: '维修中', en: 'Under maintenance', ja: '保守中' },
     'group.people.title': { zh: '人员视图', en: 'People View', ja: '人の位置・移動' },
     'control.roles': { zh: '角色', en: 'Roles', ja: '人物区分' },
+    // 按使用者划分的视图：中文用角色词，日文用「〜向け」
+    'scenario.parking.operator.title': { zh: '运营视图', en: 'Operator View', ja: '運営者向け' },
+    'scenario.parking.driver.title': { zh: '车主视图', en: 'Driver View', ja: 'ドライバー向け' },
+    'scenario.museum.curator.title': { zh: '策展视图', en: 'Curator View', ja: '学芸員向け' },
+    'scenario.museum.operations.title': {
+      zh: '运营与安保视图',
+      en: 'Operations and Security View',
+      ja: '運営・警備向け',
+    },
+    'scenario.museum.visitor.title': { zh: '观众视图', en: 'Visitor View', ja: '来館者向け' },
+    'home.comingSoon': { zh: '开发中', en: 'Coming soon', ja: '開発中' },
   } as const;
 
   it('uses the agreed terms', () => {
@@ -71,6 +82,54 @@ describe('terminology', () => {
       for (const [key, text] of Object.entries(messages[locale])) {
         expect(text, `${locale} ${key}`).not.toMatch(banned[locale]);
       }
+    }
+  });
+});
+
+describe('home page copy', () => {
+  // 首页、场景卡片和菜单是 React 改版时新写的文案，按上一版已审过的文案统一写法
+  const isNewCopy = (key: string) => /^(home|scenario|nav)\./.test(key);
+  const entries = (locale: (typeof LOCALES)[number]) =>
+    Object.entries(messages[locale]).filter(([key]) => isNewCopy(key));
+
+  it('writes Japanese without half-width spaces around numbers and Latin letters', () => {
+    const cjk = '[\\u3040-\\u30ff\\u4e00-\\u9fff]';
+    const spaced = new RegExp(`${cjk} [A-Za-z0-9{]|[A-Za-z0-9}] ${cjk}`);
+    for (const [key, text] of entries('ja')) expect(text, key).not.toMatch(spaced);
+  });
+
+  it('uses American spelling in English, as the rest of the app does', () => {
+    for (const [key, text] of entries('en'))
+      expect(text, key).not.toMatch(/licence|utilis|colour|centre|organis/i);
+  });
+
+  it('uses Chinese words rather than Japanese ones', () => {
+    for (const [key, text] of entries('zh')) {
+      expect(text, key).not.toMatch(/满空|入出库|学艺员|来馆|展示室|警备|收藏库|解说/);
+    }
+  });
+
+  it('says what the SDK and the application layer each do, with no negatives', () => {
+    const intro = {
+      zh: 'SDK 负责室内地图、场馆数据和实时位置；应用层负责各场景的业务功能和页面。',
+      en: 'The SDK handles the indoor map, venue data and real-time positions. The application layer handles the features and screens for each use case.',
+      ja: 'SDKは屋内地図、施設データ、リアルタイムの位置情報を担い、アプリケーション層は各シーンの業務機能と画面を担います。',
+    };
+    for (const locale of LOCALES) expect(messages[locale]['home.intro'], locale).toBe(intro[locale]);
+  });
+
+  it('describes the parking and museum demos the way the reviewed hospital copy does', () => {
+    for (const id of ['hospital', 'parking', 'museum'] as const) {
+      const key = `scenario.${id}.desc` as const;
+      expect(messages.zh[key], key).toMatch(/^以虚构的“.+”为例，展示.+。$/);
+      expect(messages.en[key], key).toMatch(/^Explore .+, in the fictional .+\.$/);
+      expect(messages.ja[key], key).toMatch(/^架空の「.+」を舞台に、.+を確認できるデモです。$/);
+    }
+  });
+
+  it('notes that every venue is fictional without naming only the hospital', () => {
+    for (const locale of LOCALES) {
+      expect(messages[locale]['home.note'], locale).not.toMatch(/樱花|Sakura|さくら/);
     }
   });
 });

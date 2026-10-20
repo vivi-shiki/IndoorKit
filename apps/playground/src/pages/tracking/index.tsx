@@ -198,6 +198,7 @@ export function TrackingPage({ query }: HospitalPageProps) {
   return (
     <MapPageLayout
       title="page.tracking.title"
+      desc="page.tracking.desc"
       stageRef={stageRef}
       page={page}
       controls={

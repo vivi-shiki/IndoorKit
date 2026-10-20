@@ -28,7 +28,7 @@ export function Hero() {
       <Typography data-testid="home-tagline" sx={{ fontSize: 18, fontWeight: 600, mb: 1 }}>
         {t('home.tagline')}
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 1.5 }}>
+      <Typography data-testid="home-intro" color="text.secondary" sx={{ mb: 1.5 }}>
         {t('home.intro')}
       </Typography>
       <Link href={REPO} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
@@ -141,7 +141,7 @@ export function Footer() {
   const t = useT();
   return (
     <Typography component="footer" color="text.secondary" sx={{ mt: 4, fontSize: 14 }}>
-      {t('gallery.note')} <Link href={REPO}>GitHub</Link>
+      {t('home.note')} <Link href={REPO}>GitHub</Link>
     </Typography>
   );
 }

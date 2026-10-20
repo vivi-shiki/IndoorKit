@@ -31,11 +31,20 @@ export const PRODUCT = {
   ja: '病院内の位置情報マップ',
 };
 
+/** 各页面标题下的一句说明（英文），和上一版首页卡片上的说明相同 */
+export const PAGE_DESCS: Record<Demo, string> = {
+  assets: 'Browse devices by department and room, with their operating status and operating time today.',
+  tracking: 'Filter people by role or department, then select a person to follow their location on the map.',
+  trail: 'Replay a person’s movement today, with the places they stopped and the alerts along the route.',
+  alerts: 'View alerts triggered by department boundaries and custom zones for both equipment and people.',
+  occupancy: 'See how location reports are distributed on each floor, by time window and role.',
+};
+
 /** 首页：SDK 名称和一句话介绍 */
 export const TAGLINES = {
-  en: 'An IoT × indoor map SDK: put location tags, sensors and device status on one indoor map.',
-  zh: 'IoT × 室内地图 SDK：把定位标签、传感器和设备状态放到同一张室内地图上。',
-  ja: 'IoT × 屋内地図 SDK：位置タグ、センサー、機器の状態を 1 枚の屋内地図にまとめます。',
+  en: 'An indoor map SDK for IoT: location tags, sensors and device status on one map.',
+  zh: '面向 IoT 的室内地图 SDK：在一张地图上呈现定位标签、传感器和设备状态。',
+  ja: 'IoT向けの屋内地図SDK。位置タグ、センサー、機器の状態をひとつの地図に表示します。',
 };
 
 /** 打开首页并等它就绪 */

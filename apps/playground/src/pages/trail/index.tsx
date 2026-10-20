@@ -174,6 +174,7 @@ export function TrailPage({ query }: HospitalPageProps) {
   return (
     <MapPageLayout
       title="page.trail.title"
+      desc="page.trail.desc"
       stageRef={stageRef}
       page={page}
       controls={

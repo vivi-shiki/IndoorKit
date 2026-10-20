@@ -218,6 +218,7 @@ export function AlertsPage() {
   return (
     <MapPageLayout
       title="page.alerts.title"
+      desc="page.alerts.desc"
       stageRef={stageRef}
       page={page}
       controls={

@@ -218,11 +218,13 @@ function Floors({ page }: { page: MapPage<readonly AnyPlugin[]> | null }) {
 }
 
 /**
- * 地图页的公共布局：标题栏（标题和页面控件）、地图、楼层按钮、场馆名和手机端的列表按钮。
+ * 地图页的公共布局：标题栏（标题、说明和页面控件）、地图、楼层按钮、场馆名和手机端的列表按钮。
  * 列表面板桌面端常驻左侧；手机端收在按钮后面，点开后是底部抽屉。
  */
 export function MapPageLayout(props: {
   title: MessageKey;
+  /** 标题下的一句说明 */
+  desc: MessageKey;
   stageRef: RefObject<HTMLDivElement | null>;
   page: MapPage<readonly AnyPlugin[]> | null;
   /** 标题栏里的指标和控件 */
@@ -238,7 +240,12 @@ export function MapPageLayout(props: {
   return (
     <>
       <header className="bar">
-        <h1>{t(props.title)}</h1>
+        <div className="bar-title">
+          <h1>{t(props.title)}</h1>
+          <p className="page-desc" data-testid="page-desc">
+            {t(props.desc)}
+          </p>
+        </div>
         {props.controls}
       </header>
       <div className="stage" ref={props.stageRef} data-panel-open={panelOpen ? '' : undefined}>

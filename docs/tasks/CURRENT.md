@@ -20,6 +20,8 @@
 
 # UPDATES
 
+- 2026-10-20 Vivi: 现在的三语表述有很严重的不流畅感觉，能不能参考react更新前上一版，重写各个文案，给我一个修复方案. Plan reviewed in the Claude Doc 「IndoorKit 三语文案修复方案」; all three open points accepted. Follow-up: the home intro names only what the SDK and the application layer each handle, with one set of terms and no negatives (「不要提不xx」). → No.2
+
 # TEST [CONFIRMED]
 
 Reading of the request:
@@ -45,6 +47,7 @@ Before the change: `vitest run test/layers.test.ts apps/playground/test` → 3 l
 # PROPOSALS
 
 - No.1 React + MUI app shell, hash router with ordered teardown, pages as React components [CONFIRMED]
+- No.2 Rewrite the new home, carousel and menu copy in the voice of the reviewed hospital copy [CONFIRMED]
 
 ## No.1 React + MUI app shell, hash router with ordered teardown, pages as React components
 
@@ -65,3 +68,17 @@ Before the change: `vitest run test/layers.test.ts apps/playground/test` → 3 l
 - `pnpm build` passes (app bundle 1.69 MB, gzip 490 KB; Vite warns above 1.5 MB).
 - `pnpm e2e`: 102 passed (84 before + 18 new), including leak-bench (`activeWorkers`, `liveMaps`, `lastUnreleased` all 0 after every round) and both contrast checks.
 - Screenshots of home (light, dark, parking slide, phone), all five pages on desktop and phone and the open phone menu were checked by eye.
+
+## No.2 Rewrite the new home, carousel and menu copy in the voice of the reviewed hospital copy
+
+### CODE CHANGE
+
+- `i18n.ts`: home tagline and intro (SDK / 应用层 / application layer / アプリケーション層, no negatives, no IMDF); parking and museum descriptions use the hospital sentence pattern (以虚构的“X”为例，展示… / Explore …, in the fictional X. / 架空の「X」を舞台に、…を確認できるデモです。) without floor and space counts; Chinese drops Japanese words (满空, 入出库, 学艺员, 来馆者, 展示室, 警备); English uses American spelling; Japanese drops half-width spaces and names audience views 「〜向け」; en badge “Coming soon”; ja arrows 前のシーン / 次のシーン; footer `home.note` covers every venue. Keys renamed: `gallery.subtitle` → `scenario.hospital.desc` (text unchanged), `gallery.note` → `home.note`; new `nav.home`.
+- Map pages show `page.*.desc` under the title (one line with ellipsis on phones); the trail list on phones is capped at 38 % so it stays clear of the floor buttons. The “← IndoorKit” link is named “Back to home” for screen readers.
+- Tests: `i18n.test.ts` (spacing, spelling, Japanese loanwords, intro, sentence pattern, footer, view names), `home.spec.ts`, `navigation.spec.ts`, `helpers.ts`.
+
+### CONFIRMED
+
+- `pnpm verify`: 308 unit tests pass.
+- `pnpm e2e`: 103 passed, including leak-bench and both contrast checks; home in three languages, the heatmap page and the phone trail page checked by eye.
+

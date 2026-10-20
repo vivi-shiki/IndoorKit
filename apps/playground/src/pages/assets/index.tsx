@@ -259,6 +259,7 @@ export function AssetsPage() {
   return (
     <MapPageLayout
       title="page.assets.title"
+      desc="page.assets.desc"
       stageRef={stageRef}
       page={page}
       controls={

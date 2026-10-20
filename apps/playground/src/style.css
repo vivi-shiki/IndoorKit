@@ -22,6 +22,17 @@ a {
   margin: 0;
 }
 
+.bar-title {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.page-desc {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .metric {
   color: var(--muted);
   font-size: 14px;
@@ -539,6 +550,13 @@ details summary {
     padding: 8px 12px;
   }
 
+  /* 手机上说明只占一行 */
+  .page-desc {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .venue-name {
     top: 12px;
     bottom: auto;
@@ -606,6 +624,7 @@ details summary {
   /* 轨迹页的列表停在播放条上方 */
   .stage:has(.player) .panel {
     bottom: 112px;
+    max-height: 38%;
   }
 
   /* 抽屉打开时列表让位 */

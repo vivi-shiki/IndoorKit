@@ -18,7 +18,7 @@ export const SCENARIOS: readonly Scenario[] = [
   {
     id: 'hospital',
     title: 'scenario.hospital.title',
-    description: 'gallery.subtitle',
+    description: 'scenario.hospital.desc',
     views: [
       { title: 'group.efficiency.title', desc: 'group.efficiency.desc' },
       { title: 'group.people.title', desc: 'group.people.desc' },

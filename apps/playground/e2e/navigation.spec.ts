@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test';
-import { DEMOS, GROUP_TITLES, GROUPS, openDemo, openHome, PRODUCT, TITLES } from './helpers';
+import { DEMOS, GROUP_TITLES, GROUPS, openDemo, openHome, PAGE_DESCS, PRODUCT, TITLES } from './helpers';
 
 const sidebar = (page: Page) => page.getByTestId('nav-sidebar');
 const waitFor = (page: Page, demo: string) =>
@@ -33,6 +33,8 @@ test.describe('desktop sidebar', () => {
       await waitFor(page, demo);
       expect(new URL(page.url()).hash).toBe(`#/hospital/${demo}`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(TITLES[demo].en);
+      // 标题下是这一页的说明，菜单里只放标题
+      await expect(page.getByTestId('page-desc')).toHaveText(PAGE_DESCS[demo]);
       await expect(sidebar(page).getByRole('link', { name: TITLES[demo].en })).toHaveAttribute(
         'aria-current',
         'page',
@@ -69,6 +71,7 @@ test.describe('desktop sidebar', () => {
 
   test('the IndoorKit link goes back to the home page', async ({ page }) => {
     await openDemo(page, 'tracking');
+    await expect(sidebar(page).getByTestId('home-link')).toHaveAccessibleName('Back to home');
     await sidebar(page).getByTestId('home-link').click();
     await page.waitForFunction(() => window.__vivi?.demo === 'home');
     const stats = await page.evaluate(() => window.__viviStats!);

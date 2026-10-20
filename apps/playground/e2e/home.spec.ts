@@ -11,6 +11,26 @@ test('the home page introduces IndoorKit as an IoT and indoor map SDK', async ({
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('IndoorKit');
   await expect(page.getByTestId('home-tagline')).toHaveText(TAGLINES.en);
   await expect(page).toHaveTitle('IndoorKit');
+  await expect(page.getByTestId('home-intro')).toHaveText(
+    'The SDK handles the indoor map, venue data and real-time positions. The application layer handles the features and screens for each use case.',
+  );
+  // 页脚说明覆盖三个场景，不只提医院
+  await expect(page.locator('footer')).toContainText(
+    'All venues, people and equipment in these demos are fictional.',
+  );
+});
+
+test('the arrows name what they switch in every language', async ({ page }) => {
+  await openHome(page);
+  for (const [language, previous, next] of [
+    ['中文', '上一个场景', '下一个场景'],
+    ['English', 'Previous use case', 'Next use case'],
+    ['日本語', '前のシーン', '次のシーン'],
+  ]) {
+    await switcher(page).getByRole('button', { name: language }).click();
+    await expect(carousel(page).getByRole('button', { name: previous, exact: true })).toBeVisible();
+    await expect(carousel(page).getByRole('button', { name: next, exact: true })).toBeVisible();
+  }
 });
 
 test('the carousel shows hospital, parking and museum, starting with the hospital', async ({ page }) => {
@@ -26,20 +46,20 @@ test('the carousel shows hospital, parking and museum, starting with the hospita
 test('the arrows and dots switch scenarios', async ({ page }) => {
   await openHome(page);
   await carousel(page)
-    .getByRole('button', { name: /Next|下一个|次へ/ })
+    .getByRole('button', { name: /Next|下一个|次のシーン/ })
     .click();
   await expect(active(page)).toHaveAttribute('data-scenario', 'parking');
   await carousel(page)
-    .getByRole('button', { name: /Next|下一个|次へ/ })
+    .getByRole('button', { name: /Next|下一个|次のシーン/ })
     .click();
   await expect(active(page)).toHaveAttribute('data-scenario', 'museum');
   // 最后一页再往后回到第一页
   await carousel(page)
-    .getByRole('button', { name: /Next|下一个|次へ/ })
+    .getByRole('button', { name: /Next|下一个|次のシーン/ })
     .click();
   await expect(active(page)).toHaveAttribute('data-scenario', 'hospital');
   await carousel(page)
-    .getByRole('button', { name: /Previous|上一个|前へ/ })
+    .getByRole('button', { name: /Previous|上一个|前のシーン/ })
     .click();
   await expect(active(page)).toHaveAttribute('data-scenario', 'museum');
 
@@ -73,7 +93,7 @@ test('parking and museum are greyed out and marked as in development', async ({ 
       .click();
     const card = slide(page, id);
     await expect(card).toHaveAttribute('data-disabled', 'true');
-    await expect(card.getByTestId('coming-soon')).toHaveText('In development');
+    await expect(card.getByTestId('coming-soon')).toHaveText('Coming soon');
     await expect(card.getByRole('button', { name: /Open demo/ })).toBeDisabled();
     expect(
       await card.evaluate((el) => getComputedStyle(el.querySelector('.scenario-visual')!).filter),

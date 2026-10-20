@@ -89,6 +89,7 @@ export function OccupancyPage() {
   return (
     <MapPageLayout
       title="page.occupancy.title"
+      desc="page.occupancy.desc"
       stageRef={stageRef}
       page={page}
       controls={

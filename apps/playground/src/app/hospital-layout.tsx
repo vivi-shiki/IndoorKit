@@ -40,7 +40,15 @@ function HospitalNav({ current, onNavigate }: { current: HospitalPage; onNavigat
   return (
     <>
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-        <Link href="#/" className="back" data-testid="home-link" underline="hover" onClick={onNavigate}>
+        <Link
+          href="#/"
+          className="back"
+          data-testid="home-link"
+          aria-label={t('nav.home')}
+          title={t('nav.home')}
+          underline="hover"
+          onClick={onNavigate}
+        >
           ← IndoorKit
         </Link>
         <Typography className="nav-product" data-testid="nav-product" sx={{ mt: 0.5, fontWeight: 700 }}>
