@@ -76,3 +76,26 @@ test('the gallery names the hospital the same way as the map in each language', 
     '架空の「さくら総合病院」を舞台に、院内の機器の配置と稼働状況、人の位置と移動履歴を確認できるデモです。',
   );
 });
+
+test('the gallery uses the reviewed Chinese and English copy', async ({ page }) => {
+  await page.goto('./');
+  const subtitle = page.locator('.gallery > p').first();
+  await switcher(page).getByRole('button', { name: '中文' }).click();
+  await expect(subtitle).toHaveText(
+    '以虚构的“樱花综合医院”为例，展示院内设备的位置与运行状态，以及人员的位置与移动轨迹。',
+  );
+  await switcher(page).getByRole('button', { name: 'English' }).click();
+  await expect(subtitle).toHaveText(
+    'Explore equipment locations and operating status, along with people’s locations and movement history, in the fictional Sakura General Hospital.',
+  );
+});
+
+test('the alert popup on the map follows a language switch', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('indoorkit.locale', 'zh'));
+  await openDemo(page, 'alerts');
+  const popup = page.locator('[data-popup-id="alarm"]');
+  await expect(popup).toContainText(/[一-鿿]/, { timeout: 20_000 });
+  await switcher(page).getByRole('button', { name: 'English' }).click();
+  // 新告警也会用英文重开弹窗，所以只给很短的时间：切换后应立即变成英文
+  await expect(popup).not.toContainText(/[一-鿿]/, { timeout: 300 });
+});

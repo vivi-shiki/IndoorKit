@@ -178,10 +178,16 @@ export async function mountAlertsPage(root: HTMLElement) {
   };
   const unhandled = () => alarm.alarms().filter((a) => stateOf(a.id) !== 'resolved').length;
 
+  // 记住弹窗对应的告警，切换语言时用新语言重开
+  let popupAlarm: Alarm | null = null;
+  const showPopup = (a: Alarm) => {
+    popupAlarm = a;
+    popup.open({ id: 'alarm', coord: a.coord, text: `${subjectName(a.subjectId)} · ${kindText(a)}` });
+  };
   const locate = (a: Alarm) => {
     floor.set(a.levelId);
     map.easeTo({ center: a.coord, duration: 500 });
-    popup.open({ id: 'alarm', coord: a.coord, text: `${subjectName(a.subjectId)} · ${kindText(a)}` });
+    showPopup(a);
   };
   $('[data-testid="alert-list"]').addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -204,8 +210,7 @@ export async function mountAlertsPage(root: HTMLElement) {
   };
   indoor.events.on('alarm:raise', (a) => {
     // 当前楼层的新告警弹窗提示
-    if (a.levelId === floor.current().id)
-      popup.open({ id: 'alarm', coord: a.coord, text: `${subjectName(a.subjectId)} · ${kindText(a)}` });
+    if (a.levelId === floor.current().id) showPopup(a);
     dirty = true;
   });
   indoor.events.on('positions:update', () => {
@@ -217,6 +222,7 @@ export async function mountAlertsPage(root: HTMLElement) {
   const relabel = () => {
     layerChips.render();
     translate(root);
+    if (popupAlarm && popup.list().includes('alarm')) showPopup(popupAlarm);
     refresh(true);
   };
   cleanups.push(i18n.subscribe(relabel));

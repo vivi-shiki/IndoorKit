@@ -12,7 +12,7 @@ export type Demo = (typeof DEMOS)[number];
 /** 两条业务线在三种语言下的名称 */
 export const GROUP_TITLES: Record<keyof typeof GROUPS, { en: string; zh: string; ja: string }> = {
   efficiency: { en: 'Equipment View', zh: '设备视图', ja: '機器ビュー' },
-  people: { en: 'People View', zh: '人员视图', ja: '人ビュー' },
+  people: { en: 'People View', zh: '人员视图', ja: '人の位置・移動' },
 };
 
 /** 各页面在三种语言下的标题（业务名称，不带编号） */
@@ -20,8 +20,8 @@ export const TITLES: Record<Demo, { en: string; zh: string; ja: string }> = {
   assets: { en: 'Equipment Map', zh: '设备地图', ja: '機器マップ' },
   tracking: { en: 'Live Map', zh: '实时位置', ja: '現在地マップ' },
   trail: { en: 'Route History', zh: '路线回看', ja: '経路の振り返り' },
-  alerts: { en: 'Boundary Notices', zh: '越界提醒', ja: 'エリア通知' },
-  occupancy: { en: 'Crowding Heatmap', zh: '拥挤热度', ja: '混雑状況ヒートマップ' },
+  alerts: { en: 'Zone Alerts', zh: '区域告警', ja: 'エリアアラート' },
+  occupancy: { en: 'Location Report Heatmap', zh: '位置分布热力图', ja: '位置情報ヒートマップ' },
 };
 
 /** 产品名：浏览器标签页标题和首页大标题使用 */

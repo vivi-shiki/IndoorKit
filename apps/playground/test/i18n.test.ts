@@ -22,6 +22,59 @@ describe('messages', () => {
   });
 });
 
+describe('terminology', () => {
+  // 同一个系统事件在三种语言里各用一个词：告警 / Alert / アラート
+  const TERMS = {
+    'page.alerts.title': { zh: '区域告警', en: 'Zone Alerts', ja: 'エリアアラート' },
+    'trail.alarms': { zh: '沿途告警', en: 'Alerts Along the Route', ja: '経路上のアラート' },
+    'layer.fence': { zh: '电子围栏', en: 'Geofence', ja: 'ジオフェンス' },
+    'metric.alerts': { zh: '告警', en: 'Alerts', ja: 'アラート' },
+    // 热力图统计的是定位上报次数，不是人数
+    'page.occupancy.title': {
+      zh: '位置分布热力图',
+      en: 'Location Report Heatmap',
+      ja: '位置情報ヒートマップ',
+    },
+    'metric.heatPoints': {
+      zh: '选定时段内的定位上报次数',
+      en: 'Location reports in the selected period',
+      ja: '選択期間内の測位回数',
+    },
+    'busy.title': {
+      zh: '定位上报次数最多的区域',
+      en: 'Areas with the most location reports',
+      ja: '測位回数の多いエリア',
+    },
+    // 「本科室」容易被理解成当前用户的科室
+    'place.outsideOwn': { zh: '位于所属科室外', en: 'Outside assigned department', ja: '所属診療科外' },
+    'metric.outside': { zh: '位于所属科室外', en: 'Outside assigned department', ja: '所属診療科外' },
+    'control.departments': { zh: '科室区域', en: 'Department areas', ja: '診療科エリア' },
+    'asset.monitor': { zh: '监护仪', en: 'Patient monitor', ja: '生体モニター' },
+    'trail.range': { zh: '时间范围', en: 'Time range', ja: '時間範囲' },
+    'trail.speed': { zh: '回放速度', en: 'Playback speed', ja: '再生速度' },
+    'status.maintenance': { zh: '维修中', en: 'Under maintenance', ja: '保守中' },
+    'group.people.title': { zh: '人员视图', en: 'People View', ja: '人の位置・移動' },
+    'control.roles': { zh: '角色', en: 'Roles', ja: '人物区分' },
+  } as const;
+
+  it('uses the agreed terms', () => {
+    for (const [key, values] of Object.entries(TERMS)) {
+      for (const locale of LOCALES) {
+        expect(messages[locale][key as keyof typeof messages.zh], `${locale} ${key}`).toBe(values[locale]);
+      }
+    }
+  });
+
+  it('does not mix in other words for the same alert', () => {
+    const banned = { zh: /提醒|报警|本科室|拥挤/, en: /notice|alarm|crowd|busiest/i, ja: /通知|警報|混雑/ };
+    for (const locale of LOCALES) {
+      for (const [key, text] of Object.entries(messages[locale])) {
+        expect(text, `${locale} ${key}`).not.toMatch(banned[locale]);
+      }
+    }
+  });
+});
+
 describe('detectLocale', () => {
   it('prefers a saved locale', () => {
     expect(detectLocale(memoryStorage({ [STORAGE_KEY]: 'ja' }), ['en-US'])).toBe('ja');

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { openDemo, pollHook } from './helpers';
 
-/** 拥挤热度页：缩小时画热力图，放大后换成按权重着色的圆点，中间一段两者交叉淡入淡出 */
+/** 位置分布热力图页：缩小时画热力图，放大后换成按权重着色的圆点，中间一段两者交叉淡入淡出 */
 test('crowding shows a heatmap when zoomed out and colored cells when zoomed in', async ({ page }) => {
   await openDemo(page, 'occupancy');
   await pollHook(page, () => window.__vivi!.heatPointCount()).toBeGreaterThan(0);
