@@ -1,29 +1,20 @@
-import { i18n, storage } from './app-i18n';
-import { createThemeSetting } from './theme';
+import { useSyncExternalStore } from 'react';
+import { storage } from './app-i18n';
+import { createThemeSetting, type ThemeName } from './theme';
 
 export const appTheme = createThemeSetting({
   storage,
   prefersDark: typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches,
 });
 
+// 地图上的浮层样式按 data-theme 取颜色
 const apply = () => {
   document.documentElement.dataset.theme = appTheme.value;
 };
 apply();
 appTheme.subscribe(apply);
 
-/** 亮色 / 暗色切换按钮，文字是切换后的主题 */
-export function themeToggle(): HTMLElement {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'theme-toggle';
-  const render = () => {
-    button.textContent = i18n.t(appTheme.value === 'dark' ? 'theme.light' : 'theme.dark');
-    button.setAttribute('aria-pressed', String(appTheme.value === 'dark'));
-  };
-  render();
-  button.addEventListener('click', () => appTheme.set(appTheme.value === 'dark' ? 'light' : 'dark'));
-  appTheme.subscribe(render);
-  i18n.subscribe(render);
-  return button;
+/** 当前主题；切换时使用它的组件重新渲染 */
+export function useThemeName(): ThemeName {
+  return useSyncExternalStore(appTheme.subscribe, () => appTheme.value);
 }

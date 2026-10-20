@@ -1,7 +1,7 @@
 /** 端到端测试和 agent 通过 window.__vivi 读取当前页面状态 */
 export interface ViviTestHooks {
   ready: boolean;
-  demo: 'gallery' | 'tracking' | 'assets' | 'trail' | 'alerts' | 'occupancy';
+  demo: 'home' | 'tracking' | 'assets' | 'trail' | 'alerts' | 'occupancy';
   // 所有地图页
   floor(): string;
   levelIdOf(shortName: string): string;

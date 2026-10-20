@@ -1,4 +1,5 @@
-import { createI18n, LOCALE_NAMES, LOCALES, type MessageKey, type StorageLike } from './i18n';
+import { useEffect, useSyncExternalStore } from 'react';
+import { createI18n, type Locale, type MessageKey, type StorageLike } from './i18n';
 
 const memoryFallback = new Map<string, string>();
 export const storage: StorageLike = {
@@ -30,52 +31,22 @@ if (url.searchParams.has('lang')) {
   history.replaceState(history.state, '', url);
 }
 
-let pageTitle: MessageKey | null = null;
-
-/** 当前页面的标题；浏览器标签页显示「页面名 | 产品名」，首页只显示产品名 */
-export function setPageTitle(key: MessageKey | null) {
-  pageTitle = key;
-  translate();
+/** 当前语言；语言切换时使用它的组件重新渲染 */
+export function useLocale(): Locale {
+  return useSyncExternalStore(i18n.subscribe, () => i18n.locale);
 }
 
-/** 把 data-i18n / data-i18n-aria / data-i18n-placeholder 标记的元素翻译成当前语言 */
-export function translate(root: ParentNode = document) {
-  document.documentElement.lang = i18n.locale;
-  document.title = pageTitle ? `${i18n.t(pageTitle)} | ${i18n.t('app.name')}` : i18n.t('app.name');
-  for (const el of root.querySelectorAll<HTMLElement>('[data-i18n]')) {
-    el.textContent = i18n.t(el.dataset.i18n as MessageKey);
-  }
-  for (const el of root.querySelectorAll<HTMLElement>('[data-i18n-aria]')) {
-    el.setAttribute('aria-label', i18n.t(el.dataset.i18nAria as MessageKey));
-  }
-  for (const el of root.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]')) {
-    el.placeholder = i18n.t(el.dataset.i18nPlaceholder as MessageKey);
-  }
+/** 翻译函数，组件随语言切换重新渲染 */
+export function useT() {
+  useLocale();
+  return i18n.t;
 }
 
-i18n.subscribe(() => translate());
-
-/** 语言切换按钮组：中文 / English / 日本語 */
-export function languageSwitcher(): { element: HTMLElement; dispose: () => void } {
-  const group = document.createElement('div');
-  group.className = 'lang-switch';
-  group.setAttribute('role', 'group');
-  group.dataset.i18nAria = 'language.label';
-  const render = () => {
-    group.setAttribute('aria-label', i18n.t('language.label'));
-    group.replaceChildren(
-      ...LOCALES.map((locale) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.lang = locale;
-        button.textContent = LOCALE_NAMES[locale];
-        button.setAttribute('aria-pressed', String(locale === i18n.locale));
-        button.addEventListener('click', () => i18n.setLocale(locale));
-        return button;
-      }),
-    );
-  };
-  render();
-  const dispose = i18n.subscribe(render);
-  return { element: group, dispose: () => void dispose() };
+/** 浏览器标签页显示「页面名 | 医院演示名」，首页只显示 SDK 名 */
+export function usePageTitle(key: MessageKey | null) {
+  const locale = useLocale();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.title = key ? `${i18n.t(key)} | ${i18n.t('app.name')}` : 'IndoorKit';
+  }, [key, locale]);
 }
