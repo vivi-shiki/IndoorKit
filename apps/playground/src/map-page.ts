@@ -161,7 +161,10 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
     hooks.departmentLayerVisible = () => department.visible();
   }
 
-  const rendered = (layerId: string) => map.queryRenderedFeatures({ layers: [layerId] });
+  // queryRenderedFeatures 不看图层的 minzoom / maxzoom：刚缩放时还会返回保留着的其他级别瓦片里的要素，
+  // 而绘制时会跳过当前缩放下隐藏的图层，所以这里按绘制的规则先判断一次
+  const rendered = (layerId: string) =>
+    map.getLayer(layerId)!.isHidden(map.getZoom()) ? [] : map.queryRenderedFeatures({ layers: [layerId] });
   hooks.floor = () => floor.current().shortName.en ?? '';
   hooks.levelIdOf = (short) => floor.resolve(short).id;
   hooks.renderedLevelIds = (layerId) =>
@@ -175,7 +178,10 @@ export async function mountMapPage<const P extends readonly AnyPlugin[]>(
   hooks.styleLayerIds = () => map.getStyle().layers.map((layer) => layer.id);
   hooks.mapBackground = () => String(map.getPaintProperty('background', 'background-color'));
   hooks.zoom = () => map.getZoom();
-  hooks.setZoom = (zoom) => map.jumpTo({ zoom });
+  // 不返回 jumpTo 的结果：那是整个 Map 对象，page.evaluate 会去序列化它
+  hooks.setZoom = (zoom) => {
+    map.jumpTo({ zoom });
+  };
   hooks.venueScreenCenter = () => {
     const [[west, south], [east, north]] = venue.bounds;
     const point = map.project([(west + east) / 2, (south + north) / 2]);

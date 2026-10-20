@@ -22,6 +22,24 @@ export interface HeatmapApi {
   groups(): readonly string[] | null;
 }
 
+/** 网格权重到这个值时颜色和热度到顶 */
+const WEIGHT_MAX = 20;
+/** Mapbox 热力图示例的色带：从透明的蓝到红，热力图和着色圆点共用 */
+const PALETTE = [
+  'rgba(33,102,172,0)',
+  'rgb(103,169,207)',
+  'rgb(209,229,240)',
+  'rgb(253,219,199)',
+  'rgb(239,138,98)',
+  'rgb(178,24,43)',
+];
+/** 色带均匀铺在 [0, max] 上 */
+const ramp = (max: number) => PALETTE.flatMap((color, i) => [(i / (PALETTE.length - 1)) * max, color]);
+/** 放大到 POINTS_FROM 开始出现着色圆点，到 HEAT_UNTIL 热力图完全淡出 */
+const POINTS_FROM = 19;
+const POINTS_FULL = 20;
+const HEAT_UNTIL = 21;
+
 interface Cell {
   x: number;
   y: number;
@@ -31,6 +49,10 @@ interface Cell {
 /**
  * 人员密度热力图。样本按「分钟 × 楼层 × 网格」累加计数，
  * 内存只与最大窗口的分钟数和网格数有关，与标签数和上报次数无关。
+ *
+ * 显示按 Mapbox「Create a heatmap layer」示例：缩小时是热力图；放大后网格间距超过光斑半径，
+ * 热力图会露出一个个格子中心，所以在 POINTS_FROM～HEAT_UNTIL 之间淡出，
+ * 换成按权重着色、带白边的圆点（同一份数据、同一套色带）。
  */
 export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPosition) => string }) {
   return definePlugin({
@@ -41,10 +63,33 @@ export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPo
         {
           id: 'indoor-heat',
           type: 'heatmap',
+          maxzoom: HEAT_UNTIL,
           paint: {
-            'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, 20, 1],
-            'heatmap-radius': 25,
-            'heatmap-opacity': 0.8,
+            'heatmap-weight': ['interpolate', ['linear'], ['get', 'weight'], 0, 0, WEIGHT_MAX, 1],
+            'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 16, 1, HEAT_UNTIL, 3],
+            'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'], ...ramp(1)],
+            'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 16, 10, 18.5, 25, HEAT_UNTIL, 60],
+            'heatmap-opacity': ['interpolate', ['linear'], ['zoom'], POINTS_FROM, 1, HEAT_UNTIL, 0],
+          },
+        },
+        {
+          id: 'indoor-heat-point',
+          type: 'circle',
+          minzoom: POINTS_FROM,
+          paint: {
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              POINTS_FROM,
+              ['interpolate', ['linear'], ['get', 'weight'], 1, 2, WEIGHT_MAX, 7],
+              22,
+              ['interpolate', ['linear'], ['get', 'weight'], 1, 8, WEIGHT_MAX, 50],
+            ],
+            'circle-color': ['interpolate', ['linear'], ['get', 'weight'], ...ramp(WEIGHT_MAX)],
+            'circle-stroke-color': 'white',
+            'circle-stroke-width': 1,
+            'circle-opacity': ['interpolate', ['linear'], ['zoom'], POINTS_FROM, 0, POINTS_FULL, 1],
           },
         },
       ]);
@@ -74,12 +119,12 @@ export function heatmapPlugin(options: { cellMeters: number; groupOf?: (p: TagPo
         }
         count = 0;
         features = [];
-        for (const c of merged.values()) {
+        for (const [key, c] of merged) {
           count += c.count;
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: toLngLat([(c.x + 0.5) * cell, (c.y + 0.5) * cell]) },
-            properties: { weight: c.count, level_id: levelId },
+            properties: { id: key, weight: c.count, level_id: levelId },
           });
         }
         overlay.setData(features);

@@ -11,7 +11,8 @@ Each demo calls `setHooks` (`apps/playground/src/test-hooks.ts`) and fills in wh
 | Hook | Demo | Returns |
 | --- | --- | --- |
 | `floor()`, `levelIdOf(short)` | every map page | current floor short name; level id for a short name |
-| `renderedLevelIds(layer)`, `renderedCount(layer)` | every map page | what is actually rendered, via `queryRenderedFeatures` |
+| `renderedLevelIds(layer)`, `renderedCount(layer)` | every map page | what is actually rendered, via `queryRenderedFeatures`; a layer hidden at the current zoom (`minzoom`, `maxzoom`, `visibility`) counts as nothing, because the query alone still returns features from tiles kept from another zoom level |
+| `zoom()`, `setZoom(z)` | every map page | current zoom; jump to a zoom keeping the center |
 | `labelLanguage()` | every map page | the first language in the label expression |
 | `resourceLabels()` | every map page | `indoor.resources.labels()` |
 | `styleLayerIds()` | every map page | ids of every layer in the live MapLibre style |

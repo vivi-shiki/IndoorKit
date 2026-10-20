@@ -29,3 +29,20 @@ Reference: the Mapbox GL JS example "Create a heatmap layer" (earthquakes). A `h
 Before the change: the 3 unit tests fail (no `maxzoom`, no point layer, no `id`), and the e2e test fails at zoom 19.5 (no colored cells).
 
 # PROPOSALS
+
+- No.1 Heatmap and colored-circle layers crossfading by zoom, as in the Mapbox example [CONFIRMED]
+
+## No.1 Heatmap and colored-circle layers crossfading by zoom, as in the Mapbox example
+
+### CODE CHANGE
+
+- `packages/plugins/src/heatmap.ts`: the `indoor-heat` heatmap layer gets `maxzoom` 21, intensity 1→3 and radius 10→25→60 px over zoom 16→18.5→21, the Mapbox color ramp on `heatmap-density`, and opacity 1 at 19 → 0 at 21. A new `indoor-heat-point` circle layer on the same source (`minzoom` 19) is colored by `weight` with the same palette, sized by zoom and then weight, has a white 1 px stroke, and fades in from 19 to 20. The palette is defined once and spread over density 0–1 for the heatmap and weight 0–20 for the circles. Cell features carry `id` (the grid key).
+- Playground hooks `zoom()` / `setZoom(z)`.
+
+### CONFIRMED
+
+- Unit tests 11/11; `heat-zoom.spec.ts` passes 10/10 in parallel and 20/20 serially. Screenshots at zoom 18.5 / 19.5 / 20.5 / 21.5: continuous heatmap, crossfade, colored circles only.
+- Two test-hook defects found while confirming, both fixed:
+  - `setZoom` returned `map.jumpTo(...)`, the whole MapLibre `Map`. `page.evaluate` serialized it, which took 60–85 s per call under six parallel workers, so the e2e test timed out in the full suite. It now returns nothing; the call takes milliseconds.
+  - `renderedCount` / `renderedLevelIds` used `queryRenderedFeatures` alone. That does not check the layer's `minzoom` / `maxzoom`, so right after zooming out it still returned circles from tiles kept from the higher zoom, although the painter skips layers hidden at the current zoom. The hook now applies `StyleLayer.isHidden(zoom)` first.
+- `pnpm verify` 228/228, `pnpm build`, `pnpm e2e` 82/82 twice in a row. KB: `Index.md` (heatmap display) and `KB_Testing.md` (hooks) updated.
