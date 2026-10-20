@@ -68,3 +68,43 @@ describe('popupPlugin', () => {
     expect(fake.listenerCount('move')).toBe(0);
   });
 });
+
+describe('floor overlay updates', () => {
+  // 真实地图在上一次 setData 的瓦片还没切完时再次 setData，同一瓦片的两次解析会交错，
+  // queryRenderedFeatures 随后会读到不配套的数据并抛出 "feature index out of bounds"
+  it('sends the next data only after the previous update has loaded, keeping the latest', async () => {
+    const { map, fake } = await openMap([floorPlugin, polygonPlugin]);
+    fake.holdSourceLoads = true;
+    const sent = fake.sourceUpdates('indoor-polygons');
+
+    map.plugins.polygon.add({ id: 'a', floor: '1F', coordinates: ring });
+    map.plugins.polygon.add({ id: 'b', floor: '1F', coordinates: ring });
+    map.plugins.polygon.add({ id: 'c', floor: '1F', coordinates: ring });
+    expect(fake.sourceUpdates('indoor-polygons')).toBe(sent + 1);
+    expect(featureCollection(fake, 'indoor-polygons').features.map((f) => f.properties!.id)).toEqual(['a']);
+
+    // 另一个 source 加载完不放行
+    fake.fire('sourcedata', { type: 'sourcedata', sourceId: 'indoor-other' });
+    expect(fake.sourceUpdates('indoor-polygons')).toBe(sent + 1);
+
+    fake.finishSourceLoad('indoor-polygons');
+    expect(fake.sourceUpdates('indoor-polygons')).toBe(sent + 2);
+    expect(featureCollection(fake, 'indoor-polygons').features.map((f) => f.properties!.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+
+    // 没有新数据时加载完就停下
+    fake.finishSourceLoad('indoor-polygons');
+    expect(fake.sourceUpdates('indoor-polygons')).toBe(sent + 2);
+  });
+
+  it('sends right away when nothing is loading', async () => {
+    const { map, fake } = await openMap([floorPlugin, polygonPlugin]);
+    const sent = fake.sourceUpdates('indoor-polygons');
+    map.plugins.polygon.add({ id: 'a', floor: '1F', coordinates: ring });
+    map.plugins.polygon.add({ id: 'b', floor: '1F', coordinates: ring });
+    expect(fake.sourceUpdates('indoor-polygons')).toBe(sent + 2);
+  });
+});

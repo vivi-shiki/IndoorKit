@@ -13,6 +13,14 @@ export class FakeMap implements MapLike {
   #basePaint = new Map<string, Record<string, unknown>>();
   #offset = { x: 0, y: 0 };
   #container?: HTMLElement;
+  /** setData 之后还没加载完的 source */
+  #loading = new Set<string>();
+  #updates = new Map<string, number>();
+  /**
+   * 默认 setData 立即加载完并触发 sourcedata。设为 true 时 source 保持加载中，
+   * 直到 finishSourceLoad，用来模拟真实地图在 Worker 里重新切瓦片的那段时间。
+   */
+  holdSourceLoads = false;
 
   constructor(baseLayers: LayerSpecification[] = []) {
     for (const layer of baseLayers) {
@@ -33,8 +41,24 @@ export class FakeMap implements MapLike {
     return {
       setData: (data: unknown) => {
         entry.data = data;
+        this.#updates.set(id, (this.#updates.get(id) ?? 0) + 1);
+        if (this.holdSourceLoads) this.#loading.add(id);
+        else this.fire('sourcedata', { type: 'sourcedata', sourceId: id });
       },
     };
+  }
+  isSourceLoaded(id: string) {
+    if (!this.#sources.has(id)) throw new Error(`source "${id}" does not exist`);
+    return !this.#loading.has(id);
+  }
+  /** 结束一次被 holdSourceLoads 挂起的加载 */
+  finishSourceLoad(id: string) {
+    if (!this.#loading.delete(id)) throw new Error(`source "${id}" is not loading`);
+    this.fire('sourcedata', { type: 'sourcedata', sourceId: id });
+  }
+  /** source 收到过几次 setData */
+  sourceUpdates(id: string) {
+    return this.#updates.get(id) ?? 0;
   }
   getSourceData(id: string) {
     return this.#sources.get(id)?.data;
