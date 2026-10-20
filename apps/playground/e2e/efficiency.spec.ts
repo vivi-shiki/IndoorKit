@@ -72,7 +72,7 @@ test.describe('Asset Overview: departments and drill-down', () => {
 
   test('shows the department ranges on the map', async ({ page }) => {
     await openDemo(page, 'assets');
-    await pollHook(page, () => window.__vivi!.renderedCount('indoor-departments')).toBeGreaterThan(0);
+    await pollHook(page, () => window.__vivi!.renderedCount('indoor-zones')).toBeGreaterThan(0);
     await page.getByTestId('toggle-departments').click();
     await pollHook(page, () => window.__vivi!.departmentLayerVisible()).toBe(false);
   });

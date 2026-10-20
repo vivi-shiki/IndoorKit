@@ -1,10 +1,11 @@
-import type { PositionBatch } from '@indoorkit/core';
+import type { PositionBatch } from '@indoorkit/rtls';
+import { departmentExtension } from '@indoorkit/hospital';
 import { buildVenueModel } from '@indoorkit/imdf';
 import { generateVenue, SAKURA_HOSPITAL } from '@indoorkit/venue-gen';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createSimulationProvider, createWorkerProvider, exposeSimulation } from '../src/index';
 
-const venue = buildVenueModel(generateVenue(SAKURA_HOSPITAL));
+const venue = buildVenueModel(generateVenue(SAKURA_HOSPITAL), [departmentExtension]);
 
 describe('createSimulationProvider', () => {
   afterEach(() => {

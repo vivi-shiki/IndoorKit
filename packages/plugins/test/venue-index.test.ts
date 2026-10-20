@@ -7,15 +7,9 @@ const venue = buildVenueModel(makeArchive());
 const index = createVenueIndex(venue);
 
 describe('createVenueIndex', () => {
-  it('finds the unit and the department that cover a point', () => {
-    expect(index.locate(IDS.level1, [0.0005, 0.0005])).toEqual({
-      unitId: IDS.room,
-      departmentId: IDS.department,
-    });
-  });
-
-  it('reports a public area as a unit without a department', () => {
-    expect(index.locate(IDS.level1, [0.0015, 0.0005])).toEqual({ unitId: IDS.hall, departmentId: null });
+  it('finds the unit that covers a point', () => {
+    expect(index.locate(IDS.level1, [0.0005, 0.0005])).toEqual({ unitId: IDS.room });
+    expect(index.locate(IDS.level1, [0.0015, 0.0005])).toEqual({ unitId: IDS.hall });
   });
 
   it('returns null outside every unit or on another floor', () => {
@@ -23,20 +17,17 @@ describe('createVenueIndex', () => {
     expect(index.locate(IDS.level2, [0.0005, 0.0005])).toBeNull();
   });
 
-  it('describes units and departments', () => {
+  it('describes units', () => {
     const unit = index.unit(IDS.room);
-    expect(unit).toMatchObject({ id: IDS.room, levelId: IDS.level1, departmentId: IDS.department });
+    expect(unit).toMatchObject({ id: IDS.room, levelId: IDS.level1, category: 'room' });
+    expect(unit).not.toHaveProperty('departmentId');
     expect(unit.name.en).toBe('Internal Medicine');
     expect(unit.center[0]).toBeCloseTo(0.0005, 9);
     expect(unit.center[1]).toBeCloseTo(0.0005, 9);
-    expect(index.department(IDS.department).code).toBe('internal');
-    expect(index.departmentByCode('internal').id).toBe(IDS.department);
-    expect(index.departmentLevels(IDS.department)).toEqual([IDS.level1]);
+    expect(index).not.toHaveProperty('department');
   });
 
   it('throws for unknown ids', () => {
     expect(() => index.unit('nope')).toThrow(/unknown unit/);
-    expect(() => index.department('nope')).toThrow(/unknown department/);
-    expect(() => index.departmentByCode('nope')).toThrow(/unknown department/);
   });
 });

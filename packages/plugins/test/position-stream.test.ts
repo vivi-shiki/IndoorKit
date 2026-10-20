@@ -1,4 +1,4 @@
-import { createManualProvider } from '@indoorkit/core/testing';
+import { createManualProvider } from '@indoorkit/rtls/testing';
 import { describe, expect, it } from 'vitest';
 import {
   floorPlugin,

@@ -1,10 +1,11 @@
-import type { TagPosition } from '@indoorkit/core';
-import { buildVenueModel, type VenueModel } from '@indoorkit/imdf';
+import type { TagPosition } from '@indoorkit/rtls';
+import { departmentExtension } from '@indoorkit/hospital';
+import { buildVenueModel } from '@indoorkit/imdf';
 import { generateVenue, SAKURA_HOSPITAL } from '@indoorkit/venue-gen';
 import { describe, expect, it } from 'vitest';
 import { createSimulation } from '../src/index';
 
-const venue: VenueModel = buildVenueModel(generateVenue(SAKURA_HOSPITAL));
+const venue = buildVenueModel(generateVenue(SAKURA_HOSPITAL), [departmentExtension]);
 
 type Box = [number, number, number, number];
 const boxOf = (geometry: GeoJSON.Geometry): Box => {

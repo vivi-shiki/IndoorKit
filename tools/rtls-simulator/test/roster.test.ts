@@ -1,22 +1,25 @@
-import type { TagPosition } from '@indoorkit/core';
-import { buildVenueModel, type VenueModel } from '@indoorkit/imdf';
-import { generateVenue, SAKURA_HOSPITAL } from '@indoorkit/venue-gen';
-import { describe, expect, it } from 'vitest';
 import {
   ASSET_TYPES,
-  createRoster,
-  createSimulation,
   DAY_START_MS,
   dayTime,
+  departmentExtension,
+  departmentsOf,
   MOBILE_ASSET_TYPES,
   ROLES,
   statusAt,
   statusSummary,
-} from '../src/index';
+} from '@indoorkit/hospital';
+import { buildVenueModel } from '@indoorkit/imdf';
+import type { TagPosition } from '@indoorkit/rtls';
+import { generateVenue, SAKURA_HOSPITAL } from '@indoorkit/venue-gen';
+import { describe, expect, it } from 'vitest';
+import * as simulator from '../src/index';
+import { createRoster, createSimulation } from '../src/index';
 
-const venue: VenueModel = buildVenueModel(generateVenue(SAKURA_HOSPITAL));
+const venue = buildVenueModel(generateVenue(SAKURA_HOSPITAL), [departmentExtension]);
+const departments = departmentsOf(venue);
 const DAY = 24 * 3600_000;
-const deptByCode = (code: string) => venue.departments.find((d) => d.code === code)!;
+const deptByCode = (code: string) => departments.find((d) => d.code === code)!;
 
 type Box = [number, number, number, number];
 const boxOf = (geometry: GeoJSON.Geometry): Box => {
@@ -26,7 +29,7 @@ const boxOf = (geometry: GeoJSON.Geometry): Box => {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 };
 const owner = new Map<string, string>();
-for (const d of venue.departments) for (const id of d.unitIds) owner.set(id, d.id);
+for (const d of departments) for (const id of d.unitIds) owner.set(id, d.id);
 const units = venue.features.units.features.map((u) => ({
   id: u.properties.id,
   level: u.properties.level_id,
@@ -41,6 +44,13 @@ const departmentAt = (p: TagPosition) => {
   return unit ? (owner.get(unit.id) ?? null) : null;
 };
 
+describe('simulator exports', () => {
+  it('generates data only and leaves the hospital model to @indoorkit/hospital', () => {
+    for (const name of ['ROLES', 'ASSET_TYPES', 'ASSET_STATUSES', 'statusAt', 'statusSummary', 'sosActive', 'dayTime'])
+      expect(simulator).not.toHaveProperty(name);
+  });
+});
+
 describe('createRoster', () => {
   const roster = createRoster(venue, { people: 400, assets: 200 });
 
@@ -52,7 +62,7 @@ describe('createRoster', () => {
   });
 
   it('puts every person and every asset in a department', () => {
-    const ids = new Set(venue.departments.map((d) => d.id));
+    const ids = new Set(departments.map((d) => d.id));
     for (const p of roster.people) expect(ids.has(p.departmentId)).toBe(true);
     for (const a of roster.assets) expect(ids.has(a.departmentId)).toBe(true);
     expect(new Set(roster.people.map((p) => p.id)).size).toBe(400);

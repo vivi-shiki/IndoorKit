@@ -1,19 +1,19 @@
-import { createManualProvider } from '@indoorkit/core/testing';
-import { buildVenueModel, type ImdfArchive } from '@indoorkit/imdf';
+import { buildVenueModel, type ImdfArchive, type RawCollection } from '@indoorkit/imdf';
+import { createVenueIndex } from '@indoorkit/plugins';
+import type { PositionBatch, TagPosition } from '@indoorkit/rtls';
 import { describe, expect, it } from 'vitest';
-import { IDS, makeArchive } from '../../imdf/test/fixture';
+import { IDS, makeArchive } from '../../../packages/imdf/test/fixture';
 import {
   type AlarmSubject,
-  alarmPlugin,
   createAlarmEngine,
-  createVenueIndex,
+  createHospital,
   type DepartmentRule,
+  departmentExtension,
   type FenceRule,
-  floorPlugin,
-  polygonPlugin,
-  positionStreamPlugin,
 } from '../src/index';
-import { batch, openMap, tag } from './helpers';
+
+const tag = (id: string, levelId: string, coord: [number, number]): TagPosition => ({ id, levelId, coord });
+const batch = (time: number, positions: TagPosition[]): PositionBatch => ({ time, positions });
 
 /**
  * 1F：西半边是内科房间，东北角是外科房间，东南角是公共走廊。
@@ -58,7 +58,7 @@ function archive(): ImdfArchive {
     },
     properties: { category: 'room', level_id: IDS.level1, name: { ja: '外科', en: 'Surgery' } },
   });
-  a.department!.features.push({
+  (a.department as RawCollection).features.push({
     type: 'Feature',
     id: SURGERY,
     feature_type: 'department',
@@ -67,7 +67,8 @@ function archive(): ImdfArchive {
   });
   return a;
 }
-const venue = buildVenueModel(archive());
+const venue = buildVenueModel(archive(), [departmentExtension]);
+const hospital = createHospital(venue, createVenueIndex(venue));
 const INTERNAL = IDS.department;
 const ROOM: [number, number] = [0.0005, 0.0005];
 const HALL: [number, number] = [0.0015, 0.0002];
@@ -109,7 +110,7 @@ const wardFence = (rule: Partial<FenceRule> = {}): FenceRule => ({
   ...rule,
 });
 const engine = (departmentRules: DepartmentRule[], fences: FenceRule[] = []) => {
-  const e = createAlarmEngine({ index: createVenueIndex(venue), subjects, departmentRules });
+  const e = createAlarmEngine({ hospital, subjects, departmentRules });
   for (const f of fences) e.addFence(f);
   return e;
 };
@@ -264,32 +265,5 @@ describe('status layer', () => {
     ];
     expect(alarms).toHaveLength(3);
     expect(new Set(alarms.map((a) => a.id)).size).toBe(3);
-  });
-});
-
-describe('alarmPlugin', () => {
-  it('checks every position update, draws its fences and keeps the alarms', async () => {
-    const provider = createManualProvider();
-    const { map } = await openMap([
-      floorPlugin,
-      polygonPlugin,
-      positionStreamPlugin({ provider, intervalMs: 1000, frame: () => () => {} }),
-      alarmPlugin({ subjects, departmentRules: [patientLeaves] }),
-    ] as const);
-    const raised: string[] = [];
-    map.events.on('alarm:raise', (a) => raised.push(`${a.subjectId}:${a.kind}`));
-    const { levelId: _, ...fence } = wardFence();
-    map.plugins.alarm.addFence({ ...fence, floor: '1F' });
-    expect(map.plugins.polygon.count()).toBe(1);
-    expect(map.plugins.alarm.fences().map((f) => f.id)).toEqual(['ward']);
-
-    provider.emit(batch(0, [tag('patient', L1, HALL)]));
-    expect(raised).toEqual(['patient:outside-own']);
-    expect(map.plugins.alarm.alarms().map((a) => a.subjectId)).toEqual(['patient']);
-
-    expect(map.plugins.alarm.removeFence('ward')).toBe(true);
-    expect(map.plugins.polygon.count()).toBe(0);
-    await map.destroy();
-    expect(map.resources.size).toBe(0);
   });
 });

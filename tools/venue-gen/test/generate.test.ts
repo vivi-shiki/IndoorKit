@@ -1,4 +1,5 @@
-import { validateImdf } from '@indoorkit/imdf';
+import { departmentExtension } from '@indoorkit/hospital';
+import { type RawCollection, validateImdf } from '@indoorkit/imdf';
 import { describe, expect, it } from 'vitest';
 import { generateVenue, SAKURA_HOSPITAL } from '../src/index';
 
@@ -23,7 +24,7 @@ const unitsOn = (levelId: string) => archive.unit.features.filter((u) => u.prope
 
 describe('generateVenue', () => {
   it('produces an archive that passes IMDF validation', () => {
-    const result = validateImdf(archive);
+    const result = validateImdf(archive, [departmentExtension]);
     if (!result.ok) throw new Error(JSON.stringify(result.issues.slice(0, 5)));
     expect(result.ok).toBe(true);
   });
@@ -159,13 +160,13 @@ describe('generateVenue', () => {
       'amenity',
       'department',
     ] as const;
-    const ids = files.flatMap((f) => archive[f]?.features.map((x) => x.id) ?? []);
+    const ids = files.flatMap((f) => (archive[f] as RawCollection | undefined)?.features.map((x) => x.id) ?? []);
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
 
 describe('departments', () => {
-  const departments = archive.department!.features;
+  const departments = archive.department.features;
   const owner = new Map<string, string>();
   for (const d of departments) for (const id of d.properties.unit_ids as string[]) owner.set(id, d.id);
   const levelOf = new Map(archive.unit.features.map((u) => [u.id, u.properties.level_id as string]));

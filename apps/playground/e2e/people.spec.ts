@@ -99,7 +99,7 @@ test.describe('Zone Alerts: two layers', () => {
     await expect(item).toBeVisible();
     await expect(item.getByTestId('alarm-subject')).not.toBeEmpty();
     await expect(item.getByTestId('alarm-layer')).not.toBeEmpty();
-    await pollHook(page, () => window.__vivi!.renderedCount('indoor-departments')).toBeGreaterThan(0);
+    await pollHook(page, () => window.__vivi!.renderedCount('indoor-zones')).toBeGreaterThan(0);
   });
 
   test('acknowledges and resolves an alarm', async ({ page }) => {

@@ -5,13 +5,14 @@ import { batch, featureCollection, IDS, openMap, tag } from './helpers';
 const ROOM: [number, number] = [0.0005, 0.0005];
 const HALL: [number, number] = [0.0015, 0.0005];
 const STATUS_ORDER = ['offline', 'maintenance', 'running', 'idle'];
+const STATUS_COLORS = { offline: '#ff0000', maintenance: '#ff8800', running: '#00ff00', idle: '#888888' };
 const withStatus = (id: string, levelId: string, coord: [number, number], status: string) => ({
   ...tag(id, levelId, coord),
   status,
 });
 
 async function open() {
-  const opened = await openMap([floorPlugin, unitClusterPlugin({ statusOrder: STATUS_ORDER })]);
+  const opened = await openMap([floorPlugin, unitClusterPlugin({ statusOrder: STATUS_ORDER, statusColors: STATUS_COLORS })]);
   return { ...opened, clusters: opened.map.plugins['unit-cluster'] };
 }
 
@@ -79,6 +80,21 @@ describe('unitClusterPlugin', () => {
     expect(clusters.groups()[0]!.ids).toEqual(['a', 'b']);
     expect(clusters.position('a')).toMatchObject({ unitId: IDS.room, status: 'running' });
     expect(clusters.members(IDS.room).map((p) => p.id)).toEqual(['a', 'b']);
+  });
+
+  it('colours statuses only with the colours it is given, others gray', async () => {
+    const { fake } = await openMap([
+      floorPlugin,
+      unitClusterPlugin({ statusOrder: ['bad', 'good'], statusColors: { bad: '#ff0000' } }),
+    ]);
+    const layer = fake.getLayer('indoor-unit-clusters') as { paint: Record<string, unknown> };
+    expect(layer.paint['circle-stroke-color']).toEqual([
+      'match',
+      ['coalesce', ['get', 'worst'], ''],
+      'bad',
+      '#ff0000',
+      '#6b7280',
+    ]);
   });
 
   it('draws single points for close zoom levels and releases its layers', async () => {

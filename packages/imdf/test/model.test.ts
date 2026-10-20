@@ -38,29 +38,11 @@ describe('buildVenueModel', () => {
     expect(room.properties.label_en).toBe('Internal Medicine');
   });
 
-  it('exposes departments with their units', () => {
+  it('describes only standard IMDF features, with no extension data', () => {
     const model = buildVenueModel(makeArchive());
-    expect(model.departments).toEqual([
-      {
-        id: IDS.department,
-        code: 'internal',
-        name: { ja: '内科', en: 'Internal Medicine' },
-        unitIds: [IDS.room],
-      },
-    ]);
-  });
-
-  it('marks units with their department and leaves public areas without one', () => {
-    const model = buildVenueModel(makeArchive());
-    const byId = new Map(model.features.units.features.map((u) => [u.properties.id, u.properties]));
-    expect(byId.get(IDS.room)!.department_id).toBe(IDS.department);
-    expect(byId.get(IDS.hall)!.department_id).toBeUndefined();
-  });
-
-  it('has no departments when the archive has none', () => {
-    const archive = makeArchive();
-    delete archive.department;
-    expect(buildVenueModel(archive).departments).toEqual([]);
+    expect(model.extensions).toEqual({});
+    expect(model).not.toHaveProperty('departments');
+    for (const u of model.features.units.features) expect(Object.keys(u.properties).sort()).not.toContain('department_id');
   });
 
   it('throws on an invalid archive', () => {

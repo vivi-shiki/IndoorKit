@@ -5,7 +5,7 @@ import { batch, featureCollection, IDS, openMap, tag } from './helpers';
 const MIN = 60_000;
 
 async function open() {
-  const opened = await openMap([floorPlugin, heatmapPlugin({ cellMeters: 2 })]);
+  const opened = await openMap([floorPlugin, heatmapPlugin({ cellMeters: 2, windowsMinutes: [1, 5, 15], window: 5 })]);
   return { ...opened, heat: opened.map.plugins.heatmap };
 }
 
@@ -56,13 +56,29 @@ describe('heatmapPlugin', () => {
 
   it('rejects windows other than 1, 5 and 15 minutes', async () => {
     const { heat } = await open();
-    expect(() => heat.setWindow(7 as 5)).toThrow(/window/);
+    expect(() => heat.setWindow(7)).toThrow(/window/);
+  });
+
+  it('takes its windows from the options', async () => {
+    const opened = await openMap([floorPlugin, heatmapPlugin({ cellMeters: 2, windowsMinutes: [2, 10], window: 10 })]);
+    const heat = opened.map.plugins.heatmap;
+    expect(heat.window()).toBe(10);
+    expect(heat.windows()).toEqual([2, 10]);
+    expect(() => heat.setWindow(5)).toThrow(/window/);
+    for (let m = 0; m < 60; m++) heat.add(batch(m * MIN, [tag('a', IDS.level1, [0, 0])]));
+    expect(heat.bucketCount()).toBeLessThanOrEqual(11);
+  });
+
+  it('rejects an initial window outside its windows', async () => {
+    await expect(
+      openMap([floorPlugin, heatmapPlugin({ cellMeters: 2, windowsMinutes: [2, 10], window: 5 })]),
+    ).rejects.toThrow(/window/);
   });
 
   it('splits samples into groups and shows only the selected groups', async () => {
     const opened = await openMap([
       floorPlugin,
-      heatmapPlugin({ cellMeters: 2, groupOf: (p) => (p.id.startsWith('v') ? 'visitor' : 'staff') }),
+      heatmapPlugin({ cellMeters: 2, windowsMinutes: [1, 5, 15], window: 5, groupOf: (p) => (p.id.startsWith('v') ? 'visitor' : 'staff') }),
     ]);
     const heat = opened.map.plugins.heatmap;
     heat.add(
