@@ -102,7 +102,7 @@ TypeScript (strict) · MapLibre GL JS · IMDF · zod · Web Worker + Comlink · 
 | `domains/hospital` | Hospital business logic without a map: departments (an IMDF extension), roles, devices and statuses, and the two-layer alert engine |
 | `tools/venue-gen` | Generator for the fictional hospital and its departments |
 | `tools/rtls-simulator` | Roster of people and devices, movement simulator and its Worker data provider |
-| `apps/playground` | The five pages of the live demo: `engine/` loads MapLibre, `adapters/` connects the hospital domain and the simulator to SDK plugins, `presentation/` formats text and colors, `pages/` holds each page, `testing/` holds the test hooks |
+| `apps/playground` | The live demo, in React with MUI: a home page with the three use cases, then the five hospital pages behind a sidebar (top menu on phones). `engine/` loads MapLibre, `adapters/` connects the hospital domain and the simulator to SDK plugins, `presentation/` formats text and colors, `pages/` holds each page, `testing/` holds the test hooks |
 
 ## Run locally
 

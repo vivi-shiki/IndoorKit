@@ -14,9 +14,9 @@ Project instructions shared by AI collaborators and human developers. Claude Cod
 | `tools/venue-gen` | Generates IMDF data for the fictional hospital "さくら総合病院" |
 | `tools/rtls-simulator` | Roster and movement simulator, as a Worker data provider |
 | `tools/leak-bench` | Playwright memory regression tests |
-| `apps/playground` | Demo gallery, deployed to GitHub Pages: `engine/`, `adapters/`, `presentation/`, `pages/<page>/{index,view}.ts`, `testing/` |
+| `apps/playground` | React + MUI demo app, deployed to GitHub Pages: `app/` (hash router, hospital sidebar / top menu, theme), `engine/`, `adapters/`, `presentation/`, `pages/<page>/{index,view}.tsx` (`home` is the scenario carousel), `testing/` |
 
-The layers and what each may import are described in [ADR 0002](docs/adr/0002-sdk-and-domain-layers.md) and checked by `test/layers.test.ts`.
+React and MUI are used only in `apps/` ([ADR 0003](docs/adr/0003-react-app.md)); the SDK packages and `domains/` stay framework-free TypeScript. The layers and what each may import are described in [ADR 0002](docs/adr/0002-sdk-and-domain-layers.md) and checked by `test/layers.test.ts`.
 
 ## The only entry commands
 

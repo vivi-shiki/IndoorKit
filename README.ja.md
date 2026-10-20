@@ -102,7 +102,7 @@ TypeScript（strict）· MapLibre GL JS · IMDF · zod · Web Worker + Comlink �
 | `domains/hospital` | 地図に依存しない病院の業務：診療科（IMDF 拡張）、役割、機器と状態、2 層のアラートエンジン |
 | `tools/venue-gen` | 架空の病院とその診療科の生成スクリプト |
 | `tools/rtls-simulator` | 人と機器の名簿、移動シミュレーター、Worker 用データプロバイダー |
-| `apps/playground` | オンラインデモの 5 ページ。`engine/` が MapLibre を読み込み、`adapters/` が病院の業務とシミュレーターを SDK のプラグインにつなぎ、`presentation/` が文言と色、`pages/` が各ページ、`testing/` がテスト用フック |
+| `apps/playground` | オンラインデモ（React と MUI）。トップページで 3 つの活用シーンを紹介し、病院デモの 5 ページはサイドバー（スマホでは上部メニュー）で切り替えます。`engine/` が MapLibre を読み込み、`adapters/` が病院の業務とシミュレーターを SDK のプラグインにつなぎ、`presentation/` が文言と色、`pages/` が各ページ、`testing/` がテスト用フック |
 
 ## ローカルで動かす
 

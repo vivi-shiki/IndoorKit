@@ -20,7 +20,7 @@
 - **地图引擎**：只有 `@indoorkit/core` 引入 maplibre-gl。页面要的镜头、坐标换算、点选和等待绘制都由核心提供（`indoor.camera.focus` / `fit`、`indoor.project`、`map:click` 事件、`ctx.queryRendered`、`indoor.idle` / `rendered`）。应用里只有 `engine/maplibre.ts` 加载引擎的样式表和 Worker 脚本，`testing/` 通过 `@indoorkit/core/testing` 的 `inspect` 读取样式供测试钩子使用。
 - **SDK**：不认识任何行业概念。科室变成通用的 IMDF 扩展（`defineImdfExtension`，数据在 `venue.extensions`）；科室插件变成按区块分组的 `zonePlugin`；状态颜色、热力图窗口由调用方传入；定位数据契约独立成 `@indoorkit/rtls`，`positions:update` 事件在那里声明。
 - **业务**：`@indoorkit/hospital` 放科室扩展、科室查询（`createHospital`）、人员和设备模型、报警规则和报警引擎。它不引入地图、不碰 DOM，可以在服务端或 Worker 里直接用。
-- **页面**：每个页面一个目录，`index.ts` 接线（插件、事件、状态），`view.ts` 生成界面 HTML。页面不碰底层地图、不写 `indoor-` 图层 id、不强转插件 API。把业务接到 SDK 插件上的代码（报警插件、读取带科室的场馆、模拟数据源）放在 `adapters/`。
+- **页面**：每个页面一个目录，`index.tsx` 是页面组件（创建地图、订阅事件、持有状态），`view.tsx` 是展示用的 React 组件（React 见 [ADR 0003](0003-react-app.md)）。页面不碰底层地图、不写 `indoor-` 图层 id、不强转插件 API。把业务接到 SDK 插件上的代码（报警插件、读取带科室的场馆、模拟数据源）放在 `adapters/`。
 
 边界由 `test/layers.test.ts` 检查：扫描每层源码的 import 和用词，越界即失败。
 

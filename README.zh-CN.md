@@ -102,7 +102,7 @@ TypeScript（strict）· MapLibre GL JS · IMDF · zod · Web Worker + Comlink �
 | `domains/hospital` | 不依赖地图的医院业务：科室（IMDF 扩展）、角色、设备与状态、两层告警引擎 |
 | `tools/venue-gen` | 虚构医院及其科室的生成器 |
 | `tools/rtls-simulator` | 人员与设备名册、移动模拟器及其 Worker 数据源 |
-| `apps/playground` | 在线演示的五个页面：`engine/` 加载 MapLibre，`adapters/` 把医院业务和模拟器接到 SDK 插件上，`presentation/` 负责文字与颜色，`pages/` 是各页面，`testing/` 是测试钩子 |
+| `apps/playground` | 在线演示，用 React 和 MUI 编写：首页介绍三个应用场景，医院演示的五个页面由侧栏（手机端为顶栏菜单）切换。`engine/` 加载 MapLibre，`adapters/` 把医院业务和模拟器接到 SDK 插件上，`presentation/` 负责文字与颜色，`pages/` 是各页面，`testing/` 是测试钩子 |
 
 ## 本地运行
 

@@ -43,3 +43,25 @@ Success criteria: `pnpm verify`, `pnpm build`, `pnpm e2e` (including leak-bench)
 Before the change: `vitest run test/layers.test.ts apps/playground/test` → 3 layer checks fail (no `src/app`, no `.tsx` pages, pages write HTML strings) and both new test files fail to import (`src/app/routes`, `src/pages/home/scenarios` do not exist). Baseline e2e on `d51cd01`: 84 passed.
 
 # PROPOSALS
+
+- No.1 React + MUI app shell, hash router with ordered teardown, pages as React components [CONFIRMED]
+
+## No.1 React + MUI app shell, hash router with ordered teardown, pages as React components
+
+### CODE CHANGE
+
+- Dependencies (playground only): `react`, `react-dom`, `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled`, `@vitejs/plugin-react`; `jsx: react-jsx` in `tsconfig.json`.
+- `app/`: `routes.ts` (pure hash parsing and redirects, menu groups), `router.ts` (`useHashRoute`, `useSettled` waits for `teardown.ts` before mounting the next page), `mui-theme.ts` (`TOKENS` is the only place for colors; MUI palette and the `--bg`… CSS variables come from it), `controls.tsx` (theme and language buttons as MUI), `hospital-layout.tsx` (permanent drawer ≥ 641 px, app bar + top drawer below), `App.tsx`.
+- `app-i18n.ts` / `app-theme.ts`: `useLocale`, `useT`, `usePageTitle`, `useThemeName` through `useSyncExternalStore`; DOM `translate()` and the hand-made switchers removed.
+- `pages/map-page.tsx`: `useMapPage` (creates the map in the stage, registers its destruction with the router), `useMapEvent` (`useEffectEvent`), `useRefresh` (throttled re-render), `MapPageLayout`.
+- `pages/<page>/{index,view}.tsx` for the five hospital pages and `home`; `presentation/ui.tsx` (`ChipGroup`, `RadioGroup`, `throttle`), `presentation/perf.tsx` (`PerfOverlay`, commits the snapshot with `flushSync` so the hook and the text always agree).
+- Home: hero, carousel (arrows, dots, 6 s autoplay that pauses on hover/focus and stops after manual use, off with reduced motion), parking and museum greyed out with copy from the two demo plans.
+- Tests: `people.spec.ts` sets the range input through the native setter (React controlled input); the tracking tag radio shows the new choice before the page remounts.
+- Docs: ADR 0003, ADR 0002 page line, AGENTS.md, coding rule 8, three READMEs, KB testing page, screenshots in `docs/images` re-taken with the new layout.
+
+### CONFIRMED
+
+- `pnpm verify`: lint, typecheck, 302 unit tests (39 files) pass, including the new layer rules.
+- `pnpm build` passes (app bundle 1.69 MB, gzip 490 KB; Vite warns above 1.5 MB).
+- `pnpm e2e`: 102 passed (84 before + 18 new), including leak-bench (`activeWorkers`, `liveMaps`, `lastUnreleased` all 0 after every round) and both contrast checks.
+- Screenshots of home (light, dark, parking slide, phone), all five pages on desktop and phone and the open phone menu were checked by eye.

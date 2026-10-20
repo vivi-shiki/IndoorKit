@@ -37,7 +37,7 @@ Prefer these over screenshots: they give exact values, they don't depend on the 
 
 ## Memory regression
 
-`tools/leak-bench/page-switch.spec.ts` opens all four pages in turn, 2 warm-up rounds and then 8 measured rounds, forcing GC through CDP before each measurement. It fails if `JSHeapUsedSize` grows by 8 MiB or more, or if any Worker, map or registered resource is left after returning to the gallery.
+`tools/leak-bench/page-switch.spec.ts` opens all four pages in turn, 2 warm-up rounds and then 8 measured rounds, forcing GC through CDP before each measurement. It fails if `JSHeapUsedSize` grows by 8 MiB or more, or if any Worker, map or registered resource is left after returning to the home page.
 
 ## Intermittent failures
 
