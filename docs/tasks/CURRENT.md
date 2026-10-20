@@ -20,3 +20,17 @@
 4. `pnpm verify`, `pnpm build`, `pnpm e2e` pass; the fixes are on `origin/main`.
 
 # PROPOSALS
+
+- No.1 `.gitattributes` declares LF for every text file [CONFIRMED]
+- No.2 `floorOverlay` sends `setData` only after the previous update has loaded
+- No.3 `floorOverlay` also holds floor filter changes while an update is loading
+
+## No.1 `.gitattributes` declares LF for every text file
+
+### CODE CHANGE
+
+Add `.gitattributes` with `* text=auto eol=lf`. `git add --renormalize .` changes nothing (the index was already LF). The 19 CRLF working copies were checked to differ only in line endings (`git diff --ignore-cr-at-eol`) and checked out again.
+
+### CONFIRMED
+
+`test/repo.test.ts` passes: 0 CRLF working copies, every text file has `text=auto eol=lf`, and the 5 binary files stay `-text`. `pnpm verify` lint and typecheck pass on the full repo without any manual line-ending conversion. Only the overlay test from No.2 still fails, as expected.

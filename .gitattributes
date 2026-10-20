@@ -1,0 +1,2 @@
+# 文本文件在所有平台都签出为 LF（biome 按 LF 检查格式），不受 core.autocrlf 影响
+* text=auto eol=lf
