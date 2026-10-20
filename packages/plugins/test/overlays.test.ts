@@ -14,11 +14,13 @@ describe('polygonPlugin', () => {
   it('adds polygons on a floor, filters them by floor and removes them', async () => {
     const { map, fake } = await openMap([floorPlugin, polygonPlugin]);
     map.plugins.polygon.add({ id: 'p', floor: '2F', coordinates: ring, label: 'ICU' });
+    // 只把当前楼层的要素交给地图；图层本身不带楼层过滤
+    expect(featureCollection(fake, 'indoor-polygons').features).toEqual([]);
+    expect(fake.getFilter('indoor-polygons')).toBeUndefined();
+    map.plugins.floor.set('2F');
     const feature = featureCollection(fake, 'indoor-polygons').features[0]!;
     expect(feature.properties).toMatchObject({ id: 'p', level_id: IDS.level2, label: 'ICU' });
-    expect(fake.getFilter('indoor-polygons')).toEqual(['==', ['get', 'level_id'], IDS.level1]);
-    map.plugins.floor.set('2F');
-    expect(fake.getFilter('indoor-polygons')).toEqual(['==', ['get', 'level_id'], IDS.level2]);
+    expect(fake.getFilter('indoor-polygons')).toBeUndefined();
     expect(map.plugins.polygon.remove('p')).toBe(true);
     expect(map.plugins.polygon.count()).toBe(0);
   });
@@ -98,6 +100,22 @@ describe('floor overlay updates', () => {
     // 没有新数据时加载完就停下
     fake.finishSourceLoad('indoor-polygons');
     expect(fake.sourceUpdates('indoor-polygons')).toBe(sent + 2);
+  });
+
+  // 换楼层如果改图层过滤条件，MapLibre 会在下一帧重新解析瓦片，绕开上面的排队；
+  // 所以楼层也在数据里过滤，换楼层就是一次排队的 setData
+  it('queues a floor switch like any other update', async () => {
+    const { map, fake } = await openMap([floorPlugin, polygonPlugin]);
+    map.plugins.polygon.add({ id: 'one', floor: '1F', coordinates: ring });
+    map.plugins.polygon.add({ id: 'two', floor: '2F', coordinates: ring });
+    fake.holdSourceLoads = true;
+    map.plugins.polygon.add({ id: 'one-b', floor: '1F', coordinates: ring });
+    const sent = fake.sourceUpdates('indoor-polygons');
+
+    map.plugins.floor.set('2F');
+    expect(fake.sourceUpdates('indoor-polygons')).toBe(sent);
+    fake.finishSourceLoad('indoor-polygons');
+    expect(featureCollection(fake, 'indoor-polygons').features.map((f) => f.properties!.id)).toEqual(['two']);
   });
 
   it('sends right away when nothing is loading', async () => {

@@ -15,6 +15,8 @@ export interface MapLike {
   addSource(id: string, source: SourceSpecification): unknown;
   getSource(id: string): unknown;
   removeSource(id: string): unknown;
+  /** source 的数据和瓦片是否都已加载完 */
+  isSourceLoaded(id: string): boolean;
   addLayer(layer: LayerSpecification, beforeId?: string): unknown;
   getLayer(id: string): unknown;
   removeLayer(id: string): unknown;

@@ -14,7 +14,7 @@ One `ResourceTracker` per map. In registration order:
 2. The sources and layers from `buildIndoorStyle`, labels `source:<id>` and `layer:<id>`.
 3. For each plugin, in dependency order: whatever it registers through its context. `ctx.track` labels are prefixed with the plugin name (`marker:...`); `ctx.on` and `ctx.onMap` register as `<plugin>:on:<event>` and `<plugin>:map.on:<event>`. `trackSource` and `trackLayer` use the same `source:` / `layer:` labels as the core style.
 
-Nothing else is registered after `ready`. Switching floors only calls `setFilter`, and adding markers only calls `setData` on the existing `indoor-markers` source, so `resources.labels()` stays the same while the map is used. The e2e test "switching floors and adding markers registers no new resources" checks this.
+Nothing else is registered after `ready`. Switching floors only calls `setFilter` on the venue layers and `setData` on the plugin overlay sources, and adding markers only calls `setData` on the existing `indoor-markers` source, so `resources.labels()` stays the same while the map is used. The e2e test "switching floors and adding markers registers no new resources" checks this.
 
 ## Release order
 

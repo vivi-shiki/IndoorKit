@@ -55,12 +55,15 @@ describe('trailPlugin', () => {
   it('draws the part of the trail on the current floor and its stops', async () => {
     const { map, fake, trail } = await open();
     trail.set(SAMPLES);
-    const path = featureCollection(fake, 'indoor-trail-path').features;
-    expect(path.map((f) => f.properties!.level_id)).toEqual([L1, L2]);
-    expect(featureCollection(fake, 'indoor-trail-stops').features).toHaveLength(2);
+    const levels = (source: string) =>
+      featureCollection(fake, source).features.map((f) => f.properties!.level_id);
+    expect(levels('indoor-trail-path')).toEqual([L1]);
+    expect(levels('indoor-trail-stops')).toEqual([L1]);
     expect(trail.stops().map((x) => x.start)).toEqual([0, 5000]);
     expect(trail.range()).toEqual([0, 7000]);
     map.plugins.floor.set('2F');
+    expect(levels('indoor-trail-path')).toEqual([L2]);
+    expect(levels('indoor-trail-stops')).toEqual([L2]);
     expect(fake.getLayoutProperty('indoor-trail-path', 'visibility')).not.toBe('none');
   });
 

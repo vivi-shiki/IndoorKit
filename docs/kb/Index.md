@@ -46,7 +46,7 @@ Live positions come from a `DataProvider` (`packages/core/src/types.ts`). `tools
 
 - Use `positionStreamPlugin({ provider, intervalMs })` to draw positions; it owns the provider, disposes it with the map, and re-broadcasts each batch as the `positions:update` event.
 - Use `geofencePlugin` (needs `polygon`), `heatmapPlugin` and `clusterPlugin` to consume positions; geofence and heatmap listen to `positions:update` themselves.
-- Use `floorOverlay` (`packages/plugins/src/overlay.ts`) for any plugin layer that follows the current floor, and `localProjection` / `distanceMeters` for metric math on lng/lat.
+- Use `floorOverlay` (`packages/plugins/src/overlay.ts`) for any plugin layer that follows the current floor, and `localProjection` / `distanceMeters` for metric math on lng/lat. Never call `setData` or `setFilter` on a plugin GeoJSON source yourself: `floorOverlay` filters by floor in the data and keeps at most one `setData` in flight (the next one waits for `sourcedata` with `isSourceLoaded`). MapLibre does not wait for or cancel a running reload of the same tile, and overlapping parses of different data make `queryRenderedFeatures` throw "feature index out of bounds" (`apps/playground/e2e/streaming-query.spec.ts`).
 - Use `clusterPoints` for greedy radius clustering with a KDBush index; `clusterPlugin` runs it on every `positions:update` for the current floor.
 - Use `indoor.setTheme(themes.dark)` to recolor without recreating the map; `themePaint` is the single mapping from a theme to paint properties.
 

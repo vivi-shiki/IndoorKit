@@ -37,9 +37,11 @@ describe('markerPlugin', () => {
 
   it('shows only markers on the current floor', async () => {
     const { map, fake } = await open();
-    expect(fake.getFilter('indoor-markers')).toEqual(['==', ['get', 'level_id'], IDS.level1]);
+    map.plugins.marker.add({ id: 'a', floor: '1F', coord: [0, 0] });
+    map.plugins.marker.add({ id: 'b', floor: '2F', coord: [0, 0] });
+    expect(markerData(fake).features.map((f) => f.properties!.id)).toEqual(['a']);
     map.plugins.floor.set('2F');
-    expect(fake.getFilter('indoor-markers')).toEqual(['==', ['get', 'level_id'], IDS.level2]);
+    expect(markerData(fake).features.map((f) => f.properties!.id)).toEqual(['b']);
   });
 
   it('defaults to the current floor when none is given', async () => {

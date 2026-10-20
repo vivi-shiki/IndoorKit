@@ -23,7 +23,7 @@
 
 - No.1 `.gitattributes` declares LF for every text file [CONFIRMED]
 - No.2 `floorOverlay` sends `setData` only after the previous update has loaded [DENIED]
-- No.3 Filter overlays by floor in the data, so every change is one queued `setData`
+- No.3 Filter overlays by floor in the data, so every change is one queued `setData` [CONFIRMED]
 
 ## No.1 `.gitattributes` declares LF for every text file
 
@@ -52,3 +52,11 @@ The unit tests pass, but `streaming-query.spec.ts` (assets) still fails 3/20 (it
 ### CODE CHANGE
 
 Keep No.2's queue. Drop the layer filter on overlay layers: `floorOverlay` keeps all features, sends only those whose `level_id` is the current floor, and on `floor:change` queues a resend. Overlay sources then never reload tiles for any reason other than their own serialized `setData`. The polygon test asserted the layer filter; it now asserts the data sent to the source.
+
+### CONFIRMED
+
+- Unit tests: the queue tests and the new "queues a floor switch" test pass. The polygon, marker and trail tests that asserted a layer filter, or both floors' features in the source, now assert that only the current floor's features are sent and that a switch sends the other floor's. 155/155 pass.
+- `streaming-query.spec.ts` (assets, floors switching every 100 ms) passes 20/20; it failed about 8/20 before and 3/20 with No.2 alone. The original flaky `business.spec.ts` "unit clusters" passes 40/40.
+- `pnpm verify` 225/225, `pnpm build`, `pnpm e2e` 81/81 (leak-bench included).
+- KB: `docs/kb/Index.md` (floorOverlay) and `KB_Core_Lifecycle.md` (what a floor switch calls) updated.
+- Trade-off: when updates arrive faster than MapLibre reloads tiles, intermediate data is dropped and the latest is drawn. Live positions only need the latest.
