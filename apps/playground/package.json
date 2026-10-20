@@ -9,13 +9,24 @@
     "preview": "vite preview --port 4173 --strictPort"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@indoorkit/core": "workspace:*",
     "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
     "@indoorkit/plugins": "workspace:*",
     "@indoorkit/rtls": "workspace:*",
     "@indoorkit/rtls-simulator": "workspace:*",
+    "@mui/icons-material": "^9.5.0",
+    "@mui/material": "^9.5.0",
     "comlink": "^4.4.2",
-    "maplibre-gl": "^6.15.0"
+    "maplibre-gl": "^6.15.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2"
   }
 }
