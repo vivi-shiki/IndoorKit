@@ -20,15 +20,15 @@ export const TITLES: Record<Demo, { en: string; zh: string; ja: string }> = {
   assets: { en: 'Equipment Map', zh: '设备地图', ja: '機器マップ' },
   tracking: { en: 'Live Map', zh: '实时位置', ja: '現在地マップ' },
   trail: { en: 'Route History', zh: '路线回看', ja: '経路の振り返り' },
-  alerts: { en: 'Boundary Notices', zh: '越界提醒', ja: '境界通知' },
-  occupancy: { en: 'Crowding Heatmap', zh: '拥挤热度', ja: '混み具合ヒートマップ' },
+  alerts: { en: 'Boundary Notices', zh: '越界提醒', ja: 'エリア通知' },
+  occupancy: { en: 'Crowding Heatmap', zh: '拥挤热度', ja: '混雑状況ヒートマップ' },
 };
 
 /** 产品名：浏览器标签页标题和首页大标题使用 */
 export const PRODUCT = {
   en: 'Indoor Hospital Map',
   zh: '医院室内地图看板',
-  ja: '病院屋内マップ',
+  ja: '病院内の位置情報マップ',
 };
 
 /** 打开一个页面（可带 ?key=value 参数）并等它进入就绪状态 */

@@ -62,7 +62,8 @@ test('a map page opens in the saved language', async ({ page }) => {
 
 test('the gallery names the hospital the same way as the map in each language', async ({ page }) => {
   await page.goto('./');
-  const note = page.locator('.gallery .note');
+  // 日文的说明写在副标题里，其他语言写在底部说明里
+  const note = page.locator('.gallery');
   const names = { 中文: '樱花综合医院', English: 'Sakura General Hospital', 日本語: 'さくら総合病院' };
   for (const [button, name] of Object.entries(names)) {
     await switcher(page).getByRole('button', { name: button }).click();
@@ -70,4 +71,8 @@ test('the gallery names the hospital the same way as the map in each language', 
   }
   await switcher(page).getByRole('button', { name: '中文' }).click();
   await expect(note).not.toContainText('さくら');
+  await switcher(page).getByRole('button', { name: '日本語' }).click();
+  await expect(page.locator('.gallery > p').first()).toHaveText(
+    '架空の「さくら総合病院」を舞台に、院内の機器の配置と稼働状況、人の位置と移動履歴を確認できるデモです。',
+  );
 });
