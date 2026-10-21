@@ -197,6 +197,9 @@ importers:
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../../packages/imdf
+      '@indoorkit/parking':
+        specifier: workspace:*
+        version: link:../../domains/parking
 
 packages:
 

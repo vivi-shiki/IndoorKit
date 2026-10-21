@@ -7,10 +7,11 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "tsx src/cli.ts ../../apps/playground/public/data/sakura-hospital"
+    "generate": "tsx src/cli.ts ../../apps/playground/public/data"
   },
   "dependencies": {
     "@indoorkit/hospital": "workspace:*",
-    "@indoorkit/imdf": "workspace:*"
+    "@indoorkit/imdf": "workspace:*",
+    "@indoorkit/parking": "workspace:*"
   }
 }
