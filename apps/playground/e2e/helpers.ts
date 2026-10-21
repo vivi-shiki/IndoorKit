@@ -40,7 +40,7 @@ export const PAGE_DESCS: Record<Demo, string> = {
     'Play back a person’s location history over the selected period, including stops and related alerts.',
   alerts: 'Review and manage alerts from department zones, geofences, and device or person status.',
   occupancy:
-    'View the distribution of location updates by time range and person type. Colors represent update counts, not the number of people currently present.',
+    'View the distribution of location records by time range and person type. Colors represent the number of location records in the selected period, not the number of people currently present.',
 };
 
 /** 首页：SDK 名称和一句话介绍 */

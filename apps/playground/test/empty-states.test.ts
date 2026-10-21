@@ -16,14 +16,14 @@ describe('empty lists say why they are empty', () => {
   it('the heatmap list without reports', () => {
     const ctx = { venue: {}, index: {}, departmentOfUnit: () => null } as never;
     const html = renderToStaticMarkup(createElement(BusyList, { ctx, rows: [], reports: 0 }));
-    expect(html).toContain('No location updates for the selected period');
+    expect(html).toContain('No location records for the selected period');
   });
 
   it('the heatmap list while its first ranking is still being computed', () => {
     // 已有上报但排名还没算出来时不能说“没有上报”
     const ctx = { venue: {}, index: {}, departmentOfUnit: () => null } as never;
     const html = renderToStaticMarkup(createElement(BusyList, { ctx, rows: [], reports: 329 }));
-    expect(html).not.toContain('No location updates');
+    expect(html).not.toContain('No location records');
   });
 
   it('the trail without stops', () => {
@@ -37,8 +37,8 @@ describe('counts in English', () => {
   it('use the singular for one', () => {
     expect(countText(1, 'detail.device', 'detail.devices')).toBe('1 device');
     expect(countText(2, 'detail.device', 'detail.devices')).toBe('2 devices');
-    expect(countText(0, 'busy.report', 'busy.reports')).toBe('0 updates');
-    expect(countText(1, 'busy.report', 'busy.reports')).toBe('1 update');
+    expect(countText(0, 'busy.report', 'busy.reports')).toBe('0 records');
+    expect(countText(1, 'busy.report', 'busy.reports')).toBe('1 record');
   });
 
   it('keep one form in Chinese and Japanese', () => {

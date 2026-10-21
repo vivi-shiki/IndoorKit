@@ -33,17 +33,17 @@ describe('terminology', () => {
     'layer.department': { zh: '部门区域', en: 'Department zones', ja: '部門エリア' },
     'layer.status': { zh: '设备与人员状态', en: 'Device and person status', ja: '機器・人の状態' },
     'metric.alerts': { zh: '告警', en: 'Alerts', ja: 'アラート' },
-    // 热力图统计的是定位次数，不是人数
+    // 热力图累计的是收到的位置记录，不是测位动作，也不是人数
     'page.occupancy.title': { zh: '定位热力图', en: 'Location Heatmap', ja: '測位ヒートマップ' },
     'metric.heatPoints': {
-      zh: '所选时段定位次数',
-      en: 'Location updates in period',
-      ja: '選択期間の測位回数',
+      zh: '所选时段位置记录数',
+      en: 'Location records in selected period',
+      ja: '選択期間の位置記録数',
     },
     'busy.title': {
-      zh: '定位次数最多的房间（前 3）',
-      en: 'Top 3 rooms by location updates',
-      ja: '測位回数の多い部屋（上位 3 件）',
+      zh: '位置记录最多的房间（前 3）',
+      en: 'Top 3 rooms by location records',
+      ja: '位置記録数の多い部屋（上位 3 件）',
     },
     // 部门包含护理部和行政部，不全是临床科室
     'place.outsideOwn': {
@@ -63,7 +63,8 @@ describe('terminology', () => {
     'trail.range': { zh: '时间范围', en: 'Time range', ja: '時間範囲' },
     'trail.speed': { zh: '回放速度', en: 'Playback speed', ja: '再生速度' },
     'status.maintenance': { zh: '维护中', en: 'Under maintenance', ja: 'メンテナンス中' },
-    'metric.tags': { zh: '在线标签数', en: 'Active tags', ja: '通信中のタグ' },
+    // 计数是收到过数据的标签总数，不剔除超时标签，不能叫“在线”
+    'metric.tags': { zh: '已接收标签数', en: 'Tags received', ja: '受信済みタグ数' },
     // 菜单和页面标题
     'group.efficiency.title': { zh: '医疗设备', en: 'Medical Equipment', ja: '医療機器' },
     'group.people.title': { zh: '人员', en: 'People', ja: '人の所在' },
@@ -89,19 +90,26 @@ describe('terminology', () => {
       en: 'Entered another department',
       ja: '他部門エリアへの進入',
     },
-    'alarm.dwell': { zh: '停留超时', en: 'Dwell time exceeded', ja: '長時間滞在' },
+    'alarm.dwell': { zh: '停留超时', en: 'Dwell time exceeded', ja: '滞在時間超過' },
     'alarm.leave': { zh: '离开区域', en: 'Zone exit', ja: 'エリアからの離脱' },
-    'alarm.offline': { zh: '设备离线', en: 'Device offline', ja: '機器の通信途絶' },
+    // 由设备上报的离线状态触发，不是通信超时推断
+    'alarm.offline': { zh: '设备离线', en: 'Device offline', ja: '機器オフライン' },
     'alarm.sos': { zh: 'SOS 求救', en: 'SOS alert', ja: 'SOS 発報' },
     // ICU 按部门豁免，是限制区域而不是绝对禁区
     'fence.icu': { zh: 'ICU 限制区域', en: 'ICU restricted zone', ja: 'ICU 立入制限エリア' },
     'alarm.forbid': { zh: '闯入限制区域', en: 'Restricted zone entry', ja: '立入制限エリアへの侵入' },
+    // 规则只判断设备进入 1 层大厅区域，不判断离开方向，也不阻止带出
     'fence.exit': {
-      zh: '设备防带出（出入口）',
-      en: 'Equipment exit alert (entrances)',
-      ja: '機器の持ち出し検知（出入口）',
+      zh: '设备进入出入口区域',
+      en: 'Equipment detected in entrance area',
+      ja: '出入口エリアへの機器進入',
     },
-    'fence.wardDwell': { zh: '病房停留超时', en: 'Patient room dwell limit', ja: '病室での長時間滞在' },
+    // 规则只针对访客
+    'fence.wardDwell': {
+      zh: '病房探视停留超时',
+      en: 'Visitor dwell limit in patient room',
+      ja: '病室での面会者の滞在時間超過',
+    },
   } as const;
 
   it('uses the agreed terms', () => {
@@ -137,8 +145,9 @@ describe('terminology', () => {
       expect(text, key).not.toMatch(/ジオフェンス|位置報告|現在地|積算照度|オンライン/);
     }
     expect(messages.ja['scenario.museum.curator.desc']).toContain('積算露光量');
-    expect(messages.zh['scenario.museum.curator.desc']).toContain('累计曝光量');
-    for (const [key, text] of Object.entries(messages.zh)) expect(text, key).not.toMatch(/定位上报|光照量/);
+    // 中文“曝光量”容易联想到摄影曝光
+    expect(messages.zh['scenario.museum.curator.desc']).toContain('累计光照量（lx·h）');
+    for (const [key, text] of Object.entries(messages.zh)) expect(text, key).not.toMatch(/定位上报|曝光/);
     for (const [key, text] of Object.entries(messages.en)) expect(text, key).not.toMatch(/location report/i);
   });
 

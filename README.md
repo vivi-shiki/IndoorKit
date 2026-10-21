@@ -15,7 +15,7 @@ In this demo, clinical, nursing, administrative, and service rooms are assigned 
 Alerts come from department zones, geofences, and device or person status. For each location update, the engine checks department zones, then geofences, and then status signals such as a device going offline or an SOS alert:
 
 1. **Department zones**: for example a patient outside their assigned department for more than 30 s, a visitor entering a department they are not visiting, or a device taken out of its department.
-2. **Geofences**: an ICU restricted zone with exemptions based on department, an equipment exit alert at a first-floor entrance, and a dwell limit for a patient room.
+2. **Geofences**: an ICU restricted zone with exemptions based on department, an alert when equipment enters a first-floor entrance area, and a visitor dwell limit for a patient room.
 3. **Device and person status**: a device going offline, or a person sending an SOS alert.
 
 ## Medical Equipment
@@ -40,7 +40,7 @@ See where everyone is now. Simulated people move along corridors, enter and leav
 - People are colored by person type (doctor, nurse, patient, visitor, care assistant, security guard) and can be filtered by type.
 - People are listed by department, with how many are outside their assigned department.
 - Search by name or ID, then select a result to switch to that person’s floor and follow their location. The person card shows their assigned department, their location and whether they are inside their assigned department, with a link to play back their location history.
-- Choose 500, 2,000 or 5,000 simulated tags; positions are reported once per second and glide smoothly between reports. A performance panel shows frame rate, frame interval and active tags.
+- Choose 500, 2,000 or 5,000 simulated tags; positions are reported once per second and glide smoothly between reports. A performance panel shows frame rate, frame interval and the number of tags received.
 
 ![Live People Tracking](docs/images/tracking.png)
 
@@ -65,7 +65,7 @@ A single list shows department zone, geofence, and status alerts, including the 
 
 ### Location Heatmap
 
-Location updates on each floor over the last 1, 5 or 15 minutes, filtered by person type, with the three rooms on the floor that have the most updates. Colors represent update counts, not the number of people currently present.
+Location records on each floor over the last 1, 5 or 15 minutes, filtered by person type, with the three rooms on the floor that have the most records. Colors represent the number of location records, not the number of people currently present.
 
 ![Location Heatmap](docs/images/occupancy.png)
 
