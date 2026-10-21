@@ -40,6 +40,7 @@ Do not call vite, tsc, vitest or playwright directly. The one exception is narro
 
 - Write the test first, then the implementation. Commit only when `pnpm verify` and `pnpm e2e` both pass.
 - Do not commit data about any real hospital, company or person.
+- End every commit message with the trailer `Co-authored-by: vivi-shiki <70496895+vivi-shiki@users.noreply.github.com>`, after any other trailers, so the project owner is credited on GitHub.
 - Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/testing/hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
 
 ## Workflows
