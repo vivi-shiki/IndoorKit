@@ -70,7 +70,7 @@ function presetFences({
       id: 'ward-dwell',
       key: 'fence.wardDwell',
       floor: '4F',
-      coordinates: unitOn('4F', 'Ward 401'),
+      coordinates: unitOn('4F', 'Patient room 401'),
       rule: 'dwell',
       dwellMs: 120_000,
       selector: { roles: ['visitor'] },

@@ -209,3 +209,32 @@ describe('departments', () => {
     for (const id of icuRooms) expect(owner.get(id)).toBe(byCode('icu').id);
   });
 });
+
+describe('map labels', () => {
+  const names = (lang: 'ja' | 'en' | 'zh') =>
+    new Set(archive.unit.features.map((u) => u.properties.name?.[lang]).filter(Boolean));
+  const departmentNames = (lang: 'ja' | 'en' | 'zh') =>
+    new Set(archive.department.features.map((d) => d.properties.name[lang]));
+
+  it('names single patient rooms as rooms, not wards', () => {
+    const en = [...names('en')];
+    expect(en.filter((n) => /^Ward /.test(n))).toEqual([]);
+    expect(en.filter((n) => /^Patient room \d{3}$/.test(n))).toHaveLength(11);
+  });
+
+  it('uses the reviewed room and department names', () => {
+    for (const n of ['Billing desk', 'Information desk', 'ENT (Ear, Nose and Throat)', 'Consultation room']) {
+      expect(names('en'), n).toContain(n);
+    }
+    for (const n of ['Nursing station', 'Rehabilitation room', 'Conference room', 'Sterile supply room']) {
+      expect(names('en'), n).toContain(n);
+    }
+    for (const n of ['Doctors’ office', 'Storage room', 'Hospital director’s office'])
+      expect(names('en'), n).toContain(n);
+    for (const n of ['接待处', '检验室', '消毒供应室']) expect(names('zh'), n).toContain(n);
+    expect(names('ja')).toContain('耳鼻咽喉科');
+    expect(departmentNames('ja')).toContain('外来部門');
+    expect(departmentNames('en')).toContain('Medical technical services');
+    expect(departmentNames('en')).toContain('Nursing department');
+  });
+});
