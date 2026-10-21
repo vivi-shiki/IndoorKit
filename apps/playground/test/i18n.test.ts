@@ -23,40 +23,38 @@ describe('messages', () => {
 });
 
 describe('terminology', () => {
-  // 术语按三语文案整改文档第 3 节统一：同一概念在三种语言里各用一个词
+  // 术语按三语文案整改文档第 3 节统一：同一概念在三种语言里各用一个词。
+  // 2026-10-21 起，三种语言各用本国 RTLS 行业的说法（日文参考ケアコム、Me-Tracker、LocoView 等产品）
   const TERMS = {
     // 页面同时列出区域、围栏和状态告警，标题不限于“区域”
     'page.alerts.title': { zh: '告警中心', en: 'Alerts', ja: 'アラート一覧' },
     'trail.alarms': { zh: '沿途告警', en: 'Alerts along the route', ja: '経路上のアラート' },
-    'layer.fence': { zh: '电子围栏', en: 'Geofence', ja: 'ジオフェンス' },
-    'layer.department': { zh: '部门规则', en: 'Department rules', ja: '部門ルール' },
-    'layer.status': { zh: '状态上报', en: 'Status reports', ja: '状態報告' },
+    'layer.fence': { zh: '电子围栏', en: 'Geofence', ja: 'エリア検知' },
+    'layer.department': { zh: '部门区域', en: 'Department zones', ja: '部門エリア' },
+    'layer.status': { zh: '设备与人员状态', en: 'Device and person status', ja: '機器・人の状態' },
     'metric.alerts': { zh: '告警', en: 'Alerts', ja: 'アラート' },
-    // 热力图统计的是定位上报次数，不是人数
-    'page.occupancy.title': {
-      zh: '定位上报热力图',
-      en: 'Location Report Heatmap',
-      ja: '位置報告ヒートマップ',
-    },
+    // 热力图统计的是定位次数，不是人数
+    'page.occupancy.title': { zh: '定位热力图', en: 'Location Heatmap', ja: '測位ヒートマップ' },
     'metric.heatPoints': {
-      zh: '所选时段上报次数',
-      en: 'Reports in selected period',
-      ja: '選択期間の位置報告数',
+      zh: '所选时段定位次数',
+      en: 'Location updates in period',
+      ja: '選択期間の測位回数',
     },
     'busy.title': {
-      zh: '定位上报最多的房间（前 3）',
-      en: 'Top 3 rooms by location reports',
-      ja: '位置報告数の多い部屋（上位 3 件）',
+      zh: '定位次数最多的房间（前 3）',
+      en: 'Top 3 rooms by location updates',
+      ja: '測位回数の多い部屋（上位 3 件）',
     },
     // 部门包含护理部和行政部，不全是临床科室
     'place.outsideOwn': {
       zh: '位于所属部门范围外',
       en: 'Outside assigned department',
-      ja: '所属部門のエリア外',
+      ja: '所属部門エリア外',
     },
-    'metric.outside': { zh: '所属部门范围外', en: 'Outside assigned department', ja: '所属部門のエリア外' },
-    'control.departments': { zh: '部门区域', en: 'Department areas', ja: '部門エリア' },
+    'metric.outside': { zh: '所属部门范围外', en: 'Outside assigned department', ja: '所属部門エリア外' },
+    'control.departments': { zh: '部门区域', en: 'Department zones', ja: '部門エリア' },
     'detail.department': { zh: '所属部门', en: 'Assigned department', ja: '所属部門' },
+    'detail.location': { zh: '当前位置', en: 'Location', ja: '所在地' },
     'panel.departments': { zh: '部门', en: 'Departments', ja: '部門' },
     // 医生、患者等是人员类型，不是权限角色
     'control.roles': { zh: '人员类型', en: 'Person type', ja: '対象者の区分' },
@@ -65,9 +63,13 @@ describe('terminology', () => {
     'trail.range': { zh: '时间范围', en: 'Time range', ja: '時間範囲' },
     'trail.speed': { zh: '回放速度', en: 'Playback speed', ja: '再生速度' },
     'status.maintenance': { zh: '维护中', en: 'Under maintenance', ja: 'メンテナンス中' },
-    'group.efficiency.title': { zh: '设备', en: 'Equipment', ja: '機器' },
-    'group.people.title': { zh: '人员', en: 'People', ja: '院内の人' },
-    'page.trail.title': { zh: '轨迹回放', en: 'Movement Replay', ja: '移動履歴の再生' },
+    'metric.tags': { zh: '在线标签数', en: 'Active tags', ja: '通信中のタグ' },
+    // 菜单和页面标题
+    'group.efficiency.title': { zh: '医疗设备', en: 'Medical Equipment', ja: '医療機器' },
+    'group.people.title': { zh: '人员', en: 'People', ja: '人の所在' },
+    'page.assets.title': { zh: '设备定位', en: 'Asset Tracking', ja: '医療機器の所在・稼働状況' },
+    'page.tracking.title': { zh: '人员实时定位', en: 'Live People Tracking', ja: '所在確認' },
+    'page.trail.title': { zh: '轨迹回放', en: 'Location History Playback', ja: '移動履歴の再生' },
     // 处理流程：未处理 → 已确认 → 已解决；“未解决”统计包含已确认
     'state.open': { zh: '未处理', en: 'Open', ja: '未対応' },
     'state.acknowledged': { zh: '已确认', en: 'Acknowledged', ja: '確認済み' },
@@ -76,9 +78,30 @@ describe('terminology', () => {
     // 按钮只改处理状态，不代表修好了
     'action.ack': { zh: '标记为已确认', en: 'Mark as acknowledged', ja: '確認済みにする' },
     'action.resolve': { zh: '标记为已解决', en: 'Mark as resolved', ja: '解決済みにする' },
+    // 告警名：日文用「〜検知」系产品的名词形式
+    'alarm.outside-own': {
+      zh: '离开所属部门范围',
+      en: 'Outside assigned department',
+      ja: '所属部門エリア外への移動',
+    },
+    'alarm.enter-other': {
+      zh: '进入其他部门区域',
+      en: 'Entered another department',
+      ja: '他部門エリアへの進入',
+    },
+    'alarm.dwell': { zh: '停留超时', en: 'Dwell time exceeded', ja: '長時間滞在' },
+    'alarm.leave': { zh: '离开区域', en: 'Zone exit', ja: 'エリアからの離脱' },
+    'alarm.offline': { zh: '设备离线', en: 'Device offline', ja: '機器の通信途絶' },
+    'alarm.sos': { zh: 'SOS 求救', en: 'SOS alert', ja: 'SOS 発報' },
     // ICU 按部门豁免，是限制区域而不是绝对禁区
-    'fence.icu': { zh: 'ICU 限制区域', en: 'ICU restricted area', ja: 'ICU 立入制限エリア' },
-    'alarm.forbid': { zh: '进入限制区域', en: 'Entered a restricted area', ja: '立入制限エリアに立ち入り' },
+    'fence.icu': { zh: 'ICU 限制区域', en: 'ICU restricted zone', ja: 'ICU 立入制限エリア' },
+    'alarm.forbid': { zh: '闯入限制区域', en: 'Restricted zone entry', ja: '立入制限エリアへの侵入' },
+    'fence.exit': {
+      zh: '设备防带出（出入口）',
+      en: 'Equipment exit alert (entrances)',
+      ja: '機器の持ち出し検知（出入口）',
+    },
+    'fence.wardDwell': { zh: '病房停留超时', en: 'Patient room dwell limit', ja: '病室での長時間滞在' },
   } as const;
 
   it('uses the agreed terms', () => {
@@ -107,6 +130,16 @@ describe('terminology', () => {
   it('says department everywhere, since departments include nursing and administration', () => {
     for (const [key, text] of Object.entries(messages.zh)) expect(text, key).not.toMatch(/科室/);
     for (const [key, text] of Object.entries(messages.ja)) expect(text, key).not.toMatch(/診療科/);
+  });
+
+  it('uses the Japanese industry words for locating and area detection', () => {
+    for (const [key, text] of Object.entries(messages.ja)) {
+      expect(text, key).not.toMatch(/ジオフェンス|位置報告|現在地|積算照度|オンライン/);
+    }
+    expect(messages.ja['scenario.museum.curator.desc']).toContain('積算露光量');
+    expect(messages.zh['scenario.museum.curator.desc']).toContain('累计曝光量');
+    for (const [key, text] of Object.entries(messages.zh)) expect(text, key).not.toMatch(/定位上报|光照量/);
+    for (const [key, text] of Object.entries(messages.en)) expect(text, key).not.toMatch(/location report/i);
   });
 
   it('uses Chinese words rather than Japanese ones', () => {

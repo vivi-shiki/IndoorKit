@@ -12,15 +12,15 @@ All people, equipment and buildings are fictional. The venue is "Sakura General 
 
 In this demo, clinical, nursing, administrative, and service rooms are assigned to departments, such as emergency, internal medicine, surgery, or intensive care. A department may span multiple rooms, buildings, and floors. People and equipment also have an assigned department. Shared spaces such as corridors, elevators, and restrooms are not assigned to a department.
 
-Alerts come from department rules, geofence rules, and reported status. For each position report, the engine checks department rules, then geofences, and then status signals such as equipment going offline or an SOS request:
+Alerts come from department zones, geofences, and device or person status. For each location update, the engine checks department zones, then geofences, and then status signals such as a device going offline or an SOS alert:
 
-1. **Department rules**: for example a patient outside their assigned department for more than 30 s, a visitor entering a department they are not visiting, or a device taken out of its department.
-2. **Geofences**: an ICU access restriction with exemptions based on department, an equipment-restricted area near a first-floor entrance, and a visit duration limit for a patient room.
-3. **Status reports**: equipment going offline, or a person sending an SOS request.
+1. **Department zones**: for example a patient outside their assigned department for more than 30 s, a visitor entering a department they are not visiting, or a device taken out of its department.
+2. **Geofences**: an ICU restricted zone with exemptions based on department, an equipment exit alert at a first-floor entrance, and a dwell limit for a patient room.
+3. **Device and person status**: a device going offline, or a person sending an SOS alert.
 
-## Equipment
+## Medical Equipment
 
-### Equipment Map
+### Asset Tracking
 
 View the equipment in each room, its current status, and its operating time today. The demo simulates operating, idle, offline, and maintenance states using a predefined schedule for each device.
 
@@ -29,7 +29,7 @@ View the equipment in each room, its current status, and its operating time toda
 - Click a room to see its equipment. Click a device to see its status, how long it has been in that status, its operating time today, its battery and its status history today.
 - Search by equipment ID or type, and filter by status or type.
 
-![Equipment Map](docs/images/assets.png)
+![Asset Tracking](docs/images/assets.png)
 
 ## People
 
@@ -39,12 +39,12 @@ See where everyone is now. Simulated people move along corridors, enter and leav
 
 - People are colored by person type (doctor, nurse, patient, visitor, care assistant, security guard) and can be filtered by type.
 - People are listed by department, with how many are outside their assigned department.
-- Search by name or ID, then select a result to switch to that person’s floor and follow their location. The person card shows their assigned department, their location and whether they are inside their assigned department, with a link to replay their movement.
-- Choose 500, 2,000 or 5,000 simulated tags; positions are reported once per second and glide smoothly between reports. A performance panel shows frame rate, frame interval and online tags.
+- Search by name or ID, then select a result to switch to that person’s floor and follow their location. The person card shows their assigned department, their location and whether they are inside their assigned department, with a link to play back their location history.
+- Choose 500, 2,000 or 5,000 simulated tags; positions are reported once per second and glide smoothly between reports. A performance panel shows frame rate, frame interval and active tags.
 
 ![Live People Tracking](docs/images/tracking.png)
 
-### Movement Replay
+### Location History Playback
 
 See where someone has been. Pick a person and a period of 15, 30 or 60 minutes, and replay their movement at 1×, 4× or 16×.
 
@@ -52,22 +52,22 @@ See where someone has been. Pick a person and a period of 15, 30 or 60 minutes, 
 - Stops are listed with their time, room and duration, and marked when they are outside the person's assigned department. Click a stop to jump to that moment.
 - Alerts along the route are listed below the stops.
 
-![Movement Replay](docs/images/trail.png)
+![Location History Playback](docs/images/trail.png)
 
 ### Alerts
 
-A single list shows department, geofence, and status alerts, including the affected person or device, location, alert category, and severity.
+A single list shows department zone, geofence, and status alerts, including the affected person or device, location, alert category, and severity.
 
 - Mark each alert as acknowledged or resolved, and filter the list by alert category.
 - Click the person or device in an alert to jump to its floor and position.
 
 ![Alerts](docs/images/alerts.png)
 
-### Location Report Heatmap
+### Location Heatmap
 
-Location reports on each floor over the last 1, 5 or 15 minutes, filtered by person type, with the three rooms on the floor that have the most reports. Colors represent report counts, not the number of people currently present.
+Location updates on each floor over the last 1, 5 or 15 minutes, filtered by person type, with the three rooms on the floor that have the most updates. Colors represent update counts, not the number of people currently present.
 
-![Location Report Heatmap](docs/images/occupancy.png)
+![Location Heatmap](docs/images/occupancy.png)
 
 ### On every page
 
@@ -83,8 +83,8 @@ Location reports on each floor over the last 1, 5 or 15 minutes, filtered by per
 - **Open data format.** Maps use IMDF (OGC Community Standard), validated with zod, including references between features and unique ids. Departments are an IMDF extension file that lists the rooms of each department; validation rejects unknown rooms and rooms claimed by two departments. The fictional hospital is generated by a script, so the data is reproducible.
 - **Styles generated from data.** Room colors and 2.5D heights come from the room category and a theme; walls and rooms are extruded with `fill-extrusion`, no 3D models needed. Language and theme switch at runtime without recreating the map.
 - **Position simulation in a Web Worker.** A deterministic, seeded simulator runs in a Web Worker and talks to the page through Comlink. The same ID is always the same person or device, with the same person type, department and status schedule.
-- **Two-layer alert engine.** Each report is checked against department rules first (outside the assigned department with a grace period, entering another department) and geofences second (restricted area, dwell time exceeded, left the area), with exemptions by department. Area rules raise an alert once per ongoing violation and can trigger again after the violation clears. Offline and SOS alerts are handled separately as status changes.
-- **Spatial algorithms.** A Flatbush index plus point-in-polygon checks finds the room and department of every report; interpolated movement with trail history and stop detection; per-room clustering by status; a heatmap that aggregates samples into per-minute grid buckets so memory stays bounded.
+- **Two-layer alert engine.** Each location update is checked against department zones first (outside the assigned department with a grace period, entering another department) and geofences second (restricted zone entry, dwell time exceeded, zone exit), with exemptions by department. Area rules raise an alert once per ongoing violation and can trigger again after the violation clears. Offline and SOS alerts are handled separately as status changes.
+- **Spatial algorithms.** A Flatbush index plus point-in-polygon checks finds the room and department of every location update; interpolated movement with trail history and stop detection; per-room clustering by status; a heatmap that aggregates samples into per-minute grid buckets so memory stays bounded.
 - **Tested end to end.** Unit tests run the SDK against an in-memory mock map without WebGL. Playwright tests drive the real pages through test hooks, check contrast in both themes, and measure heap growth through the Chrome DevTools Protocol. GitHub Actions runs everything and deploys to GitHub Pages.
 
 ## Tech stack

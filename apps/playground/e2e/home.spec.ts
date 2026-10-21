@@ -134,13 +134,13 @@ test('the hospital slide uses the reviewed copy in every language', async ({ pag
   );
   await switcher(page).getByRole('button', { name: '日本語' }).click();
   await expect(description).toHaveText(
-    '架空の「さくら総合病院」を舞台に、院内機器の位置と稼働状況、院内にいる人の現在地と移動履歴を確認できるデモです。',
+    '架空の「さくら総合病院」を舞台に、医療機器の所在と稼働状況、職員や患者などの所在と移動履歴を確認できるデモです。',
   );
   await expect(page.getByTestId('home-tagline')).toHaveText(TAGLINES.ja);
   // 医院场景列出侧栏里的两个业务视图
   await expect(slide(page, 'hospital').getByTestId('scenario-view').locator('strong')).toHaveText([
-    '機器',
-    '院内の人',
+    '医療機器',
+    '人の所在',
   ]);
 });
 

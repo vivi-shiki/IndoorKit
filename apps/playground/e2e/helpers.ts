@@ -11,17 +11,17 @@ export type Demo = (typeof DEMOS)[number];
 
 /** 两条业务线在三种语言下的名称 */
 export const GROUP_TITLES: Record<keyof typeof GROUPS, { en: string; zh: string; ja: string }> = {
-  efficiency: { en: 'Equipment', zh: '设备', ja: '機器' },
-  people: { en: 'People', zh: '人员', ja: '院内の人' },
+  efficiency: { en: 'Medical Equipment', zh: '医疗设备', ja: '医療機器' },
+  people: { en: 'People', zh: '人员', ja: '人の所在' },
 };
 
 /** 各页面在三种语言下的标题（业务名称，不带编号） */
 export const TITLES: Record<Demo, { en: string; zh: string; ja: string }> = {
-  assets: { en: 'Equipment Map', zh: '设备地图', ja: '機器マップ' },
-  tracking: { en: 'Live People Tracking', zh: '人员实时定位', ja: '院内の人の現在地' },
-  trail: { en: 'Movement Replay', zh: '轨迹回放', ja: '移動履歴の再生' },
+  assets: { en: 'Asset Tracking', zh: '设备定位', ja: '医療機器の所在・稼働状況' },
+  tracking: { en: 'Live People Tracking', zh: '人员实时定位', ja: '所在確認' },
+  trail: { en: 'Location History Playback', zh: '轨迹回放', ja: '移動履歴の再生' },
   alerts: { en: 'Alerts', zh: '告警中心', ja: 'アラート一覧' },
-  occupancy: { en: 'Location Report Heatmap', zh: '定位上报热力图', ja: '位置報告ヒートマップ' },
+  occupancy: { en: 'Location Heatmap', zh: '定位热力图', ja: '測位ヒートマップ' },
 };
 
 /** 医院演示的名称：侧栏标题和浏览器标签页标题使用 */
@@ -36,11 +36,11 @@ export const PAGE_DESCS: Record<Demo, string> = {
   assets: 'Browse devices by department and room, with their operating status and operating time today.',
   tracking:
     'Filter people by type or department, select a person to view details, and enable following to keep their location in view.',
-  trail: 'Replay a person’s movements over the selected period, including stops and related alerts.',
-  alerts:
-    'Review and manage alerts from department rules, geofences, and equipment or personal status reports.',
+  trail:
+    'Play back a person’s location history over the selected period, including stops and related alerts.',
+  alerts: 'Review and manage alerts from department zones, geofences, and device or person status.',
   occupancy:
-    'View the distribution of location reports by time range and person type. Colors represent report counts, not the number of people currently present.',
+    'View the distribution of location updates by time range and person type. Colors represent update counts, not the number of people currently present.',
 };
 
 /** 首页：SDK 名称和一句话介绍 */

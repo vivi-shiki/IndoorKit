@@ -31,7 +31,7 @@ test.describe('Real-time Tracking: people', () => {
     await expect(card).toContainText(target.name);
     await expect(card.getByTestId('person-department')).not.toBeEmpty();
     await expect(card.getByTestId('person-location')).not.toBeEmpty();
-    await expect(card.getByRole('link', { name: 'Replay movement' })).toHaveAttribute(
+    await expect(card.getByRole('link', { name: 'Play location history' })).toHaveAttribute(
       'href',
       `#/hospital/trail?tag=${target.id}`,
     );
