@@ -17,6 +17,8 @@ export const TOKENS = {
     danger: '#b91c1c',
     // 首页背景图标：浅色主题是淡淡的黑色
     ink: 'rgba(0, 0, 0, 0.09)',
+    // 奇数行稍深一点，背景不那么单调
+    inkAlt: 'rgba(0, 0, 0, 0.13)',
   },
   dark: {
     bg: '#0d1117',
@@ -29,6 +31,7 @@ export const TOKENS = {
     danger: '#f87171',
     // 深色背景上黑色看不见，改成淡淡的白色
     ink: 'rgba(230, 237, 243, 0.07)',
+    inkAlt: 'rgba(230, 237, 243, 0.1)',
   },
 } as const satisfies Record<ThemeName, Record<string, string>>;
 
