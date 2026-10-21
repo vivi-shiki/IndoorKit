@@ -73,13 +73,4 @@ export function RadioGroup(props: {
   );
 }
 
-/** 至少隔 ms 毫秒才执行一次，用来限制列表重画频率 */
-export function throttle(fn: () => void, ms: number) {
-  let last = -Infinity;
-  return (force = false) => {
-    const now = performance.now();
-    if (!force && now - last < ms) return;
-    last = now;
-    fn();
-  };
-}
+export { throttle } from '../app/map';

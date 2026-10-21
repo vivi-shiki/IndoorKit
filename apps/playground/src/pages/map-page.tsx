@@ -1,59 +1,17 @@
-import {
-  type AnyPlugin,
-  type CreateIndoorMapOptions,
-  createIndoorMap,
-  type IndoorEvents,
-  type IndoorMap,
-  languageFallbacks,
-  themes,
-} from '@indoorkit/core';
+import { type AnyPlugin, type IndoorMap, languageFallbacks } from '@indoorkit/core';
 import type { Hospital, HospitalVenue } from '@indoorkit/hospital';
 import { pickLabel } from '@indoorkit/imdf';
 import type { FloorApi, VenueIndex, ZoneApi } from '@indoorkit/plugins';
-import {
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useReducer,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, type RefObject, useEffect, useReducer, useRef, useState } from 'react';
 import { loadVenue, placesOf } from '../adapters/venue';
+import { createTrackedMap, FloorButtons, fitToStage, followAppSettings } from '../app/map';
 import { trackTeardown } from '../app/teardown';
-import { i18n, useLocale, usePageTitle, useT } from '../app-i18n';
-import { appTheme } from '../app-theme';
+import { useLocale, usePageTitle, useT } from '../app-i18n';
 import type { MessageKey } from '../i18n';
-import { throttle } from '../presentation/ui';
-import { setHooks, stats, type ViviTestHooks } from '../testing/hooks';
+import { setHooks, type ViviTestHooks } from '../testing/hooks';
 import { installMapHooks } from '../testing/map-hooks';
 
-/** 创建地图并计入全局统计；销毁后记录未释放资源数 */
-export async function createTrackedMap<const P extends readonly AnyPlugin[]>(
-  options: CreateIndoorMapOptions<P>,
-): Promise<IndoorMap<P>> {
-  const indoor = await createIndoorMap({
-    ...options,
-    languages: options.languages ?? languageFallbacks(i18n.locale),
-    theme: options.theme ?? themes[appTheme.value],
-  });
-  stats().liveMaps++;
-  const destroy = indoor.destroy;
-  let counted = false;
-  indoor.destroy = async () => {
-    try {
-      await destroy();
-    } finally {
-      if (!counted) {
-        counted = true;
-        stats().liveMaps--;
-        stats().lastUnreleased = indoor.resources.size;
-      }
-    }
-  };
-  return indoor;
-}
+export { createTrackedMap, useMapEvent, useRefresh } from '../app/map';
 
 export interface MapPageOptions<P extends readonly AnyPlugin[]> {
   demo: ViviTestHooks['demo'];
@@ -120,32 +78,9 @@ export function useMapPage<const P extends readonly AnyPlugin[]>(
       const floor = indoor.plugin<FloorApi>('floor');
       if (initial.floor) floor.set(initial.floor);
 
-      // 场馆放在面板和按钮之外的空白里，留白按实际布局计算
-      const panel = stage.querySelector<HTMLElement>('.panel');
-      const toggle = stage.querySelector<HTMLElement>('.panel-toggle');
-      if (panel && toggle) {
-        const shown = (el: HTMLElement) => getComputedStyle(el).display !== 'none';
-        const box = stage.getBoundingClientRect();
-        indoor.camera.fit(venue.bounds, {
-          padding: {
-            top: shown(toggle) ? toggle.getBoundingClientRect().bottom - box.top + 16 : 48,
-            bottom: 72,
-            left: shown(panel) ? panel.getBoundingClientRect().right - box.left + 16 : 24,
-            right: 88,
-          },
-          durationMs: 0,
-        });
-      }
-
-      // 地图内的标注随语言和主题一起切换，不重建地图
+      fitToStage(indoor, stage, venue.bounds);
       const map = indoor;
-      cleanups.push(
-        i18n.subscribe(() => {
-          const languages = languageFallbacks(i18n.locale);
-          if (map.languages[0] !== languages[0]) map.setLanguages(languages);
-        }),
-        appTheme.subscribe((name) => map.setTheme(themes[name])),
-      );
+      cleanups.push(followAppSettings(map));
 
       // 科室范围由医院业务给出，地图上用 SDK 的区域插件画
       const { index, hospital } = placesOf(venue);
@@ -189,48 +124,6 @@ export function useMapPage<const P extends readonly AnyPlugin[]>(
   return [page, { state, retry }];
 }
 
-/** 订阅地图事件；处理函数总是读到最新的状态 */
-export function useMapEvent<K extends keyof IndoorEvents>(
-  page: MapPage<readonly AnyPlugin[]> | null,
-  type: K,
-  handler: (payload: IndoorEvents[K]) => void,
-) {
-  const onEvent = useEffectEvent(handler);
-  useEffect(() => page?.indoor.events.on(type, (payload) => onEvent(payload)), [page, type]);
-}
-
-/**
- * 限频重画：实时数据每秒更新，列表最多每 ms 毫秒重画一次。
- * 返回值变化时组件重新渲染并读取插件里的最新数据；refresh(true) 立即重画。
- */
-export function useRefresh(ms: number) {
-  const [version, bump] = useReducer((v: number) => v + 1, 0);
-  const refresh = useMemo(() => throttle(bump, ms), [ms]);
-  return [version, refresh] as const;
-}
-
-/** 右侧楼层按钮 */
-function Floors({ page }: { page: MapPage<readonly AnyPlugin[]> | null }) {
-  const t = useT();
-  const [, refresh] = useReducer((v: number) => v + 1, 0);
-  useMapEvent(page, 'floor:change', refresh);
-  return (
-    <fieldset className="floors" aria-label={t('floor.label')}>
-      {page &&
-        [...page.floor.list()].reverse().map((level) => (
-          <button
-            key={level.id}
-            type="button"
-            aria-pressed={level.id === page.floor.current().id}
-            onClick={() => page.floor.set(level.id)}
-          >
-            {level.shortName.en ?? level.id}
-          </button>
-        ))}
-    </fieldset>
-  );
-}
-
 /**
  * 地图页的公共布局：标题栏（标题、说明和页面控件）、地图、楼层按钮、场馆名和手机端的列表按钮。
  * 列表面板桌面端常驻左侧；手机端收在按钮后面，点开后是底部抽屉。
@@ -265,7 +158,7 @@ export function MapPageLayout(props: {
       </header>
       <div className="stage" ref={props.stageRef} data-panel-open={panelOpen ? '' : undefined}>
         <div className="map" />
-        <Floors page={page} />
+        <FloorButtons page={page} label={t('floor.label')} />
         <div className="venue-name" data-testid="venue-name">
           {page && pickLabel(page.venue.name, languageFallbacks(locale))}
         </div>
