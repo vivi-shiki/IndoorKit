@@ -1,5 +1,6 @@
 /** 地址栏 hash 与页面的对应关系；GitHub Pages 上只能用 hash 路由 */
 
+import { isMuseumPage, MUSEUM_PAGES, type MuseumPage, museumHref } from '../museum/routes';
 import { isParkingPage, PARKING_PAGES, type ParkingPage, parkingHref } from '../parking/routes';
 
 /** 医院演示的两个业务视图，侧栏和手机菜单按这个顺序分组 */
@@ -15,7 +16,8 @@ export const HOSPITAL_PAGES: readonly HospitalPage[] = HOSPITAL_GROUPS.flatMap((
 export type Route =
   | { name: 'home' }
   | { name: 'hospital'; page: HospitalPage; query: URLSearchParams }
-  | { name: 'parking'; page: ParkingPage; query: URLSearchParams };
+  | { name: 'parking'; page: ParkingPage; query: URLSearchParams }
+  | { name: 'museum'; page: MuseumPage; query: URLSearchParams };
 
 /** 医院演示的页面组件收到的参数（如 ?tags=500） */
 export interface HospitalPageProps {
@@ -30,7 +32,7 @@ const isPage = (name: string | undefined): name is HospitalPage =>
 
 /**
  * 解析 hash。redirect 是应当替换到地址栏的规范地址：
- * 进入医院或停车场演示直接打开第一个地图页；旧的 #/<page> 链接移到 #/hospital/<page>；其他地址回首页。
+ * 进入医院、停车场或博物馆演示直接打开第一个地图页；旧的 #/<page> 链接移到 #/hospital/<page>；其他地址回首页。
  */
 export function parseRoute(hash: string): { route: Route; redirect?: string } {
   const [path = '', query = ''] = hash.replace(/^#\/?/, '').split('?');
@@ -54,6 +56,16 @@ export function parseRoute(hash: string): { route: Route; redirect?: string } {
     return {
       route: { name: 'parking', page: first, query: new URLSearchParams() },
       redirect: parkingHref(first),
+    };
+  }
+  if (parts[0] === 'museum') {
+    if (parts.length === 2 && isMuseumPage(parts[1])) {
+      return { route: { name: 'museum', page: parts[1], query: new URLSearchParams(query) } };
+    }
+    const first = MUSEUM_PAGES[0]!;
+    return {
+      route: { name: 'museum', page: first, query: new URLSearchParams() },
+      redirect: museumHref(first),
     };
   }
   if (parts.length === 1 && isPage(parts[0])) {

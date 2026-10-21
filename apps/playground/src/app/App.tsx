@@ -3,6 +3,7 @@ import GlobalStyles from '@mui/material/GlobalStyles';
 import { ThemeProvider } from '@mui/material/styles';
 import { type ComponentType, useMemo } from 'react';
 import { useThemeName } from '../app-theme';
+import { MuseumApp } from '../museum';
 import { AlertsPage } from '../pages/alerts';
 import { AssetsPage } from '../pages/assets';
 import { HomePage } from '../pages/home';
@@ -45,6 +46,9 @@ export function App() {
       )}
       {route.name === 'parking' && (
         <ParkingApp page={route.page} shown={shown?.name === 'parking' ? shown : null} routeKey={key} />
+      )}
+      {route.name === 'museum' && (
+        <MuseumApp page={route.page} shown={shown?.name === 'museum' ? shown : null} routeKey={key} />
       )}
       <AppControls />
     </ThemeProvider>

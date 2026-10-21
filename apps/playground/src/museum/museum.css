@@ -1,0 +1,208 @@
+/*
+ * 博物馆页面自己的样式；标题栏、面板、抽屉和 chip 沿用外框的 style.css。
+ * 颜色只用 style.css 里由 TOKENS 生成的变量；不依赖其他演示的样式表。
+ */
+
+.sim-clock {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+.note {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--accent);
+  background: var(--bg);
+}
+
+.row.static {
+  cursor: default;
+}
+
+.row[aria-current="step"] .name {
+  font-weight: 700;
+}
+
+/* 24 小时曲线 */
+.museum-chart {
+  margin: 4px 0 8px;
+}
+
+.museum-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-band {
+  fill: #16a34a;
+  opacity: 0.12;
+}
+
+.chart-axis {
+  stroke: var(--border);
+}
+
+.chart-tick {
+  fill: var(--muted);
+  font-size: 9px;
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 2;
+}
+
+.chart-line.line-a,
+.chart-key.line-a {
+  stroke: var(--accent);
+  border-color: var(--accent);
+}
+
+.chart-line.line-b,
+.chart-key.line-b {
+  stroke: var(--muted);
+  stroke-dasharray: 4 3;
+  border-color: var(--muted);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--muted);
+}
+
+.chart-key {
+  display: inline-block;
+  width: 16px;
+  margin-right: 4px;
+  vertical-align: middle;
+  border-top: 2px solid;
+}
+
+.chart-key.line-b {
+  border-top-style: dashed;
+}
+
+/* 藏品列表与光照预算 */
+.collection-panel {
+  width: 340px;
+}
+
+.object-rows .row {
+  flex-wrap: wrap;
+}
+
+.budget {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 9em;
+}
+
+.budget-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.budget-fill {
+  display: block;
+  height: 100%;
+}
+
+.budget-fill.ok {
+  background: #16a34a;
+}
+
+.budget-fill.warn {
+  background: #d97706;
+}
+
+.budget-fill.over {
+  background: #dc2626;
+}
+
+.budget-text {
+  font-variant-numeric: tabular-nums;
+}
+
+.swatch-art {
+  display: block;
+  width: 100%;
+  max-width: 240px;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+.move-status.wrong-place,
+.move-status.overdue,
+.checkpoint-status.missed,
+.checkpoint-status.late {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.move-status.done,
+.checkpoint-status.passed {
+  color: #15803d;
+}
+
+:root[data-theme="dark"] .move-status.done,
+:root[data-theme="dark"] .checkpoint-status.passed {
+  color: #4ade80;
+}
+
+/* 导览卡片：手机上是底部抽屉 */
+.guide-card .guide-object {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-card h3 {
+  margin: 4px 0;
+}
+
+@media (max-width: 640px) {
+  .collection-panel {
+    width: auto;
+  }
+
+  /* 导览页的解说卡片一直在：点开列表时列表盖住卡片 */
+  .stage[data-panel-open]:has(.guide-card) .panel.guide-panel {
+    display: block;
+  }
+
+  .stage[data-panel-open] .guide-card {
+    display: none;
+  }
+}

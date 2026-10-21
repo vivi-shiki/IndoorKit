@@ -1,5 +1,6 @@
 import { type CDPSession, expect, type Page, test } from '@playwright/test';
 import { DEMOS, openDemo } from '../../apps/playground/e2e/helpers';
+import { MUSEUM_PAGES, openMuseum } from '../../apps/playground/e2e/museum-helpers';
 import { openParking, PARKING_PAGES } from '../../apps/playground/e2e/parking-helpers';
 
 const WARMUP_ROUNDS = 2;
@@ -14,10 +15,11 @@ async function usedHeap(cdp: CDPSession) {
   return metrics.find((m) => m.name === 'JSHeapUsedSize')!.value;
 }
 
-/** 依次打开医院和停车场的每个页面，最后回到首页，确认上一个页面已完全卸载 */
+/** 依次打开医院、停车场和博物馆的每个页面，最后回到首页，确认上一个页面已完全卸载 */
 async function round(page: Page) {
   for (const demo of DEMOS) await openDemo(page, demo);
   for (const name of PARKING_PAGES) await openParking(page, name);
+  for (const name of MUSEUM_PAGES) await openMuseum(page, name);
   await page.goto('./#/');
   await page.waitForFunction(() => window.__vivi?.demo === 'home');
   const stats = await page.evaluate(() => window.__viviStats!);

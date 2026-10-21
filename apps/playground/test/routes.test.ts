@@ -30,7 +30,7 @@ describe('parseRoute', () => {
   });
 
   it('sends removed and unknown pages to the home page', () => {
-    for (const old of ['basic', 'memory', 'realtime', 'cluster', 'geofence', 'heatmap', 'museum']) {
+    for (const old of ['basic', 'memory', 'realtime', 'cluster', 'geofence', 'heatmap']) {
       expect(parseRoute(`#/${old}`)).toEqual({ route: { name: 'home' }, redirect: '#/' });
     }
   });

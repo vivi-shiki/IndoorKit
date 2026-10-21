@@ -46,6 +46,8 @@ const pages = sourceFiles('apps/playground/src/pages');
 const APP = 'apps/playground/src';
 const parkingApp = sourceFiles(`${APP}/parking`);
 const parkingPages = sourceFiles(`${APP}/parking/pages`);
+const museumApp = sourceFiles(`${APP}/museum`);
+const museumPages = sourceFiles(`${APP}/museum/pages`);
 
 /** 相对导入解析成仓库里的路径（不带扩展名）；包名原样返回 */
 const resolveImport = (file: string, module: string) =>
@@ -65,6 +67,9 @@ describe('layer directories', () => {
     'apps/playground/src/parking',
     'docs/adr/0002-sdk-and-domain-layers.md',
     'docs/adr/0004-parking-scenario.md',
+    'domains/museum/src',
+    'apps/playground/src/museum',
+    'docs/adr/0005-museum-scenario.md',
   ])('%s exists', (path) => {
     expect(existsSync(join(ROOT, path))).toBe(true);
   });
@@ -96,6 +101,7 @@ describe('SDK layer', () => {
         (m) =>
           m.startsWith('@indoorkit/hospital') ||
           m.startsWith('@indoorkit/parking') ||
+          m.startsWith('@indoorkit/museum') ||
           m.startsWith('@indoorkit/rtls-simulator') ||
           m.startsWith('@indoorkit/venue-gen') ||
           m.includes('domains/') ||
@@ -121,6 +127,19 @@ describe('SDK layer', () => {
   it('contains no parking words', () => {
     // IMDF 自带的区块类别 parking 不算停车场业务
     const words = /vehicle|\bplates?\b|tariff|garage|monthly|车位|停车|駐車|車室/i;
+    const hits = packages.flatMap((f) =>
+      read(f)
+        .split('\n')
+        .map((line, i) => ({ line, i }))
+        .filter(({ line }) => words.test(line))
+        .map(({ line, i }) => `${f}:${i + 1}: ${line.trim()}`),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it('contains no museum words', () => {
+    const words =
+      /museum|gallery|curator|artwork|exhibit|conservation|patrol|展示|藏品|展柜|展厅|博物|美術|学芸|巡回|巡逻/i;
     const hits = packages.flatMap((f) =>
       read(f)
         .split('\n')
@@ -261,6 +280,72 @@ describe('parking scenario', () => {
       offending(parkingPages, (m) => m.startsWith('maplibre-gl') || m === '@indoorkit/core/testing'),
     ).toEqual([]);
     const hits = parkingPages.flatMap((f) => {
+      const text = read(f);
+      return [
+        /['"`]indoor-[a-z-]+['"`]/.test(text) ? `${f}: layer id literal` : [],
+        /\bindoor\.map\b|\bpage\.map\b/.test(text) ? `${f}: raw map` : [],
+        /as Record<string, unknown>/.test(text) ? `${f}: plugin cast` : [],
+        /innerHTML|insertAdjacentHTML|\bdocument\.createElement\(/.test(text) ? `${f}: HTML string` : [],
+      ].flat();
+    });
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('museum scenario', () => {
+  it('keeps the museum business package apart from the hospital and parking ones', () => {
+    const of = (name: string) => domains.filter((f) => f.startsWith(`domains/${name}/`));
+    expect(of('museum').length).toBeGreaterThan(0);
+    expect(offending(of('museum'), (m) => /^@indoorkit\/(hospital|parking)/.test(m))).toEqual([]);
+    for (const other of ['hospital', 'parking']) {
+      expect(offending(of(other), (m) => m.startsWith('@indoorkit/museum'))).toEqual([]);
+    }
+  });
+
+  it('has a folder per museum page with its React component and view', () => {
+    for (const page of ['environment', 'collection', 'visitors', 'security', 'guide']) {
+      expect(museumPages).toContain(`${APP}/museum/pages/${page}/index.tsx`);
+      expect(museumPages).toContain(`${APP}/museum/pages/${page}/view.tsx`);
+    }
+  });
+
+  it('uses only the app shell outside its own folder, never the other demos or the home page', () => {
+    const shell = [
+      /^apps\/playground\/src\/app\/(scenario-layout|map|teardown|mui-theme)$/,
+      /^apps\/playground\/src\/(app-i18n|app-theme|settings|theme)$/,
+    ];
+    const bad = (module: string, file: string) => {
+      if (/^@indoorkit\/(hospital|parking|rtls-simulator|parking-simulator)/.test(module)) return true;
+      const target = resolveImport(file, module);
+      if (!target.startsWith('apps/')) return false;
+      if (target.startsWith(`${APP}/museum/`)) return false;
+      return !shell.some((re) => re.test(target));
+    };
+    expect(offending(museumApp, bad)).toEqual([]);
+  });
+
+  it('is unknown to the SDK, the other demos and the home page; only the router mounts it', () => {
+    const others = sourceFiles(APP).filter(
+      (f) => !f.startsWith(`${APP}/museum/`) && f !== `${APP}/app/routes.ts` && f !== `${APP}/app/App.tsx`,
+    );
+    const bad = (module: string, file: string) =>
+      module.startsWith('@indoorkit/museum') || resolveImport(file, module).startsWith(`${APP}/museum`);
+    expect(offending([...others, ...packages], bad)).toEqual([]);
+    const entry = (module: string, file: string) => {
+      const target = resolveImport(file, module);
+      return (
+        target.startsWith(`${APP}/museum`) &&
+        !/^apps\/playground\/src\/museum(\/routes|\/index)?$/.test(target)
+      );
+    };
+    expect(offending([`${APP}/app/routes.ts`, `${APP}/app/App.tsx`], entry)).toEqual([]);
+  });
+
+  it('museum pages use only SDK public APIs', () => {
+    expect(
+      offending(museumPages, (m) => m.startsWith('maplibre-gl') || m === '@indoorkit/core/testing'),
+    ).toEqual([]);
+    const hits = museumPages.flatMap((f) => {
       const text = read(f);
       return [
         /['"`]indoor-[a-z-]+['"`]/.test(text) ? `${f}: layer id literal` : [],
