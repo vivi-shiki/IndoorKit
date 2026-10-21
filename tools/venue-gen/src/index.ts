@@ -2,6 +2,7 @@ import type { ImdfArchive, LabelMap, RawCollection, RawFeature } from '@indoorki
 import type { MultiPolygon, Polygon } from 'geojson';
 import { makeUuid } from './uuid';
 
+export { generateMuseum, MINATO_MUSEUM, type MuseumArchive, type MuseumGenOptions } from './museum';
 export { generateParking, MINATO_PARKING, type ParkingArchive, type ParkingGenOptions } from './parking';
 
 export interface VenueGenOptions {

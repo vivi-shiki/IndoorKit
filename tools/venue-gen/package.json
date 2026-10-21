@@ -12,6 +12,7 @@
   "dependencies": {
     "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
+    "@indoorkit/museum": "workspace:*",
     "@indoorkit/parking": "workspace:*"
   }
 }

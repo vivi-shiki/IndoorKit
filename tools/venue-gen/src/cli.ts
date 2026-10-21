@@ -2,10 +2,18 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { departmentExtension } from '@indoorkit/hospital';
 import { type AnyImdfExtension, IMDF_FILES, type ImdfArchive, validateImdf } from '@indoorkit/imdf';
+import { museumExtensions } from '@indoorkit/museum';
 import { parkingExtensions } from '@indoorkit/parking';
-import { generateParking, generateVenue, MINATO_PARKING, SAKURA_HOSPITAL } from './index';
+import {
+  generateMuseum,
+  generateParking,
+  generateVenue,
+  MINATO_MUSEUM,
+  MINATO_PARKING,
+  SAKURA_HOSPITAL,
+} from './index';
 
-/** 两个虚构场馆写到 <outDir>/<场馆>/<文件>.json */
+/** 三个虚构场馆写到 <outDir>/<场馆>/<文件>.json */
 const outDir = resolve(process.argv[2] ?? 'out');
 
 async function write(name: string, archive: ImdfArchive, extensions: readonly AnyImdfExtension[]) {
@@ -27,3 +35,4 @@ async function write(name: string, archive: ImdfArchive, extensions: readonly An
 
 await write('sakura-hospital', generateVenue(SAKURA_HOSPITAL), [departmentExtension]);
 await write('minato-parking', generateParking(MINATO_PARKING), parkingExtensions);
+await write('minato-museum', generateMuseum(MINATO_MUSEUM), museumExtensions);
