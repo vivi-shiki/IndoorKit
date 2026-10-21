@@ -177,6 +177,13 @@ describe('home page copy', () => {
       expect(messages[locale]['home.note'], locale).not.toMatch(/樱花|Sakura|さくら/);
     }
   });
+
+  it('names the carousel arrows after what they switch', () => {
+    expect([messages.ja['home.previous'], messages.ja['home.next']]).toEqual([
+      '前の活用シーン',
+      '次の活用シーン',
+    ]);
+  });
 });
 
 describe('detectLocale', () => {

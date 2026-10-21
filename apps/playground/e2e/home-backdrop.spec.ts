@@ -48,6 +48,29 @@ test('the icons scroll diagonally behind the home page, alternating direction', 
     .toBe(before.length);
 });
 
+test('each diagonal row shows one kind of icon, odd and even rows in a slightly different grey', async ({
+  page,
+}) => {
+  await openHome(page);
+  const rows = await lanes(page).evaluateAll((els) =>
+    els.map((el) => ({ icon: el.getAttribute('data-icon'), ink: getComputedStyle(el).backgroundColor })),
+  );
+  // 前几行各是一种图标，互不相同
+  expect(rows.slice(0, 6).map((r) => r.icon)).toEqual([
+    'car',
+    'stethoscope',
+    'dinosaur-rex',
+    'truck',
+    'pillow',
+    'breastplate',
+  ]);
+  const even = new Set(rows.filter((_, i) => i % 2 === 0).map((r) => r.ink));
+  const odd = new Set(rows.filter((_, i) => i % 2 === 1).map((r) => r.ink));
+  expect(even.size).toBe(1);
+  expect(odd.size).toBe(1);
+  expect([...even][0]).not.toBe([...odd][0]);
+});
+
 test('one loop moves a lane by exactly one tile, so the restart is invisible', async ({ page }) => {
   await openHome(page);
   const result = await lanes(page)
@@ -97,7 +120,7 @@ test('the backdrop covers the whole window and lets clicks through', async ({ pa
 
 test('scenario cards are frosted glass over the icons', async ({ page }) => {
   await openHome(page);
-  const card = page.locator('[data-scenario]').first();
+  const card = page.locator('[data-scenario][data-active="true"]');
   const style = await card.evaluate((el) => {
     const s = getComputedStyle(el);
     return { filter: s.backdropFilter, background: s.backgroundColor };
