@@ -116,7 +116,8 @@ export function unitStatePlugin(options: UnitStateOptions) {
             'text-field': ['get', 'text'],
             'text-font': ['Noto Sans Regular'],
             'text-size': 13,
-            'text-allow-overlap': true,
+            // 相邻两区的标签靠得太近时只显示一个，放大后各自出现
+            'text-allow-overlap': false,
           },
           paint: {
             'text-color': match('worst', options.colors),
