@@ -110,6 +110,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugins
 
+  domains/parking:
+    dependencies:
+      '@indoorkit/imdf':
+        specifier: workspace:*
+        version: link:../../packages/imdf
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   packages/core:
     dependencies:
       '@indoorkit/imdf':
