@@ -69,6 +69,21 @@ describe('markerPlugin', () => {
     expect(map.plugins.marker.count()).toBe(0);
   });
 
+  it('colours each marker and updates its label, colour and place', async () => {
+    const { map, fake } = await open();
+    map.plugins.marker.add({ id: 'a', coord: [0, 0], label: '12' });
+    map.plugins.marker.add({ id: 'b', coord: [0, 0], label: '0', color: '#b91c1c' });
+    expect(markerData(fake).features.map((f) => f.properties!.color)).toEqual(['#e5484d', '#b91c1c']);
+    const layer = fake.getLayer('indoor-markers') as { paint: Record<string, unknown> };
+    expect(layer.paint['circle-color']).toEqual(['get', 'color']);
+    map.plugins.marker.update('a', { label: '11', color: '#15803d', coord: [0.001, 0] });
+    expect(markerData(fake).features[0]).toMatchObject({
+      geometry: { coordinates: [0.001, 0] },
+      properties: { label: '11', color: '#15803d' },
+    });
+    expect(() => map.plugins.marker.update('nope', { label: 'x' })).toThrow(/unknown marker/);
+  });
+
   it('removes its source and layer on destroy', async () => {
     const { map, fake } = await open();
     map.plugins.marker.add({ id: 'a', coord: [0, 0] });

@@ -29,7 +29,7 @@ describe('buildIndoorStyle', () => {
   it('colours units by category from the theme', () => {
     const units = style.layers.find((l) => l.id === 'indoor-units')!;
     const color = JSON.stringify((units as { paint: Record<string, unknown> }).paint['fill-extrusion-color']);
-    for (const c of ['room', 'walkway', 'elevator', 'stairs', 'restroom']) {
+    for (const c of ['room', 'walkway', 'elevator', 'stairs', 'restroom', 'parking', 'road', 'ramp']) {
       expect(color).toContain(c);
       expect(color).toContain(themes.light.unitColors[c]!);
     }

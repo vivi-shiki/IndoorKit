@@ -8,14 +8,20 @@ export interface MarkerInput {
   /** 楼层 id 或简称；省略时使用当前楼层 */
   floor?: string;
   label?: string;
+  /** 圆点颜色，默认红色 */
+  color?: string;
 }
 
 export interface MarkerApi {
   add(marker: MarkerInput): string;
+  /** 改标记的文字、颜色或位置（同一楼层内） */
+  update(id: string, patch: Partial<Pick<MarkerInput, 'label' | 'color' | 'coord'>>): void;
   remove(id: string): boolean;
   clear(): void;
   count(): number;
 }
+
+const DEFAULT_COLOR = '#e5484d';
 
 export const markerPlugin = definePlugin({
   name: 'marker',
@@ -27,7 +33,7 @@ export const markerPlugin = definePlugin({
         type: 'circle',
         paint: {
           'circle-radius': 8,
-          'circle-color': '#e5484d',
+          'circle-color': ['get', 'color'],
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 2,
         },
@@ -53,16 +59,24 @@ export const markerPlugin = definePlugin({
     };
 
     return {
-      add({ id, coord, floor: ref, label }) {
+      add({ id, coord, floor: ref, label, color }) {
         if (markers.has(id)) throw new Error(`marker "${id}" already exists`);
         const level = ref ? overlay.floor.resolve(ref) : overlay.floor.current();
         markers.set(id, {
           type: 'Feature',
           geometry: { type: 'Point', coordinates: coord },
-          properties: { id, level_id: level.id, label: label ?? '' },
+          properties: { id, level_id: level.id, label: label ?? '', color: color ?? DEFAULT_COLOR },
         });
         sync();
         return id;
+      },
+      update(id, patch) {
+        const marker = markers.get(id);
+        if (!marker) throw new Error(`unknown marker "${id}"`);
+        if (patch.coord) marker.geometry = { type: 'Point', coordinates: patch.coord };
+        if (patch.label !== undefined) marker.properties!.label = patch.label;
+        if (patch.color !== undefined) marker.properties!.color = patch.color;
+        sync();
       },
       remove(id) {
         const removed = markers.delete(id);

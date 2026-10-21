@@ -13,6 +13,7 @@ export {
   type RenderedTag,
   type Sample,
 } from './position-stream';
+export { type RouteApi, type RoutePointInput, routePlugin } from './route';
 export { type LineInput, linePlugin, type PolygonInput, polygonPlugin, type ShapeApi } from './shapes';
 export { detectStops, type Stop, type TrailApi, trailPlugin } from './trail';
 export {
@@ -22,5 +23,12 @@ export {
   type UnitGroup,
   unitClusterPlugin,
 } from './unit-cluster';
+export {
+  type UnitStateApi,
+  type UnitStateGroup,
+  type UnitStateGroupInput,
+  type UnitStateOptions,
+  unitStatePlugin,
+} from './unit-state';
 export { createVenueIndex, type Location, type UnitInfo, type VenueIndex } from './venue-index';
 export { type ZoneApi, type ZoneInput, zonePlugin } from './zone';
