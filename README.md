@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
-IndoorKit is an indoor mapping SDK built with TypeScript and MapLibre GL JS. This repository includes a hospital real-time location system (RTLS) demo that runs entirely in the browser.
+IndoorKit is an indoor mapping SDK built with TypeScript and MapLibre GL JS. This repository includes a hospital real-time location system (RTLS) demo and a parking management demo, both running entirely in the browser.
 
 **Live demo: <https://vivi-shiki.github.io/IndoorKit/?lang=en>**
 
@@ -76,6 +76,36 @@ Location records on each floor over the last 1, 5 or 15 minutes, filtered by per
 - Both themes target WCAG AA text contrast requirements. See the [contrast tests](apps/playground/e2e/theme-contrast.spec.ts) for the checks currently covered.
 - Language and theme are remembered in the browser for the next visit.
 
+## Parking Management
+
+A second demo built on the same SDK, with its own business package. The fictional "Minato Central Parking" has a four-level garage (the fourth level is the rooftop) and a surface lot, with 332 spaces in total. A simulated day starts at 14:00 by default and runs at 1×, 10× or 60×. Plates are masked by default, and every plate and company is fictional.
+
+### Space Availability
+
+Each space is colored as available, occupied, reserved, needs attention, or detector offline when its sensor or camera is down. Monthly, EV charging, accessible and large-vehicle spaces have their own outline. The availability signs at the entrance and on each level show the same numbers as the map. Zones can be highlighted from the list, and device layers show space sensors, AI cameras with their coverage, EV chargers and CO sensors. Click a space for its plate, entry time, parking time and current fee.
+
+![Space Availability](docs/images/parking-availability.png)
+
+### Entries and Exits
+
+License plate reads at the entrance and exit, with vehicles parking and leaving, in one list of the latest 50 events. Vehicles driving on site move on the map. Search by plate to see the vehicle's space and a fee broken down into daytime and night periods, including the night maximum and the 24-hour maximum.
+
+### Alerts
+
+Alerts in three tiers: space use (a monthly, reserved, EV, accessible or large-vehicle space used by the wrong vehicle), parking time (unpaid exit, long-term parking, an EV left after charging, a reservation no-show, overnight parking) and equipment and environment (an offline sensor or camera, a gate or parking lock fault, a charger fault, a high CO level, an intercom help call). Mark each alert as acknowledged or resolved, filter by tier and severity, and open a recognition snapshot.
+
+### Reserve and Navigate
+
+Designed for phones. Reserve a space in 15-minute slots by vehicle type, an accessible space, or closeness to the elevator, and see the driving route from the entrance along the one-way lanes and ramps. The Fleet tab allocates spaces in a row for a company, starting with the large-vehicle zone, and the Event tab books a whole zone.
+
+![Reserve and Navigate](docs/images/parking-reserve.png)
+
+### Operations Analytics
+
+Spaces are colored by utilization for today, daytime, lunchtime or yesterday, next to utilization, turnover, average stay, revenue, unpaid fees, vacant monthly spaces, vehicles parked by hour and revenue by zone. Suggestions from yesterday's data cover peak pricing, EV charging capacity and offering quiet zones as monthly parking.
+
+![Operations Analytics](docs/images/parking-analytics.png)
+
 ## Technical highlights
 
 - **Indoor map SDK with a plugin system.** `definePlugin` declares a plugin and its dependencies; plugins load in dependency order and their APIs are fully typed (`map.plugins.alarm.alarms()`).
@@ -98,11 +128,13 @@ TypeScript (strict) · MapLibre GL JS · IMDF · zod · Web Worker + Comlink · 
 | `packages/core` | Map engine wrapper: map creation, camera, plugin system, resource tracking, events, style and theme generation. The only package that imports MapLibre |
 | `packages/imdf` | IMDF loading, validation and conversion, with extension files for data outside the standard |
 | `packages/rtls` | Real-time positioning contract: tag positions, data providers and the `positions:update` event |
-| `packages/plugins` | Floor, zone, position stream, room cluster, trail, cluster, geofence, heatmap, polygon, line, popup and marker plugins. No hospital concepts |
+| `packages/plugins` | Floor, zone, position stream, room cluster, unit state, route, trail, cluster, geofence, heatmap, polygon, line, popup and marker plugins. No hospital or parking concepts |
 | `domains/hospital` | Hospital business logic without a map: departments (an IMDF extension), person types, equipment and statuses, and the two-layer alert engine |
-| `tools/venue-gen` | Generator for the fictional hospital and its departments |
+| `domains/parking` | Parking business logic without a map: zones, devices and lanes (IMDF extensions), the tariff, the three-tier alert engine, lane routing, reservations and fleet and event bookings, statistics and suggestions |
+| `tools/venue-gen` | Generator for the fictional hospital and its departments, and for the fictional parking garage |
 | `tools/rtls-simulator` | Roster of people and devices, movement simulator and its Worker data provider |
-| `apps/playground` | The live demo, in React with MUI: a home page with the three use cases, then the five hospital pages behind a sidebar (top menu on phones). `engine/` loads MapLibre, `adapters/` connects the hospital domain and the simulator to SDK plugins, `presentation/` formats text and colors, `pages/` holds each page, `testing/` holds the test hooks |
+| `tools/parking-simulator` | A seeded day of vehicles, reservations and device faults for the parking demo |
+| `apps/playground` | The live demo, in React with MUI: a home page with the three use cases, then the five hospital pages behind a sidebar (top menu on phones). `engine/` loads MapLibre, `adapters/` connects the hospital domain and the simulator to SDK plugins, `presentation/` formats text and colors, `pages/` holds each page, `testing/` holds the test hooks. `parking/` holds the parking demo with the same structure, independent of the hospital pages |
 
 ## Run locally
 

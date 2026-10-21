@@ -9,12 +9,14 @@ Project instructions shared by AI collaborators and human developers. Claude Cod
 | `packages/imdf` | Read IMDF, validate with zod, convert to `VenueModel`; extension files via `defineImdfExtension` |
 | `packages/rtls` | Real-time positioning contract: `TagPosition`, `PositionBatch`, `DataProvider`, `positions:update` |
 | `packages/core` | `createIndoorMap`, camera, plugin system, `ResourceTracker`, `EventBus`, style generation. The only package that imports maplibre-gl |
-| `packages/plugins` | Official plugins (`floor`, `zone`, `position-stream`, `unit-cluster`, `heatmap`, ...). No hospital concepts |
+| `packages/plugins` | Official plugins (`floor`, `zone`, `position-stream`, `unit-cluster`, `unit-state`, `route`, `heatmap`, ...). No hospital or parking concepts |
 | `domains/hospital` | Hospital business logic without a map or DOM: departments, roster model, alarm rules and engine |
-| `tools/venue-gen` | Generates IMDF data for the fictional hospital "さくら総合病院" |
+| `domains/parking` | Parking business logic without a map or DOM: zones, devices and lanes (IMDF extensions), tariff, three-tier alarms, lane routing, bookings, statistics and suggestions |
+| `tools/venue-gen` | Generates IMDF data for the fictional hospital "さくら総合病院" and the fictional garage "みなと中央パーキング" |
 | `tools/rtls-simulator` | Roster and movement simulator, as a Worker data provider |
+| `tools/parking-simulator` | Seeded day of vehicles, reservations and device incidents for the parking demo, with a data provider for vehicles on the move |
 | `tools/leak-bench` | Playwright memory regression tests |
-| `apps/playground` | React + MUI demo app, deployed to GitHub Pages: `app/` (hash router, hospital sidebar / top menu, theme), `engine/`, `adapters/`, `presentation/`, `pages/<page>/{index,view}.tsx` (`home` is the scenario carousel), `testing/` |
+| `apps/playground` | React + MUI demo app, deployed to GitHub Pages: `app/` (hash router, scenario sidebar / top menu, shared map helpers, theme), `engine/`, `adapters/`, `presentation/`, `pages/<page>/{index,view}.tsx` (hospital pages; `home` is the scenario carousel), `testing/`. `parking/` is the self-contained parking demo with the same inner layout ([ADR 0004](docs/adr/0004-parking-scenario.md)) |
 
 React and MUI are used only in `apps/` ([ADR 0003](docs/adr/0003-react-app.md)); the SDK packages and `domains/` stay framework-free TypeScript. The layers and what each may import are described in [ADR 0002](docs/adr/0002-sdk-and-domain-layers.md) and checked by `test/layers.test.ts`.
 
@@ -41,7 +43,7 @@ Do not call vite, tsc, vitest or playwright directly. The one exception is narro
 - Write the test first, then the implementation. Commit only when `pnpm verify` and `pnpm e2e` both pass.
 - Do not commit data about any real hospital, company or person.
 - End every commit message with the trailer `Co-authored-by: vivi-shiki <70496895+vivi-shiki@users.noreply.github.com>`, after any other trailers, so the project owner is credited on GitHub.
-- Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/testing/hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
+- Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/testing/hooks.ts`; parking pages use `window.__parking` in `apps/playground/src/parking/testing/hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
 
 ## Workflows
 
