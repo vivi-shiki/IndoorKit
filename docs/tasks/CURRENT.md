@@ -21,6 +21,7 @@
 # UPDATES
 
 - 2026-10-20 Vivi: 现在的三语表述有很严重的不流畅感觉，能不能参考react更新前上一版，重写各个文案，给我一个修复方案. Plan reviewed in the Claude Doc 「IndoorKit 三语文案修复方案」; all three open points accepted. Follow-up: the home intro names only what the SDK and the application layer each handle, with one set of terms and no negatives (「不要提不xx」). → No.2
+- 2026-10-21 Vivi: 按照这个方案重新整改 (with the review document 「IndoorKit 三语文案审核与整改文档」, 155 items against b863dd8: UI-001～086, MAP-001～018, README-001～043, IMPL-001～009). The document replaces the copy from No.2 where they differ. → No.3
 
 # TEST [CONFIRMED]
 
@@ -48,6 +49,7 @@ Before the change: `vitest run test/layers.test.ts apps/playground/test` → 3 l
 
 - No.1 React + MUI app shell, hash router with ordered teardown, pages as React components [CONFIRMED]
 - No.2 Rewrite the new home, carousel and menu copy in the voice of the reviewed hospital copy [CONFIRMED]
+- No.3 Apply the trilingual copy review document [CONFIRMED]
 
 ## No.1 React + MUI app shell, hash router with ordered teardown, pages as React components
 
@@ -81,4 +83,19 @@ Before the change: `vitest run test/layers.test.ts apps/playground/test` → 3 l
 
 - `pnpm verify`: 308 unit tests pass.
 - `pnpm e2e`: 103 passed, including leak-bench and both contrast checks; home in three languages, the heatmap page and the phone trail page checked by eye.
+
+## No.3 Apply the trilingual copy review document
+
+### CODE CHANGE
+
+- `i18n.ts`: every UI-001～086 suggestion; a language marked 保留原文 keeps the b863dd8 text, and keys the document does not list go back to b863dd8 (this undoes No.2 where they differ, for example the ja 〜向け view names). Terms follow section 3: 部门 / department / 部門, 人员类型 / person type / 対象者の区分, 轨迹回放 / Movement Replay / 移動履歴の再生, 告警中心 / Alerts / アラート一覧, 未解决 / Unresolved / 未解決, “mark as” buttons. `group.efficiency.desc` and `page.assets.desc` also switch to 部门 / 部門 so the term is the same everywhere.
+- IMPL-001～009: localized `aria-roledescription`; `panel.show` / `panel.hide`; theme button named by its action (`aria-label`, no `aria-pressed`); map loading and failure overlay with retry (`useMapPage` returns `[page, load]`, failed venue requests are not cached); empty states for the heatmap ranking (only when there are no reports at all) and the stop list; “Stop following”; filter hint on chip groups; `countText` for English singular forms.
+- `tools/venue-gen`: MAP-001～018; the department claim table uses the new English names, and the alerts page finds Patient room 401.
+- READMEs: README-001～043 plus the new page and group names; screenshots re-taken.
+- Tests: terminology table, American spelling, 科室 / 診療科 no longer used, empty states and singular counts (`empty-states.test.ts`), map labels, `map-load.spec.ts`, theme button, follow button, list toggle text, carousel role descriptions. `titles.spec.ts` now allows “Demo” because the reviewed product name contains it.
+
+### CONFIRMED
+
+- `pnpm verify`: 315 unit tests pass.
+- `pnpm e2e`: 105 passed, including leak-bench and both contrast checks. Home, heatmap and phone trail pages checked by eye in three languages.
 
