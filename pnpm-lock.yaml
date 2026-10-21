@@ -53,6 +53,12 @@ importers:
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../../packages/imdf
+      '@indoorkit/museum':
+        specifier: workspace:*
+        version: link:../../domains/museum
+      '@indoorkit/museum-simulator':
+        specifier: workspace:*
+        version: link:../../tools/museum-simulator
       '@indoorkit/parking':
         specifier: workspace:*
         version: link:../../domains/parking
@@ -119,6 +125,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugins
 
+  domains/museum:
+    dependencies:
+      '@indoorkit/imdf':
+        specifier: workspace:*
+        version: link:../../packages/imdf
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
+
   domains/parking:
     dependencies:
       '@indoorkit/imdf':
@@ -179,6 +194,22 @@ importers:
         specifier: workspace:*
         version: link:../imdf
 
+  tools/museum-simulator:
+    dependencies:
+      '@indoorkit/imdf':
+        specifier: workspace:*
+        version: link:../../packages/imdf
+      '@indoorkit/museum':
+        specifier: workspace:*
+        version: link:../../domains/museum
+      '@indoorkit/rtls':
+        specifier: workspace:*
+        version: link:../../packages/rtls
+    devDependencies:
+      '@indoorkit/venue-gen':
+        specifier: workspace:*
+        version: link:../venue-gen
+
   tools/parking-simulator:
     dependencies:
       '@indoorkit/imdf':
@@ -222,6 +253,9 @@ importers:
       '@indoorkit/imdf':
         specifier: workspace:*
         version: link:../../packages/imdf
+      '@indoorkit/museum':
+        specifier: workspace:*
+        version: link:../../domains/museum
       '@indoorkit/parking':
         specifier: workspace:*
         version: link:../../domains/parking
