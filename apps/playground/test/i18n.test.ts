@@ -140,6 +140,13 @@ describe('terminology', () => {
     for (const [key, text] of Object.entries(messages.ja)) expect(text, key).not.toMatch(/診療科/);
   });
 
+  it('writes the Japanese home page like a product manual, not a story', () => {
+    for (const [key, text] of Object.entries(messages.ja)) expect(text, key).not.toMatch(/舞台|登場/);
+    expect(messages.ja['home.note']).toBe(
+      'このデモで使用している施設名・人名・機器名とデータは、すべて架空のものです。',
+    );
+  });
+
   it('uses the Japanese industry words for locating and area detection', () => {
     for (const [key, text] of Object.entries(messages.ja)) {
       expect(text, key).not.toMatch(/ジオフェンス|位置報告|現在地|積算照度|オンライン/);
