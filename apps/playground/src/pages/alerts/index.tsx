@@ -86,7 +86,7 @@ export function AlertsPage() {
   const stageRef = useRef<HTMLDivElement>(null);
   // 设备用灰色画，人员按角色着色；名册在场馆加载后才有
   const roster = useRef<ReturnType<typeof createRoster> | null>(null);
-  const page = useMapPage(stageRef, {
+  const [page, load] = useMapPage(stageRef, {
     demo: 'alerts',
     readyWhen: 'first-positions',
     floor: '3F',
@@ -221,6 +221,7 @@ export function AlertsPage() {
       desc="page.alerts.desc"
       stageRef={stageRef}
       page={page}
+      load={load}
       controls={
         <>
           <span className="metric">

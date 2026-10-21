@@ -114,7 +114,12 @@ test.describe('theme', () => {
   test('switches UI and map to dark and keeps it after reload', async ({ page }) => {
     await openDemo(page, 'tracking');
     const light = await page.evaluate(() => window.__vivi!.mapBackground());
-    await page.getByRole('button', { name: /Dark|暗色|ダーク/ }).click();
+    // 按钮名称说明点下去切换到哪个主题，不用 aria-pressed 表示当前主题
+    const toggle = page.locator('.theme-toggle');
+    await expect(toggle).toHaveAccessibleName('Switch to dark theme');
+    await expect(toggle).not.toHaveAttribute('aria-pressed');
+    await toggle.click();
+    await expect(toggle).toHaveAccessibleName('Switch to light theme');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await pollHook(page, () => window.__vivi!.mapBackground()).not.toBe(light);
 

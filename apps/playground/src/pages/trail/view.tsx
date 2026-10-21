@@ -75,6 +75,13 @@ export function StopList(props: {
 }) {
   const t = useT();
   const { ctx } = props;
+  if (props.stops.length === 0) {
+    return (
+      <p className="muted" data-testid="stop-none">
+        {t('trail.noStops')}
+      </p>
+    );
+  }
   return (
     <ul className="rows" data-testid="stop-list">
       {props.stops.map((s) => {

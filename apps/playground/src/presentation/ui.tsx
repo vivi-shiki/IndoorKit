@@ -11,13 +11,14 @@ export interface ChipItem {
   color?: string;
 }
 
-/** 多选 chip 组：一个都没选时表示不筛选 */
+/** 多选 chip 组：一个都没选时表示不筛选，悬停提示里写明 */
 export function ChipGroup(props: {
   testId: string;
   items: ChipItem[];
   selected: ReadonlySet<string>;
   onChange: (selected: ReadonlySet<string>) => void;
 }) {
+  const t = useT();
   const toggle = (value: string) => {
     const next = new Set(props.selected);
     if (next.has(value)) next.delete(value);
@@ -25,7 +26,7 @@ export function ChipGroup(props: {
     props.onChange(next);
   };
   return (
-    <span className="chips">
+    <span className="chips" title={t('filter.allWhenEmpty')}>
       {props.items.map((item) => (
         <button
           key={item.value}

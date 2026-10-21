@@ -32,7 +32,7 @@ const CHUNK = 60;
 export function TrailPage({ query }: HospitalPageProps) {
   const t = useT();
   const stageRef = useRef<HTMLDivElement>(null);
-  const page = useMapPage(stageRef, {
+  const [page, load] = useMapPage(stageRef, {
     demo: 'trail',
     // 轨迹要先在页面里算出来，算完才算就绪
     readyWhen: 'manual',
@@ -177,6 +177,7 @@ export function TrailPage({ query }: HospitalPageProps) {
       desc="page.trail.desc"
       stageRef={stageRef}
       page={page}
+      load={load}
       controls={
         <>
           <PersonSelect

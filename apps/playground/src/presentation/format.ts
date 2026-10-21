@@ -55,6 +55,11 @@ export function placeText(index: VenueIndex, venue: VenueModel, where: HospitalL
   return where.departmentId ? `${unitName} · ${departmentName(venue, where.departmentId)}` : unitName;
 }
 
+/** 带数量的文字；英文 1 用单数，中文和日文两个键相同 */
+export function countText(n: number, one: MessageKey, other: MessageKey) {
+  return t(n === 1 ? one : other, { value: n });
+}
+
 export function formatDuration(ms: number) {
   const minutes = Math.floor(ms / 60_000);
   if (minutes >= 60) return t('duration.hm', { h: Math.floor(minutes / 60), m: minutes % 60 });

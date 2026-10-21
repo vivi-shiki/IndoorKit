@@ -63,7 +63,7 @@ export function ScenarioSlide(props: {
       data-scenario={scenario.id}
       data-active={String(active)}
       data-disabled={disabled ? 'true' : undefined}
-      aria-roledescription="slide"
+      aria-roledescription={t('home.slideRole')}
       aria-label={t('home.slide', { index: props.position, total: props.total })}
       aria-hidden={!active}
       inert={!active}

@@ -31,10 +31,18 @@ test.describe('Real-time Tracking: people', () => {
     await expect(card).toContainText(target.name);
     await expect(card.getByTestId('person-department')).not.toBeEmpty();
     await expect(card.getByTestId('person-location')).not.toBeEmpty();
-    await expect(card.getByRole('link', { name: /Trail|轨迹|軌跡/ })).toHaveAttribute(
+    await expect(card.getByRole('link', { name: 'Replay movement' })).toHaveAttribute(
       'href',
       `#/hospital/trail?tag=${target.id}`,
     );
+
+    // 跟随按钮的文字说明点下去会发生什么
+    const follow = card.getByTestId('follow');
+    const following = await follow.getAttribute('aria-pressed');
+    await expect(follow).toHaveText(following === 'true' ? 'Stop following' : 'Follow location');
+    await follow.click();
+    await expect(follow).toHaveAttribute('aria-pressed', following === 'true' ? 'false' : 'true');
+    await expect(follow).toHaveText(following === 'true' ? 'Follow location' : 'Stop following');
   });
 
   test('clicking a person on the map opens their card', async ({ page }) => {
@@ -91,7 +99,7 @@ test.describe('Trail Replay', () => {
   });
 });
 
-test.describe('Zone Alerts: two layers', () => {
+test.describe('Alerts: two layers', () => {
   test('raises department alarms and shows who, where and which layer', async ({ page }) => {
     await openDemo(page, 'alerts');
     await pollHook(page, () => window.__vivi!.alarmLayers()).toContain('department');
@@ -109,10 +117,10 @@ test.describe('Zone Alerts: two layers', () => {
     // 新告警插在列表顶部，按 id 定位同一条
     const item = page.locator(`[data-alarm="${id}"]`);
     const open = await page.evaluate(() => window.__vivi!.unhandledCount());
-    await item.getByRole('button', { name: /Acknowledge|确认|確認/ }).click();
+    await item.getByRole('button', { name: 'Mark as acknowledged' }).click();
     const state = () => page.evaluate((alarm) => window.__vivi!.alarmState(alarm), id!);
     await expect.poll(state).toBe('acknowledged');
-    await item.getByRole('button', { name: /Resolve|处理|対応/ }).click();
+    await item.getByRole('button', { name: 'Mark as resolved' }).click();
     await expect.poll(state).toBe('resolved');
     expect(await page.evaluate(() => window.__vivi!.unhandledCount())).toBeLessThanOrEqual(open);
   });

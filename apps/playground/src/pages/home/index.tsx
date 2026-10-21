@@ -40,7 +40,7 @@ export function HomePage() {
       <Hero />
       <section
         className="carousel"
-        aria-roledescription="carousel"
+        aria-roledescription={t('home.carousel')}
         aria-labelledby="scenarios-title"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}

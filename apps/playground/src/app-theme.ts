@@ -16,5 +16,6 @@ appTheme.subscribe(apply);
 
 /** 当前主题；切换时使用它的组件重新渲染 */
 export function useThemeName(): ThemeName {
-  return useSyncExternalStore(appTheme.subscribe, () => appTheme.value);
+  const read = () => appTheme.value;
+  return useSyncExternalStore(appTheme.subscribe, read, read);
 }

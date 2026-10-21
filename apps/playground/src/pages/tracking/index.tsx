@@ -24,7 +24,7 @@ export function TrackingPage({ query }: HospitalPageProps) {
   // 插件给标签着色时要查角色，名册在场馆加载后才有
   const people = useRef(new Map<string, Person>());
   const stageRef = useRef<HTMLDivElement>(null);
-  const page = useMapPage(stageRef, {
+  const [page, load] = useMapPage(stageRef, {
     demo: 'tracking',
     readyWhen: 'first-positions',
     plugins: (venue) => {
@@ -201,6 +201,7 @@ export function TrackingPage({ query }: HospitalPageProps) {
       desc="page.tracking.desc"
       stageRef={stageRef}
       page={page}
+      load={load}
       controls={
         <>
           <RadioGroup

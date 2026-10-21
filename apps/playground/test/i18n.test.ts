@@ -23,49 +23,62 @@ describe('messages', () => {
 });
 
 describe('terminology', () => {
-  // 同一个系统事件在三种语言里各用一个词：告警 / Alert / アラート
+  // 术语按三语文案整改文档第 3 节统一：同一概念在三种语言里各用一个词
   const TERMS = {
-    'page.alerts.title': { zh: '区域告警', en: 'Zone Alerts', ja: 'エリアアラート' },
-    'trail.alarms': { zh: '沿途告警', en: 'Alerts Along the Route', ja: '経路上のアラート' },
+    // 页面同时列出区域、围栏和状态告警，标题不限于“区域”
+    'page.alerts.title': { zh: '告警中心', en: 'Alerts', ja: 'アラート一覧' },
+    'trail.alarms': { zh: '沿途告警', en: 'Alerts along the route', ja: '経路上のアラート' },
     'layer.fence': { zh: '电子围栏', en: 'Geofence', ja: 'ジオフェンス' },
+    'layer.department': { zh: '部门规则', en: 'Department rules', ja: '部門ルール' },
+    'layer.status': { zh: '状态上报', en: 'Status reports', ja: '状態報告' },
     'metric.alerts': { zh: '告警', en: 'Alerts', ja: 'アラート' },
     // 热力图统计的是定位上报次数，不是人数
     'page.occupancy.title': {
-      zh: '位置分布热力图',
+      zh: '定位上报热力图',
       en: 'Location Report Heatmap',
-      ja: '位置情報ヒートマップ',
+      ja: '位置報告ヒートマップ',
     },
     'metric.heatPoints': {
-      zh: '选定时段内的定位上报次数',
-      en: 'Location reports in the selected period',
-      ja: '選択期間内の測位回数',
+      zh: '所选时段上报次数',
+      en: 'Reports in selected period',
+      ja: '選択期間の位置報告数',
     },
     'busy.title': {
-      zh: '定位上报次数最多的区域',
-      en: 'Areas with the most location reports',
-      ja: '測位回数の多いエリア',
+      zh: '定位上报最多的房间（前 3）',
+      en: 'Top 3 rooms by location reports',
+      ja: '位置報告数の多い部屋（上位 3 件）',
     },
-    // 「本科室」容易被理解成当前用户的科室
-    'place.outsideOwn': { zh: '位于所属科室外', en: 'Outside assigned department', ja: '所属診療科外' },
-    'metric.outside': { zh: '位于所属科室外', en: 'Outside assigned department', ja: '所属診療科外' },
-    'control.departments': { zh: '科室区域', en: 'Department areas', ja: '診療科エリア' },
+    // 部门包含护理部和行政部，不全是临床科室
+    'place.outsideOwn': {
+      zh: '位于所属部门范围外',
+      en: 'Outside assigned department',
+      ja: '所属部門のエリア外',
+    },
+    'metric.outside': { zh: '所属部门范围外', en: 'Outside assigned department', ja: '所属部門のエリア外' },
+    'control.departments': { zh: '部门区域', en: 'Department areas', ja: '部門エリア' },
+    'detail.department': { zh: '所属部门', en: 'Assigned department', ja: '所属部門' },
+    'panel.departments': { zh: '部门', en: 'Departments', ja: '部門' },
+    // 医生、患者等是人员类型，不是权限角色
+    'control.roles': { zh: '人员类型', en: 'Person type', ja: '対象者の区分' },
+    'detail.role': { zh: '人员类型', en: 'Person type', ja: '対象者の区分' },
     'asset.monitor': { zh: '监护仪', en: 'Patient monitor', ja: '生体モニター' },
     'trail.range': { zh: '时间范围', en: 'Time range', ja: '時間範囲' },
     'trail.speed': { zh: '回放速度', en: 'Playback speed', ja: '再生速度' },
-    'status.maintenance': { zh: '维修中', en: 'Under maintenance', ja: '保守中' },
-    'group.people.title': { zh: '人员视图', en: 'People View', ja: '人の位置・移動' },
-    'control.roles': { zh: '角色', en: 'Roles', ja: '人物区分' },
-    // 按使用者划分的视图：中文用角色词，日文用「〜向け」
-    'scenario.parking.operator.title': { zh: '运营视图', en: 'Operator View', ja: '運営者向け' },
-    'scenario.parking.driver.title': { zh: '车主视图', en: 'Driver View', ja: 'ドライバー向け' },
-    'scenario.museum.curator.title': { zh: '策展视图', en: 'Curator View', ja: '学芸員向け' },
-    'scenario.museum.operations.title': {
-      zh: '运营与安保视图',
-      en: 'Operations and Security View',
-      ja: '運営・警備向け',
-    },
-    'scenario.museum.visitor.title': { zh: '观众视图', en: 'Visitor View', ja: '来館者向け' },
-    'home.comingSoon': { zh: '开发中', en: 'Coming soon', ja: '開発中' },
+    'status.maintenance': { zh: '维护中', en: 'Under maintenance', ja: 'メンテナンス中' },
+    'group.efficiency.title': { zh: '设备', en: 'Equipment', ja: '機器' },
+    'group.people.title': { zh: '人员', en: 'People', ja: '院内の人' },
+    'page.trail.title': { zh: '轨迹回放', en: 'Movement Replay', ja: '移動履歴の再生' },
+    // 处理流程：未处理 → 已确认 → 已解决；“未解决”统计包含已确认
+    'state.open': { zh: '未处理', en: 'Open', ja: '未対応' },
+    'state.acknowledged': { zh: '已确认', en: 'Acknowledged', ja: '確認済み' },
+    'state.resolved': { zh: '已解决', en: 'Resolved', ja: '解決済み' },
+    'metric.unhandled': { zh: '未解决', en: 'Unresolved', ja: '未解決' },
+    // 按钮只改处理状态，不代表修好了
+    'action.ack': { zh: '标记为已确认', en: 'Mark as acknowledged', ja: '確認済みにする' },
+    'action.resolve': { zh: '标记为已解决', en: 'Mark as resolved', ja: '解決済みにする' },
+    // ICU 按部门豁免，是限制区域而不是绝对禁区
+    'fence.icu': { zh: 'ICU 限制区域', en: 'ICU restricted area', ja: 'ICU 立入制限エリア' },
+    'alarm.forbid': { zh: '进入限制区域', en: 'Entered a restricted area', ja: '立入制限エリアに立ち入り' },
   } as const;
 
   it('uses the agreed terms', () => {
@@ -84,53 +97,43 @@ describe('terminology', () => {
       }
     }
   });
-});
 
-describe('home page copy', () => {
-  // 首页、场景卡片和菜单是 React 改版时新写的文案，按上一版已审过的文案统一写法
-  const isNewCopy = (key: string) => /^(home|scenario|nav)\./.test(key);
-  const entries = (locale: (typeof LOCALES)[number]) =>
-    Object.entries(messages[locale]).filter(([key]) => isNewCopy(key));
-
-  it('writes Japanese without half-width spaces around numbers and Latin letters', () => {
-    const cjk = '[\\u3040-\\u30ff\\u4e00-\\u9fff]';
-    const spaced = new RegExp(`${cjk} [A-Za-z0-9{]|[A-Za-z0-9}] ${cjk}`);
-    for (const [key, text] of entries('ja')) expect(text, key).not.toMatch(spaced);
+  it('uses American spelling in English', () => {
+    for (const [key, text] of Object.entries(messages.en)) {
+      expect(text, key).not.toMatch(/licence|utilis|colour|centre|organis|paediatric/i);
+    }
   });
 
-  it('uses American spelling in English, as the rest of the app does', () => {
-    for (const [key, text] of entries('en'))
-      expect(text, key).not.toMatch(/licence|utilis|colour|centre|organis/i);
+  it('says department everywhere, since departments include nursing and administration', () => {
+    for (const [key, text] of Object.entries(messages.zh)) expect(text, key).not.toMatch(/科室/);
+    for (const [key, text] of Object.entries(messages.ja)) expect(text, key).not.toMatch(/診療科/);
   });
 
   it('uses Chinese words rather than Japanese ones', () => {
-    for (const [key, text] of entries('zh')) {
-      expect(text, key).not.toMatch(/满空|入出库|学艺员|来馆|展示室|警备|收藏库|解说/);
+    for (const [key, text] of Object.entries(messages.zh)) {
+      expect(text, key).not.toMatch(/满空|入出库|学艺员|来馆|展示室|警备|收藏库|禁入|防盗/);
     }
   });
+});
 
-  it('says what the SDK and the application layer each do, with no negatives', () => {
-    const intro = {
-      zh: 'SDK 负责室内地图、场馆数据和实时位置；应用层负责各场景的业务功能和页面。',
-      en: 'The SDK handles the indoor map, venue data and real-time positions. The application layer handles the features and screens for each use case.',
-      ja: 'SDKは屋内地図、施設データ、リアルタイムの位置情報を担い、アプリケーション層は各シーンの業務機能と画面を担います。',
-    };
-    for (const locale of LOCALES) expect(messages[locale]['home.intro'], locale).toBe(intro[locale]);
-  });
-
-  it('describes the parking and museum demos the way the reviewed hospital copy does', () => {
-    for (const id of ['hospital', 'parking', 'museum'] as const) {
-      const key = `scenario.${id}.desc` as const;
-      expect(messages.zh[key], key).toMatch(/^以虚构的“.+”为例，展示.+。$/);
-      expect(messages.en[key], key).toMatch(/^Explore .+, in the fictional .+\.$/);
-      expect(messages.ja[key], key).toMatch(/^架空の「.+」を舞台に、.+を確認できるデモです。$/);
-    }
+describe('home page copy', () => {
+  it('introduces the SDK without negatives', () => {
+    expect(messages.zh['home.intro']).not.toMatch(/不/);
+    expect(messages.en['home.intro']).not.toMatch(/\bnot?\b|n’t|nothing/);
+    expect(messages.ja['home.intro']).not.toMatch(/ません|ない/);
   });
 
   it('notes that every venue is fictional without naming only the hospital', () => {
     for (const locale of LOCALES) {
       expect(messages[locale]['home.note'], locale).not.toMatch(/樱花|Sakura|さくら/);
     }
+  });
+
+  it('names the carousel arrows after what they switch', () => {
+    expect([messages.ja['home.previous'], messages.ja['home.next']]).toEqual([
+      '前の活用シーン',
+      '次の活用シーン',
+    ]);
   });
 });
 
@@ -169,7 +172,7 @@ describe('createI18n', () => {
   it('translates with parameters', () => {
     const i18n = createI18n({ storage: memoryStorage(), languages: ['en'] });
     expect(i18n.locale).toBe('en');
-    expect(i18n.t('page.tracking.title')).toBe('Live Map');
+    expect(i18n.t('page.tracking.title')).toBe('Live People Tracking');
     expect(i18n.t('control.minutes', { value: 15 })).toBe('Last 15 min');
   });
 

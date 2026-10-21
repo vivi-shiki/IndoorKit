@@ -77,19 +77,31 @@ export interface MapPage<P extends readonly AnyPlugin[]> {
   hooks: ViviTestHooks;
 }
 
+/** 地图的加载状态，失败时可以重试 */
+export interface MapLoad {
+  state: 'loading' | 'ready' | 'failed';
+  retry(): void;
+}
+
 /**
  * 在 stage 里的 .map 上创建地图。地图创建是异步的，就绪前返回 null。
  * 卸载时销毁地图（含插件的 Worker），并登记给路由，路由等它完成才挂载下一页。
+ * 创建失败时 load.state 为 failed，retry() 销毁残留后重新创建。
  */
 export function useMapPage<const P extends readonly AnyPlugin[]>(
   stageRef: RefObject<HTMLElement | null>,
   options: MapPageOptions<P>,
-): MapPage<P> | null {
+): [MapPage<P> | null, MapLoad] {
   const [page, setPage] = useState<MapPage<P> | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, retry] = useReducer((n: number) => n + 1, 0);
   // 选项只在挂载时读一次；页面参数变化时路由会重新挂载页面
   const initial = useRef(options).current;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: attempt 是重试时重新创建地图的触发条件
   useEffect(() => {
+    setFailed(false);
+    setPage(null);
     const stage = stageRef.current!;
     const hooks = setHooks({ demo: initial.demo });
     let disposed = false;
@@ -161,18 +173,20 @@ export function useMapPage<const P extends readonly AnyPlugin[]>(
       setPage({ indoor, floor, venue, index, hospital, hooks });
     };
     // 一次挂载失败要报出来，但不能卡住之后的导航
-    const created = create().catch((error: unknown) =>
-      console.error('[playground] failed to open page', error),
-    );
+    const created = create().catch((error: unknown) => {
+      console.error('[playground] failed to open page', error);
+      if (!disposed) setFailed(true);
+    });
 
     return () => {
       disposed = true;
       for (const cleanup of cleanups.reverse()) cleanup();
       trackTeardown(created.then(() => indoor?.destroy()));
     };
-  }, [stageRef, initial]);
+  }, [stageRef, initial, attempt]);
 
-  return page;
+  const state = failed ? 'failed' : page ? 'ready' : 'loading';
+  return [page, { state, retry }];
 }
 
 /** 订阅地图事件；处理函数总是读到最新的状态 */
@@ -227,6 +241,7 @@ export function MapPageLayout(props: {
   desc: MessageKey;
   stageRef: RefObject<HTMLDivElement | null>;
   page: MapPage<readonly AnyPlugin[]> | null;
+  load: MapLoad;
   /** 标题栏里的指标和控件 */
   controls: ReactNode;
   /** 地图上方的叠加面板 */
@@ -255,6 +270,19 @@ export function MapPageLayout(props: {
           {page && pickLabel(page.venue.name, languageFallbacks(locale))}
         </div>
         {props.children}
+        {props.load.state === 'loading' && (
+          <div className="map-status" data-testid="map-status" role="status">
+            {t('map.loading')}
+          </div>
+        )}
+        {props.load.state === 'failed' && (
+          <div className="map-status" data-testid="map-status" role="alert">
+            <p>{t('map.failed')}</p>
+            <button type="button" className="chip" onClick={props.load.retry}>
+              {t('map.retry')}
+            </button>
+          </div>
+        )}
         <button
           type="button"
           className="panel-toggle"
@@ -262,7 +290,7 @@ export function MapPageLayout(props: {
           aria-expanded={panelOpen}
           onClick={() => setPanelOpen(!panelOpen)}
         >
-          {t('panel.toggle')}
+          {t(panelOpen ? 'panel.hide' : 'panel.show')}
         </button>
       </div>
     </>

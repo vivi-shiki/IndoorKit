@@ -80,7 +80,7 @@ export function PersonCard(props: {
           aria-pressed={props.follow}
           onClick={props.onFollow}
         >
-          {t('action.follow')}
+          {t(props.follow ? 'action.unfollow' : 'action.follow')}
         </button>
       </p>
     </>

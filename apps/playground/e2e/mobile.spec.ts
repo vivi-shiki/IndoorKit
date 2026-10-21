@@ -87,12 +87,14 @@ test.describe('phone layout', () => {
       const toggle = page.getByTestId('panel-toggle');
       const panel = page.locator('.panel');
       await expect(toggle).toBeVisible();
-      await expect(toggle).toHaveText('List');
+      await expect(toggle).toHaveText('Show list');
       await expect(toggle).toHaveAttribute('aria-expanded', 'false');
       await expect(panel).toBeHidden();
 
       await toggle.click();
       await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+      // 同一个按钮负责展开和收起，文字跟着状态变
+      await expect(toggle).toHaveText('Hide list');
       await expect(panel).toBeVisible();
       await expectNaturalLayout(page);
       // 展开后仍露出一半以上的地图

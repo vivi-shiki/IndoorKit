@@ -12,6 +12,7 @@ import { useT } from '../../app-i18n';
 import { STATUS_COLORS, STATUS_ORDER } from '../../presentation/colors';
 import {
   assetName,
+  countText,
   departmentName,
   formatClock,
   formatDuration,
@@ -126,7 +127,8 @@ export function UnitDrawer(props: {
         </button>
       </header>
       <p className="muted">
-        {departmentName(ctx.venue, unitDepartment)} · {t('detail.devices', { value: sorted.length })}
+        {departmentName(ctx.venue, unitDepartment)} ·{' '}
+        {countText(sorted.length, 'detail.device', 'detail.devices')}
         {abnormal > 0 && (
           <>
             {' · '}

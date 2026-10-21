@@ -18,7 +18,7 @@ export function OccupancyPage() {
   const stageRef = useRef<HTMLDivElement>(null);
   // 热力图按角色分组；名册在场馆加载后才有
   const roles = useRef(new Map<string, Role>());
-  const page = useMapPage(stageRef, {
+  const [page, load] = useMapPage(stageRef, {
     demo: 'occupancy',
     readyWhen: 'first-positions',
     plugins: (venue) => {
@@ -92,6 +92,7 @@ export function OccupancyPage() {
       desc="page.occupancy.desc"
       stageRef={stageRef}
       page={page}
+      load={load}
       controls={
         <>
           <RadioGroup
@@ -119,6 +120,7 @@ export function OccupancyPage() {
           <BusyList
             ctx={{ venue: page.venue, index: page.index, departmentOfUnit: page.hospital.departmentOfUnit }}
             rows={rows}
+            reports={pointCount}
           />
         ) : (
           <ol className="rows" data-testid="busy-list" />

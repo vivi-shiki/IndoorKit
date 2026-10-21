@@ -9,6 +9,10 @@ export function loadVenue(): Promise<HospitalVenue> {
   cached ??= fetchImdf(`${import.meta.env.BASE_URL}data/sakura-hospital`, fetch, [departmentExtension]).then(
     (archive) => buildVenueModel(archive, [departmentExtension]),
   );
+  // 失败的请求不缓存，重试时重新下载
+  cached.catch(() => {
+    cached = undefined;
+  });
   return cached;
 }
 

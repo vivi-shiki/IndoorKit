@@ -33,7 +33,8 @@ if (url.searchParams.has('lang')) {
 
 /** 当前语言；语言切换时使用它的组件重新渲染 */
 export function useLocale(): Locale {
-  return useSyncExternalStore(i18n.subscribe, () => i18n.locale);
+  const read = () => i18n.locale;
+  return useSyncExternalStore(i18n.subscribe, read, read);
 }
 
 /** 翻译函数，组件随语言切换重新渲染 */

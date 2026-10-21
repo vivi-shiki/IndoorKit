@@ -21,11 +21,12 @@ export function AppControls() {
         variant="outlined"
         size="small"
         color="inherit"
-        aria-pressed={theme === 'dark'}
+        aria-label={t(theme === 'dark' ? 'theme.toLight' : 'theme.toDark')}
+        title={t(theme === 'dark' ? 'theme.toLight' : 'theme.toDark')}
         onClick={() => appTheme.set(theme === 'dark' ? 'light' : 'dark')}
         sx={{ bgcolor: 'background.paper', borderColor: 'divider', color: 'text.primary', minWidth: 0 }}
       >
-        {/* 文字是切换后的主题 */}
+        {/* 文字是切换后的主题，读屏名称是完整的动作 */}
         {t(theme === 'dark' ? 'theme.light' : 'theme.dark')}
       </Button>
       <ToggleButtonGroup

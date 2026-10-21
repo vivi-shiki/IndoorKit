@@ -18,7 +18,7 @@ const NONE: ReadonlySet<string> = new Set();
 export function AssetsPage() {
   const t = useT();
   const stageRef = useRef<HTMLDivElement>(null);
-  const page = useMapPage(stageRef, {
+  const [page, load] = useMapPage(stageRef, {
     demo: 'assets',
     readyWhen: 'first-positions',
     plugins: (venue) =>
@@ -262,6 +262,7 @@ export function AssetsPage() {
       desc="page.assets.desc"
       stageRef={stageRef}
       page={page}
+      load={load}
       controls={
         <>
           <span className="metric">

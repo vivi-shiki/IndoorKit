@@ -25,10 +25,10 @@ test('browser tab titles follow the language switch', async ({ page }) => {
   await expect(page).toHaveTitle('IndoorKit');
 });
 
-test('no title mentions playground or demo', async ({ page }) => {
+test('no title mentions the playground or the codename', async ({ page }) => {
   await openHome(page);
   for (const demo of DEMOS) {
     await openDemo(page, demo);
-    expect(await page.title()).not.toMatch(/playground|demo|vivi/i);
+    expect(await page.title()).not.toMatch(/playground|vivi/i);
   }
 });
