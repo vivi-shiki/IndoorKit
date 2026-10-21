@@ -668,34 +668,35 @@ details summary {
   padding: 48px 24px 96px;
 }
 
-.carousel-viewport {
-  overflow: hidden;
-  border-radius: 12px;
+/* 三个场景并排；窄屏时上下排列 */
+.scenarios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
 }
 
-.carousel-track {
-  display: flex;
-  transition: transform 450ms ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .carousel-track {
-    transition: none;
+@media (max-width: 900px) {
+  .scenarios {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .scenario {
-  flex: 0 0 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.scenario-text {
+  flex: 1;
 }
 
 .scenario-visual {
   display: grid;
   place-items: center;
-  min-height: 240px;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -726,34 +727,8 @@ details summary {
   opacity: 0.7;
 }
 
-.carousel-dot {
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--border);
-  cursor: pointer;
-}
-
-.carousel-dot[aria-current="true"] {
-  width: 24px;
-  border-radius: 5px;
-  background: var(--accent);
-}
-
 @media (max-width: 640px) {
   .home {
     padding: 24px 16px 96px;
-  }
-
-  .scenario {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 16px;
-  }
-
-  .scenario-visual {
-    min-height: 160px;
-    order: -1;
   }
 }

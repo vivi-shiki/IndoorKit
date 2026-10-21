@@ -62,7 +62,6 @@ test('a map page opens in the saved language', async ({ page }) => {
 
 test('the home page names the hospital the same way as the map in each language', async ({ page }) => {
   await openHome(page);
-  await page.getByTestId('carousel-dot').first().click();
   // 日文的说明写在医院场景的介绍里，其他语言另外写在底部说明里
   const home = page.locator('.home');
   const names = { 中文: '樱花综合医院', English: 'Sakura General Hospital', 日本語: 'さくら総合病院' };

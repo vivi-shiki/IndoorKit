@@ -1,15 +1,13 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import MuseumIcon from '@mui/icons-material/Museum';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
+import museumShot from '../../../../../docs/images/museum-environment.png';
 import parkingShot from '../../../../../docs/images/parking-availability.png';
 import hospitalShot from '../../../../../docs/images/tracking.png';
 import { useT } from '../../app-i18n';
@@ -42,18 +40,13 @@ export function Hero() {
 const VISUALS: Record<Scenario['id'], ReactNode> = {
   hospital: <img src={hospitalShot} alt="" />,
   parking: <img src={parkingShot} alt="" />,
-  museum: <MuseumIcon />,
+  museum: <img src={museumShot} alt="" />,
 };
 
-/** 走马灯里的一页：场景说明、业务视图、打开按钮和示意图；开发中的场景置灰 */
-export function ScenarioSlide(props: {
-  scenario: Scenario;
-  active: boolean;
-  position: number;
-  total: number;
-}) {
+/** 一个场景的卡片：示意图、场景说明、业务视图和打开按钮；开发中的场景置灰 */
+export function ScenarioCard(props: { scenario: Scenario }) {
   const t = useT();
-  const { scenario, active } = props;
+  const { scenario } = props;
   const disabled = scenario.href === undefined;
   return (
     <Paper
@@ -61,16 +54,15 @@ export function ScenarioSlide(props: {
       variant="outlined"
       className="scenario"
       data-scenario={scenario.id}
-      data-active={String(active)}
       data-disabled={disabled ? 'true' : undefined}
-      aria-roledescription={t('home.slideRole')}
-      aria-label={t('home.slide', { index: props.position, total: props.total })}
-      aria-hidden={!active}
-      inert={!active}
+      aria-labelledby={`scenario-${scenario.id}`}
     >
+      <div className="scenario-visual" data-visual={scenario.id}>
+        {VISUALS[scenario.id]}
+      </div>
       <div className="scenario-text">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Typography variant="h5" component="h3" sx={{ fontWeight: 700 }}>
+          <Typography id={`scenario-${scenario.id}`} variant="h5" component="h3" sx={{ fontWeight: 700 }}>
             {t(scenario.title)}
           </Typography>
           {disabled && <Chip data-testid="coming-soon" size="small" label={t('home.comingSoon')} />}
@@ -88,6 +80,8 @@ export function ScenarioSlide(props: {
             </li>
           ))}
         </Box>
+      </div>
+      <div className="scenario-action">
         {disabled ? (
           <Button variant="contained" disabled>
             {t('home.open')}
@@ -98,41 +92,7 @@ export function ScenarioSlide(props: {
           </Button>
         )}
       </div>
-      <div className="scenario-visual" data-visual={scenario.id}>
-        {VISUALS[scenario.id]}
-      </div>
     </Paper>
-  );
-}
-
-/** 走马灯下方的前后按钮和圆点 */
-export function CarouselControls(props: {
-  scenarios: readonly Scenario[];
-  index: number;
-  go: (index: number) => void;
-}) {
-  const t = useT();
-  const { scenarios, index, go } = props;
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 2 }}>
-      <IconButton aria-label={t('home.previous')} onClick={() => go(index - 1)}>
-        <ChevronLeftIcon />
-      </IconButton>
-      {scenarios.map((s, i) => (
-        <button
-          key={s.id}
-          type="button"
-          className="carousel-dot"
-          data-testid="carousel-dot"
-          aria-label={t(s.title)}
-          aria-current={i === index}
-          onClick={() => go(i)}
-        />
-      ))}
-      <IconButton aria-label={t('home.next')} onClick={() => go(index + 1)}>
-        <ChevronRightIcon />
-      </IconButton>
-    </Box>
   );
 }
 

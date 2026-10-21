@@ -7,11 +7,11 @@ describe('home page scenarios', () => {
     expect(SCENARIOS.map((s) => s.id)).toEqual(['hospital', 'parking', 'museum']);
   });
 
-  it('opens the hospital and parking demos; the museum is still in development', () => {
+  it('opens all three demos', () => {
     expect(SCENARIOS.map((s) => [s.id, s.href ?? null])).toEqual([
       ['hospital', '#/hospital'],
       ['parking', '#/parking'],
-      ['museum', null],
+      ['museum', '#/museum'],
     ]);
   });
 
@@ -30,7 +30,7 @@ describe('home page scenarios', () => {
     }
   });
 
-  it('describes the planned parking and museum demos with their fictional venues', () => {
+  it('describes the parking and museum demos with their fictional venues', () => {
     const text = (id: string, locale: 'zh' | 'en' | 'ja') =>
       messages[locale][SCENARIOS.find((s) => s.id === id)!.description];
     expect(text('parking', 'ja')).toContain('みなと中央パーキング');
