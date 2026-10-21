@@ -27,6 +27,33 @@ describe('createVenueIndex', () => {
     expect(index).not.toHaveProperty('department');
   });
 
+  it('prefers the innermost unit when units are nested', () => {
+    const archive = makeArchive();
+    const inner = '00000000-0000-4000-8000-0000000000aa';
+    // 房间里的一个小区块（如展示柜），画在房间之后
+    archive.unit.features.push({
+      type: 'Feature',
+      id: inner,
+      feature_type: 'unit',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0.0004, 0.0004],
+            [0.0006, 0.0004],
+            [0.0006, 0.0006],
+            [0.0004, 0.0006],
+            [0.0004, 0.0004],
+          ],
+        ],
+      },
+      properties: { category: 'unspecified', level_id: IDS.level1, name: null },
+    });
+    const nested = createVenueIndex(buildVenueModel(archive));
+    expect(nested.locate(IDS.level1, [0.0005, 0.0005])).toEqual({ unitId: inner });
+    expect(nested.locate(IDS.level1, [0.0002, 0.0002])).toEqual({ unitId: IDS.room });
+  });
+
   it('throws for unknown ids', () => {
     expect(() => index.unit('nope')).toThrow(/unknown unit/);
   });
