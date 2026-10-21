@@ -1,0 +1,17 @@
+{
+  "name": "@indoorkit/parking-simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@indoorkit/imdf": "workspace:*",
+    "@indoorkit/parking": "workspace:*",
+    "@indoorkit/rtls": "workspace:*"
+  },
+  "devDependencies": {
+    "@indoorkit/venue-gen": "workspace:*"
+  }
+}

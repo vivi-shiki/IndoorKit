@@ -170,6 +170,22 @@ importers:
         specifier: workspace:*
         version: link:../imdf
 
+  tools/parking-simulator:
+    dependencies:
+      '@indoorkit/imdf':
+        specifier: workspace:*
+        version: link:../../packages/imdf
+      '@indoorkit/parking':
+        specifier: workspace:*
+        version: link:../../domains/parking
+      '@indoorkit/rtls':
+        specifier: workspace:*
+        version: link:../../packages/rtls
+    devDependencies:
+      '@indoorkit/venue-gen':
+        specifier: workspace:*
+        version: link:../venue-gen
+
   tools/rtls-simulator:
     dependencies:
       '@indoorkit/hospital':
