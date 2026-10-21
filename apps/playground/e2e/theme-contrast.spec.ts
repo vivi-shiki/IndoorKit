@@ -89,13 +89,7 @@ for (const theme of ['light', 'dark'] as const) {
     expect(
       await lowContrast(
         page,
-        [
-          '.home a',
-          '.home h1',
-          '.home h2',
-          '.home > header p',
-          '[data-scenario]:not([data-disabled]) p',
-        ],
+        ['.home a', '.home h1', '.home h2', '.home > header p', '[data-scenario]:not([data-disabled]) p'],
         4.5,
       ),
     ).toEqual([]);
