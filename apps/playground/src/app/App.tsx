@@ -9,6 +9,7 @@ import { HomePage } from '../pages/home';
 import { OccupancyPage } from '../pages/occupancy';
 import { TrackingPage } from '../pages/tracking';
 import { TrailPage } from '../pages/trail';
+import { ParkingApp } from '../parking';
 import { AppControls } from './controls';
 import { HospitalLayout } from './hospital-layout';
 import { cssVariables, muiTheme } from './mui-theme';
@@ -36,12 +37,14 @@ export function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <GlobalStyles styles={cssVariables} />
-      {route.name === 'home' ? (
-        shown && <HomePage />
-      ) : (
+      {route.name === 'home' && shown && <HomePage />}
+      {route.name === 'hospital' && (
         <HospitalLayout page={route.page}>
           {Page && shown?.name === 'hospital' && <Page key={key} query={shown.query} />}
         </HospitalLayout>
+      )}
+      {route.name === 'parking' && (
+        <ParkingApp page={route.page} shown={shown?.name === 'parking' ? shown : null} routeKey={key} />
       )}
       <AppControls />
     </ThemeProvider>

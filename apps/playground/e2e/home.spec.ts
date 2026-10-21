@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { openHome, TAGLINES } from './helpers';
+import './parking-helpers';
 
 const switcher = (page: Page) => page.getByRole('group', { name: /language|语言|言語/i });
 const carousel = (page: Page) => page.getByRole('region', { name: /Use cases|应用场景|活用シーン/ });
@@ -84,22 +85,35 @@ test('the carousel advances on its own until someone uses it', async ({ page }) 
   await expect(active(page)).toHaveAttribute('data-scenario', 'museum');
 });
 
-test('parking and museum are greyed out and marked as in development', async ({ page }) => {
+test('the museum is greyed out and marked as in development', async ({ page }) => {
   await openHome(page);
-  for (const id of ['parking', 'museum']) {
-    await page
-      .getByTestId('carousel-dot')
-      .nth(id === 'parking' ? 1 : 2)
-      .click();
-    const card = slide(page, id);
-    await expect(card).toHaveAttribute('data-disabled', 'true');
-    await expect(card.getByTestId('coming-soon')).toHaveText('In development');
-    await expect(card.getByRole('button', { name: /Open demo/ })).toBeDisabled();
-    expect(
-      await card.evaluate((el) => getComputedStyle(el.querySelector('.scenario-visual')!).filter),
-    ).toContain('grayscale');
+  await page.getByTestId('carousel-dot').nth(2).click();
+  const card = slide(page, 'museum');
+  await expect(card).toHaveAttribute('data-disabled', 'true');
+  await expect(card.getByTestId('coming-soon')).toHaveText('In development');
+  await expect(card.getByRole('button', { name: /Open demo/ })).toBeDisabled();
+  expect(
+    await card.evaluate((el) => getComputedStyle(el.querySelector('.scenario-visual')!).filter),
+  ).toContain('grayscale');
+  for (const id of ['hospital', 'parking']) {
+    await expect(slide(page, id).getByTestId('coming-soon')).toHaveCount(0);
+    await expect(slide(page, id)).not.toHaveAttribute('data-disabled');
   }
-  await expect(slide(page, 'hospital').getByTestId('coming-soon')).toHaveCount(0);
+});
+
+test('opening the parking demo goes straight to the availability map', async ({ page }) => {
+  await openHome(page);
+  await page.getByTestId('carousel-dot').nth(1).click();
+  await slide(page, 'parking')
+    .getByRole('link', { name: /Open demo/ })
+    .click();
+  await page.waitForFunction(
+    () => window.__parking?.page === 'availability' && window.__parking.ready === true,
+    undefined,
+    { timeout: 30_000 },
+  );
+  expect(new URL(page.url()).hash).toBe('#/parking/availability');
+  await expect(page.locator('canvas.maplibregl-canvas')).toBeVisible();
 });
 
 test('opening the hospital demo goes straight to a map', async ({ page }) => {

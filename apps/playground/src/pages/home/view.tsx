@@ -1,7 +1,6 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import LocalParkingIcon from '@mui/icons-material/LocalParking';
 import MuseumIcon from '@mui/icons-material/Museum';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,6 +10,7 @@ import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
+import parkingShot from '../../../../../docs/images/parking-availability.png';
 import hospitalShot from '../../../../../docs/images/tracking.png';
 import { useT } from '../../app-i18n';
 import type { Scenario } from './scenarios';
@@ -41,7 +41,7 @@ export function Hero() {
 
 const VISUALS: Record<Scenario['id'], ReactNode> = {
   hospital: <img src={hospitalShot} alt="" />,
-  parking: <LocalParkingIcon />,
+  parking: <img src={parkingShot} alt="" />,
   museum: <MuseumIcon />,
 };
 

@@ -14,6 +14,8 @@
     "@indoorkit/core": "workspace:*",
     "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
+    "@indoorkit/parking": "workspace:*",
+    "@indoorkit/parking-simulator": "workspace:*",
     "@indoorkit/plugins": "workspace:*",
     "@indoorkit/rtls": "workspace:*",
     "@indoorkit/rtls-simulator": "workspace:*",
@@ -25,6 +27,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@indoorkit/venue-gen": "workspace:*",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2"

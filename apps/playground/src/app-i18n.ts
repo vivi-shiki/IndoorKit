@@ -1,6 +1,8 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { createI18n, type Locale, type MessageKey, type StorageLike } from './i18n';
 
+export { LOCALE_NAMES, LOCALES, type Locale } from './i18n';
+
 const memoryFallback = new Map<string, string>();
 export const storage: StorageLike = {
   getItem: (key) => {

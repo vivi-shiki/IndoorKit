@@ -11,7 +11,7 @@ export interface Scenario {
 }
 
 /**
- * 首页走马灯里的应用场景。医院演示已完成，停车场和博物馆的说明来自两份 demo 规划，
+ * 首页走马灯里的应用场景。医院和停车场演示已完成，博物馆的说明来自 demo 规划，
  * 场馆都是虚构的。
  */
 export const SCENARIOS: readonly Scenario[] = [
@@ -33,6 +33,7 @@ export const SCENARIOS: readonly Scenario[] = [
       { title: 'scenario.parking.operator.title', desc: 'scenario.parking.operator.desc' },
       { title: 'scenario.parking.driver.title', desc: 'scenario.parking.driver.desc' },
     ],
+    href: '#/parking',
   },
   {
     id: 'museum',

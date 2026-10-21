@@ -7,10 +7,10 @@ describe('home page scenarios', () => {
     expect(SCENARIOS.map((s) => s.id)).toEqual(['hospital', 'parking', 'museum']);
   });
 
-  it('opens only the hospital demo; the other two are still in development', () => {
+  it('opens the hospital and parking demos; the museum is still in development', () => {
     expect(SCENARIOS.map((s) => [s.id, s.href ?? null])).toEqual([
       ['hospital', '#/hospital'],
-      ['parking', null],
+      ['parking', '#/parking'],
       ['museum', null],
     ]);
   });
