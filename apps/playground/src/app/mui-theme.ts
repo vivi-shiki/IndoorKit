@@ -15,6 +15,8 @@ export const TOKENS = {
     border: '#d9dee5',
     link: '#0969da',
     danger: '#b91c1c',
+    // 首页背景图标：浅色主题是淡淡的黑色
+    ink: 'rgba(0, 0, 0, 0.09)',
   },
   dark: {
     bg: '#0d1117',
@@ -25,6 +27,8 @@ export const TOKENS = {
     border: '#30363d',
     link: '#4493f8',
     danger: '#f87171',
+    // 深色背景上黑色看不见，改成淡淡的白色
+    ink: 'rgba(230, 237, 243, 0.07)',
   },
 } as const satisfies Record<ThemeName, Record<string, string>>;
 

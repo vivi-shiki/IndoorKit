@@ -2,6 +2,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect } from 'react';
 import { usePageTitle, useT } from '../../app-i18n';
 import { setHooks } from '../../testing/hooks';
+import { HomeBackdrop } from './backdrop-view';
 import { SCENARIOS } from './scenarios';
 import { Footer, Hero, ScenarioCard } from './view';
 
@@ -15,6 +16,7 @@ export function HomePage() {
 
   return (
     <main className="home">
+      <HomeBackdrop />
       <Hero />
       <section aria-labelledby="scenarios-title">
         <Typography id="scenarios-title" variant="h5" component="h2" sx={{ fontWeight: 700, mb: 2 }}>
