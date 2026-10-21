@@ -1,149 +1,94 @@
-# IndoorKit — 医院室内定位演示
+# IndoorKit
 
 [English](README.md) | **简体中文** | [日本語](README.ja.md)
 
-IndoorKit 是一个基于 MapLibre GL JS、使用 TypeScript 开发的室内地图 SDK。本仓库提供医院实时定位系统（RTLS）演示和停车场管理演示，都可直接在浏览器中运行。
+IndoorKit 是一个运行在浏览器中的室内地图 SDK，使用 TypeScript 开发，基于 MapLibre GL JS。它读取 IMDF 格式的场馆数据，以 2.5D 绘制楼层和房间；楼层切换、标记、实时定位、电子围栏、热力图、路线等功能都以插件提供，插件有完整的类型推导，并且自己负责释放资源。
 
 **在线演示：<https://vivi-shiki.github.io/IndoorKit/?lang=zh>**
 
-所有人员、设备和建筑都是虚构的。场馆为「樱花综合医院」：3 栋楼、每栋 5 层，每层都有连廊相通。
+## 特点
 
-## 部门
+- **插件系统。** 用 `definePlugin` 声明插件及其依赖，按依赖顺序加载，插件 API 在 `indoor.plugins` 上有完整的类型。
+- **从设计上避免内存泄漏。** 插件创建的 source、图层、监听、定时器和 Worker 都登记到 `ResourceTracker`，`destroy()` 时按创建的逆序释放。内存回归测试检查 JS 堆、Worker 和未释放的资源。
+- **开放的数据格式。** 场馆数据采用 IMDF（OGC 社区标准），用 zod 校验，包括要素之间的引用和 id 唯一性。标准之外的数据（如部门、停车分区）放在带类型的扩展文件里，各自有校验。
+- **由数据生成样式。** 房间颜色和高度由房间类别和主题决定，墙体和房间直接拉伸，不需要 3D 模型。语言和主题在运行时切换，不重建地图。
+- **实时定位。** 定位数据通过 `DataProvider` 接入；定位流插件可平滑插值数千个标签，另有带停留识别的轨迹、电子围栏、按房间聚合和内存有上限的热力图。
+- **业务逻辑在 SDK 之外。** SDK 不包含任何行业概念，业务规则放在独立的业务包里，不依赖地图和 DOM。
+- **不依赖 GPU 的测试。** 单元测试在内存中的模拟地图上运行 SDK；Playwright 通过测试钩子操作演示页面，并测量堆增长。
 
-演示中的诊疗、护理、行政及服务用房按部门归属管理，例如急诊科、内科、外科、重症医学科。一个部门可覆盖多个房间、楼栋和楼层。人员和设备也设有所属部门；走廊、电梯和卫生间等共用空间不划归任何部门。
+## 包
 
-告警分为部门区域、电子围栏和设备与人员状态三类。每次收到定位数据时，系统依次检查部门区域和电子围栏，并检查设备离线、SOS 求救等状态信号：
-
-1. **部门区域**：例如患者离开所属部门范围超过 30 秒、访客进入探视部门以外的部门区域、设备被带出所属部门。
-2. **电子围栏**：ICU 限制区域（本演示按所属部门设置豁免）、设备进入 1 层出入口区域，以及病房探视停留超时。
-3. **设备与人员状态**：设备离线、人员发出 SOS 求救。
-
-## 医疗设备
-
-### 设备定位
-
-查看各房间内的设备、设备当前状态及今日运行时长。演示按每台设备预设的状态时间表，模拟运行中、待机、离线和维护中等状态。
-
-- 设备按房间聚合，每个房间一个聚合点；聚合点的颜色取该房间内显示优先级最高的设备状态。
-- 部门列表显示每个部门的设备数，以及离线和维护中的数量。选中部门会高亮它的房间并列出来。
-- 点击房间查看其中的设备；点击设备查看状态、该状态持续了多久、今日运行时长、电量和今日状态变化。
-- 可按设备编号或类型搜索，按状态或类型筛选。
-
-![设备定位](docs/images/assets.png)
-
-## 人员
-
-### 人员实时定位
-
-查看每个人当前的位置。模拟人员沿走廊移动，经门口进出房间，并通过电梯或楼梯切换楼层。
-
-- 按人员类型着色（医生、护士、患者、访客、护理辅助人员、安保人员），可按人员类型筛选。
-- 按部门列出人员，并显示其中有多少人位于所属部门范围外。
-- 搜索姓名或编号，选择结果后跳到此人所在楼层并跟随位置。人员卡片显示所属部门、当前位置、是否位于所属部门范围内，并可直接回放轨迹。
-- 可选 500、2,000、5,000 个模拟标签；每秒上报一次，两次上报之间平滑移动。性能面板显示帧率、帧间隔和已接收标签数。
-
-![人员实时定位](docs/images/tracking.png)
-
-### 轨迹回放
-
-查看一个人之前去过哪里。选择人员和近 15、30、60 分钟的时段，按 1×、4×、16× 倍速回放。
-
-- 回放时地图跟着人切换楼层。
-- 列出停留地点的时间、房间和停留时长，位于所属部门范围外的会标出来；点击停留地点跳到那个时刻。
-- 停留地点下方列出沿途告警。
-
-![轨迹回放](docs/images/trail.png)
-
-### 告警中心
-
-在同一列表中显示部门区域、电子围栏和设备与人员状态三类告警，并列出告警对象、发生位置、来源类型和严重程度。
-
-- 可将告警标记为“已确认”或“已解决”，并按告警类型筛选。
-- 点击告警里的人员或设备，跳到所在楼层和位置。
-
-![告警中心](docs/images/alerts.png)
-
-### 定位热力图
-
-统计各楼层近 1、5、15 分钟内的位置记录数，可按人员类型筛选，并列出本层位置记录最多的三个房间。颜色表示累计的位置记录数，不代表实时人数。
-
-![定位热力图](docs/images/occupancy.png)
-
-### 所有页面通用
-
-- 楼层切换（1F～5F），所有楼栋同时切换。
-- 中文、英文、日文三语，地图内的房间名也一起切换。
-- 亮色和暗色主题均以 WCAG AA 的文字对比度要求为设计目标；已覆盖的检查项见[对比度测试](apps/playground/e2e/theme-contrast.spec.ts)。
-- 语言和主题保存在浏览器里，下次打开时保持不变。
-
-## 停车场管理
-
-用同一套 SDK、另写一个业务包做成的第二个演示。虚构的「港中央停车场」有一座 4 层的停车楼（4 层是屋顶）和一处地面停车场，共 332 个车位。模拟的一天默认从 14:00 开始，可以按 1×、10×、60× 运行。车牌默认打码，车牌和公司都是虚构的。
-
-### 车位实况
-
-每个车位按空闲、已占用、已预约、异常，以及传感器或摄像头离线时的「检测设备离线」着色；月租、充电、无障碍和大型车位另有描边。入口和各层的余位显示屏与地图上的数字一致。可以在列表里高亮某个区域，设备图层显示车位传感器、AI 摄像头及其覆盖范围、充电桩和 CO 传感器。点击车位可查看车牌、入场时间、已停时长和当前应付金额。
-
-![车位实况](docs/images/parking-availability.png)
-
-### 车辆进出
-
-出入口的车牌识别、车辆停入和驶离车位的记录，在一个列表里显示最近 50 条；场内行驶的车辆在地图上移动。按车牌搜索可查看车辆所在车位，以及按白天、夜间拆分的费用，包括夜间封顶和 24 小时封顶。
-
-### 异常告警
-
-三类告警：车位使用（月租、预约、充电、无障碍或大型车位被不符合条件的车辆占用）、停车时间（未缴费离场、长时间停车、充满电后未挪车、预约车辆未到场、夜间停放）、设备与环境（传感器或摄像头离线、道闸或地锁故障、充电桩故障、CO 浓度超标、对讲求助）。每条告警可以标记为已确认或已解决，可按类型和级别筛选，并查看识别快照。
-
-### 预约与导航
-
-按手机屏幕设计。按 15 分钟一格预约车位，可选车型、无障碍车位或靠近电梯；预约后显示从入口沿单向车道和坡道到车位的行驶路线。「企业批量」为一家公司分配连续的车位，优先使用大型车区；「活动包场」包下整个区域。
-
-![预约与导航](docs/images/parking-reserve.png)
-
-### 运营分析
-
-按今天、白天、午间或昨天，把每个车位按利用率着色，并给出利用率、周转率、平均停车时长、收入、未缴金额、空置月租车位、每小时在场车辆和各区收入。根据昨天的数据给出运营建议：高峰时段加价、增设充电桩、把利用率低的区域转为月租。
-
-![运营分析](docs/images/parking-analytics.png)
-
-## 技术要点
-
-- **带插件系统的室内地图 SDK。** 用 `definePlugin` 声明插件及其依赖，按依赖顺序加载，插件 API 有完整的类型推导（如 `map.plugins.alarm.alarms()`）。
-- **资源登记与释放。** 插件创建的 source、图层、监听、定时器和 Worker 都登记到 `ResourceTracker`，`destroy()` 时按创建的逆序释放。内存回归测试会反复切换所有页面，检查 JS 堆、Worker 和已登记资源。
-- **开放的数据格式。** 地图数据采用 IMDF（OGC 社区标准），用 zod 校验，包括要素之间的引用和 id 唯一性。部门数据通过 IMDF 扩展文件提供，其中列出各部门包含的房间；校验会拒绝不存在的房间和同时属于两个部门的房间。虚构医院由脚本生成，数据可以复现。
-- **由数据生成样式。** 房间颜色和 2.5D 高度由房间类别和主题决定；墙体和房间用 `fill-extrusion` 拉伸，不需要 3D 模型。语言和主题在运行时切换，不重建地图。
-- **定位模拟计算移至 Web Worker。** 可复现的定位模拟器（按种子生成）运行在 Web Worker 里，通过 Comlink 与页面通信。同一个编号永远是同一个人或同一台设备，人员类型、部门和状态时间表都不变。
-- **两层告警引擎。** 每次定位先按部门区域判断（离开所属部门范围并超过宽限时间、进入其他部门区域），再按电子围栏判断（闯入限制区域、停留超时、离开区域），可按部门豁免。区域告警在一次持续违规期间只触发一次；对象退出违规状态后，对应规则可再次触发。设备离线和 SOS 告警按状态变化单独判定。
-- **空间算法。** 用 Flatbush 索引加点在多边形内判断，确定每次定位所在的房间和部门；带轨迹记录和停留识别的插值移动；按房间、按状态聚合；热力图按「分钟 × 网格」累计样本，内存占用有上限。
-- **端到端测试。** 单元测试在不依赖 WebGL、内存中的模拟地图实现上运行 SDK。Playwright 通过测试钩子操作真实页面，检查两种主题下的对比度，并通过 Chrome DevTools Protocol 测量堆增长。GitHub Actions 运行全部测试并部署到 GitHub Pages。
-
-## 技术栈
-
-TypeScript（strict）· MapLibre GL JS · IMDF · zod · Web Worker + Comlink · KDBush · Flatbush · Turf · Vite · pnpm workspaces · Vitest · Playwright · Biome · GitHub Actions + GitHub Pages
-
-## 目录结构
-
-| 路径 | 内容 |
+| 包 | 内容 |
 | --- | --- |
-| `packages/core` | 地图引擎封装：地图创建、镜头、插件系统、资源登记、事件、样式与主题生成。唯一引入 MapLibre 的包 |
-| `packages/imdf` | IMDF 读取、校验与转换，标准之外的数据以扩展文件接入 |
-| `packages/rtls` | 实时定位的数据契约：标签位置、数据源和 `positions:update` 事件 |
-| `packages/plugins` | 楼层、区域、实时位置、房间聚合、区块状态、路线、轨迹、聚合、电子围栏、热力图、多边形、线、弹窗、标记插件，不含医院和停车场概念 |
-| `domains/hospital` | 不依赖地图的医院业务：部门（IMDF 扩展）、人员类型、设备与状态、两层告警引擎 |
-| `domains/parking` | 不依赖地图的停车场业务：区域、设备和车道（IMDF 扩展）、计费、三类告警引擎、车道路径、预约与企业批量、活动包场、统计和建议 |
-| `tools/venue-gen` | 虚构医院及其部门、虚构停车场的生成器 |
-| `tools/rtls-simulator` | 人员与设备名册、移动模拟器及其 Worker 数据源 |
-| `tools/parking-simulator` | 停车场演示用的一天：车辆进出、预约和设备故障，按种子生成 |
-| `apps/playground` | 在线演示，用 React 和 MUI 编写：首页介绍三个应用场景，医院演示的五个页面由侧栏（手机端为顶栏菜单）切换。`engine/` 加载 MapLibre，`adapters/` 把医院业务和模拟器接到 SDK 插件上，`presentation/` 负责文字与颜色，`pages/` 是各页面，`testing/` 是测试钩子。`parking/` 是停车场演示，结构相同，与医院页面互相独立 |
+| `@indoorkit/core` | 地图创建、相机、插件系统、资源登记、事件、样式和主题生成。唯一引用 MapLibre 的包 |
+| `@indoorkit/imdf` | IMDF 的读取、校验、转换，以及扩展文件 |
+| `@indoorkit/rtls` | 实时定位的约定：标签位置、数据源和 `positions:update` 事件 |
+| `@indoorkit/plugins` | 楼层、区域、定位流、房间聚合、区块状态、路线、轨迹、聚合、电子围栏、热力图、多边形、线、弹窗和标记插件 |
 
-## 本地运行
+## 用法
+
+```ts
+import { createIndoorMap, definePlugin } from '@indoorkit/core';
+import { buildVenueModel, fetchImdf } from '@indoorkit/imdf';
+import { floorPlugin, markerPlugin, unitStatePlugin } from '@indoorkit/plugins';
+
+const venue = buildVenueModel(await fetchImdf('/data/my-venue'));
+
+// 自定义插件：返回的 API 出现在 indoor.plugins.clicks 上
+const clicksPlugin = definePlugin({
+  name: 'clicks',
+  deps: ['floor'],
+  setup(ctx) {
+    let count = 0;
+    ctx.on('map:click', () => count++); // destroy() 时自动释放
+    return { count: () => count };
+  },
+});
+
+const indoor = await createIndoorMap({
+  container: 'map',
+  venue,
+  plugins: [
+    floorPlugin,
+    markerPlugin,
+    unitStatePlugin({ colors: { free: '#30a46c', occupied: '#e5484d' } }),
+    clicksPlugin,
+  ] as const,
+});
+
+indoor.plugins.floor.set('2F');
+indoor.plugins.marker.add({ id: 'gate', coord: venue.center, label: '入口' });
+indoor.plugins['unit-state'].set('unit-201', 'occupied');
+indoor.events.on('floor:change', ({ levelId }) => console.log(levelId));
+
+await indoor.destroy();
+```
+
+## 示例
+
+在线演示包含两个基于 SDK 的应用场景，各自有独立的业务包（`domains/hospital`、`domains/parking`）和模拟器，互不依赖。所有场馆、人员、车辆和公司都是虚构的。
+
+- **医院实时定位**：「樱花综合医院」，3 栋楼、每栋 5 层。最多 5,000 人的实时定位、设备定位、轨迹回放、基于部门区域和电子围栏的告警、定位热力图。
+- **停车场管理**：「港中央停车场」，4 层停车楼加一个平面停车场，共 332 个车位。基于传感器和摄像头的车位实况、车辆进出与停车费、三类异常告警、预约与沿车道的导航路线、运营分析。
+
+| 医院 | 停车场 |
+| --- | --- |
+| ![人员实时定位](docs/images/tracking.png) | ![车位实况](docs/images/parking-availability.png) |
+
+演示应用位于 `apps/playground`（React 和 MUI），支持中文、英文、日文，浅色和深色主题，以及手机。
+
+## 开发
 
 需要 Node.js 22 和 pnpm。
 
 ```bash
 pnpm install
-pnpm build
-pnpm --filter playground preview
+pnpm build                         # 生成数据，构建各个包和演示
+pnpm verify                        # 代码检查、类型检查和单元测试
+pnpm e2e                           # 端到端测试和内存测试
+pnpm --filter playground preview   # http://localhost:4173/IndoorKit/
 ```
 
-然后打开 <http://localhost:4173/IndoorKit/>。
+架构决策见 [docs/adr](docs/adr)。
+
+TypeScript（strict）· MapLibre GL JS · IMDF · zod · Web Worker + Comlink · KDBush · Flatbush · Turf · Vite · pnpm workspaces · Vitest · Playwright · Biome · GitHub Actions + GitHub Pages
