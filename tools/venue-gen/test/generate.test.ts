@@ -237,4 +237,16 @@ describe('map labels', () => {
     expect(departmentNames('en')).toContain('Medical technical services');
     expect(departmentNames('en')).toContain('Nursing department');
   });
+
+  it('writes English room and department names in sentence case', () => {
+    // Only the first word is capitalized; abbreviations and the ENT gloss are left alone.
+    const titleCased = [...names('en'), ...departmentNames('en')].filter((n) =>
+      n
+        .replace(/\(.*\)/, '')
+        .split(' ')
+        .slice(1)
+        .some((w: string) => /^[A-Z][a-z]/.test(w)),
+    );
+    expect(titleCased).toEqual([]);
+  });
 });

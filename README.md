@@ -10,7 +10,7 @@ All people, equipment and buildings are fictional. The venue is "Sakura General 
 
 ## Departments
 
-In this demo, clinical, nursing, administrative, and service rooms are assigned to departments, such as Emergency, Internal Medicine, Surgery or Intensive Care. A department may span multiple rooms, buildings, and floors. People and equipment also have an assigned department. Shared spaces such as corridors, elevators, and restrooms are not assigned to a department.
+In this demo, clinical, nursing, administrative, and service rooms are assigned to departments, such as emergency, internal medicine, surgery, or intensive care. A department may span multiple rooms, buildings, and floors. People and equipment also have an assigned department. Shared spaces such as corridors, elevators, and restrooms are not assigned to a department.
 
 Alerts come from department rules, geofence rules, and reported status. For each position report, the engine checks department rules, then geofences, and then status signals such as equipment going offline or an SOS request:
 
