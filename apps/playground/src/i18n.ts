@@ -25,19 +25,9 @@ const zh = {
   'scenario.parking.title': '停车场',
   'scenario.parking.desc':
     '以虚构的“港中央停车场”为例，在一张地图上展示车位传感器、车牌识别摄像头、道闸、空余车位显示屏和电动汽车充电桩。停车场包含一座 4 层停车楼和一处地面停车区，共约 340 个车位。',
-  'scenario.parking.operator.title': '运营方视图',
-  'scenario.parking.operator.desc': '查看各车位的占用状态、车辆进出记录、设备异常和车位利用率。',
-  'scenario.parking.driver.title': '司机视图',
-  'scenario.parking.driver.desc': '预约车位，并按导航路线驶入指定车位。',
   'scenario.museum.title': '博物馆',
   'scenario.museum.desc':
     '以虚构的“港市立美术博物馆”为例，在地图上展示展厅与展柜的环境监测数据、访客人数、展柜安防状态和安保巡逻情况。博物馆设有地上 3 层展区和地下藏品库，监测项目包括温湿度、照度和紫外线。',
-  'scenario.museum.curator.title': '策展与藏品管理视图',
-  'scenario.museum.curator.desc': '查看展厅与展柜的温湿度、照度、累计光照量（lx·h），以及藏品位置。',
-  'scenario.museum.operations.title': '运营与安保视图',
-  'scenario.museum.operations.desc': '查看各展厅的参观人数与参观路线、展柜安防告警，以及安保人员的巡逻情况。',
-  'scenario.museum.visitor.title': '观众视图',
-  'scenario.museum.visitor.desc': '观众走近展品时，系统会自动显示多语言解说，并推荐参观路线。',
   'nav.label': '页面',
   'nav.menu': '菜单',
   'nav.home': '返回首页',
@@ -191,23 +181,9 @@ const en: Messages = {
   'scenario.parking.title': 'Parking',
   'scenario.parking.desc':
     'The fictional Minato Central Parking has a four-level garage and a surface lot, with about 340 spaces in total. A single map brings together parking sensors, license plate recognition cameras, gates, parking availability displays, and EV chargers.',
-  'scenario.parking.operator.title': 'Operator View',
-  'scenario.parking.operator.desc':
-    'View parking space availability, vehicle entry and exit records, equipment faults, and parking utilization.',
-  'scenario.parking.driver.title': 'Driver View',
-  'scenario.parking.driver.desc': 'Reserve a parking space and get directions to it.',
   'scenario.museum.title': 'Museum',
   'scenario.museum.desc':
     'The fictional Minato City Museum of Art and History has three above-ground floors and basement collection storage. Its map displays temperature, humidity, illuminance, and UV readings, visitor counts, display case security status, and security patrol information.',
-  'scenario.museum.curator.title': 'Curator View',
-  'scenario.museum.curator.desc':
-    'Monitor temperature, humidity, illuminance, cumulative light exposure, and collection item locations.',
-  'scenario.museum.operations.title': 'Operations & Security View',
-  'scenario.museum.operations.desc':
-    'View visitor counts and routes by gallery, display case security alerts, and security patrol activity.',
-  'scenario.museum.visitor.title': 'Visitor View',
-  'scenario.museum.visitor.desc':
-    'Automatically display multilingual descriptions as visitors approach an exhibit, and suggest a route through the museum.',
   'nav.label': 'Pages',
   'nav.menu': 'Menu',
   'nav.home': 'Back to home',
@@ -363,23 +339,9 @@ const ja: Messages = {
   'scenario.parking.title': '駐車場',
   'scenario.parking.desc':
     '架空の「みなと中央パーキング」は、4 層の自走式立体駐車場と平面駐車場を備え、約 340 台を収容します。車室センサー、ナンバー認識カメラ、ゲート、満空表示板、EV 充電器の情報を 1 枚の地図に表示します。',
-  'scenario.parking.operator.title': '運営者ビュー',
-  'scenario.parking.operator.desc':
-    '車室ごとの空き状況、車両の入出庫記録、機器の異常、駐車場の利用率を確認できます。',
-  'scenario.parking.driver.title': 'ドライバービュー',
-  'scenario.parking.driver.desc': '車室を予約し、予約した車室まで誘導します。',
   'scenario.museum.title': '博物館',
   'scenario.museum.desc':
     '架空の「みなと市立美術博物館」は、地上 3 階と地下収蔵庫を備えています。展示室・展示ケースの温湿度、照度、紫外線の測定値に加え、来館者数、展示ケースの防犯状況、警備員の巡回状況を地図上に表示します。',
-  'scenario.museum.curator.title': '学芸員ビュー',
-  'scenario.museum.curator.desc':
-    '展示室・展示ケースの温湿度、照度、積算露光量と、収蔵品の保管・展示場所を確認できます。',
-  'scenario.museum.operations.title': '運営・警備ビュー',
-  'scenario.museum.operations.desc':
-    '展示室ごとの来館者数と動線、展示ケースの防犯アラート、警備員の巡回状況を確認できます。',
-  'scenario.museum.visitor.title': '来館者ビュー',
-  'scenario.museum.visitor.desc':
-    '来館者が展示物に近づくと多言語の解説を自動表示し、おすすめの見学ルートを案内します。',
   'nav.label': 'ページ',
   'nav.menu': 'メニュー',
   'nav.home': 'ホームに戻る',

@@ -37,7 +37,7 @@ export function Hero() {
   );
 }
 
-/** 一个场景的卡片：示意图、场景说明、业务视图和打开按钮；开发中的场景置灰。
+/** 一个场景的卡片：示意图、标题、一段简介和打开按钮；开发中的场景置灰。
  * 放在走马灯里时（slide）只有当前这张对辅助技术可见、可以操作。 */
 export function ScenarioCard(props: {
   scenario: Scenario;
@@ -72,19 +72,9 @@ export function ScenarioCard(props: {
           </Typography>
           {disabled && <Chip data-testid="coming-soon" size="small" label={t('home.comingSoon')} />}
         </Box>
-        <Typography data-testid="scenario-description" component="p" sx={{ mb: 2 }}>
+        <Typography data-testid="scenario-description" component="p">
           {t(scenario.description)}
         </Typography>
-        <Box component="ul" sx={{ m: 0, mb: 2, p: 0, listStyle: 'none', display: 'grid', gap: 1 }}>
-          {scenario.views.map((view) => (
-            <li key={view.title} data-testid="scenario-view">
-              <strong>{t(view.title)}</strong>
-              <Typography component="p" variant="body2" color="text.secondary">
-                {t(view.desc)}
-              </Typography>
-            </li>
-          ))}
-        </Box>
       </div>
       <div className="scenario-action">
         {disabled ? (
