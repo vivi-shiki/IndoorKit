@@ -668,88 +668,35 @@ details summary {
   padding: 48px 24px 96px;
 }
 
-/* 走马灯：三张卡片叠在同一格里，聚焦的在中间，另外两张缩小、虚化后露在左右两边 */
-.carousel-viewport {
+/* 电脑上三个场景并排；平板宽度上下排列 */
+.scenarios {
   display: grid;
-  overflow: hidden;
-  padding: 8px 0;
-  touch-action: pan-y;
-  /* 两侧卡片在边缘淡出，不留生硬的裁切线 */
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    #000 var(--fade),
-    #000 calc(100% - var(--fade)),
-    transparent
-  );
-  --fade: 10%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .scenarios {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .scenario {
-  --side-shift: 85%;
-  --side-scale: 0.8;
-  grid-area: 1 / 1;
-  justify-self: center;
-  width: min(680px, 66%);
-  transition:
-    transform 450ms ease,
-    opacity 450ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
 }
 
-.scenario[data-slot="center"] {
-  z-index: 2;
-}
-
-.scenario[data-slot="left"],
-.scenario[data-slot="right"] {
-  z-index: 1;
-  opacity: 0.6;
-  cursor: pointer;
-}
-
-.scenario[data-slot="left"] {
-  transform: translateX(calc(-1 * var(--side-shift))) scale(var(--side-scale));
-}
-
-.scenario[data-slot="right"] {
-  transform: translateX(var(--side-shift)) scale(var(--side-scale));
-}
-
-/* 两侧卡片朝外淡出，走马灯边缘不留生硬的裁切线 */
-@media (min-width: 641px) {
-  .scenario[data-slot="left"] {
-    mask-image: linear-gradient(to right, transparent 58%, #000 85%);
-  }
-
-  .scenario[data-slot="right"] {
-    mask-image: linear-gradient(to left, transparent 58%, #000 85%);
-  }
-}
-
-.scenario-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  height: 100%;
-  padding: 24px;
-  transition: filter 450ms ease;
-}
-
-.scenario:not([data-slot="center"]) .scenario-body {
-  filter: blur(2px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scenario,
-  .scenario-body {
-    transition: none;
-  }
+.scenario-text {
+  flex: 1;
 }
 
 .scenario-visual {
   display: grid;
   place-items: center;
-  min-height: 240px;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -775,6 +722,27 @@ details summary {
   opacity: 0.7;
 }
 
+/* 手机上的走马灯：卡片排成一行，一次露出一张 */
+.carousel-viewport {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 450ms ease;
+}
+
+.carousel-track > .scenario {
+  flex: 0 0 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-track {
+    transition: none;
+  }
+}
+
 .carousel-dot {
   width: 10px;
   height: 10px;
@@ -794,27 +762,5 @@ details summary {
 @media (max-width: 640px) {
   .home {
     padding: 24px 16px 96px;
-  }
-
-  /* 手机上走马灯铺满屏幕宽度，两侧卡片从屏幕边缘露出一条 */
-  .carousel-viewport {
-    margin-inline: -16px;
-  }
-
-  .scenario {
-    --side-shift: calc(100% - 24px);
-    --side-scale: 0.88;
-    width: calc(100% - 64px);
-  }
-
-  .scenario-body {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .scenario-visual {
-    min-height: 160px;
-    order: -1;
   }
 }
