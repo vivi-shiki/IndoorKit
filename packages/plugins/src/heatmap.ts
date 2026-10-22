@@ -36,9 +36,9 @@ const PALETTE = [
 /** 色带均匀铺在 [0, max] 上 */
 const ramp = (max: number) => PALETTE.flatMap((color, i) => [(i / (PALETTE.length - 1)) * max, color]);
 /** 放大到 POINTS_FROM 开始出现着色圆点，到 HEAT_UNTIL 热力图完全淡出 */
-const POINTS_FROM = 19;
-const POINTS_FULL = 20;
-const HEAT_UNTIL = 21;
+const POINTS_FROM = 20;
+const POINTS_FULL = 21;
+const HEAT_UNTIL = 22;
 
 interface Cell {
   x: number;
