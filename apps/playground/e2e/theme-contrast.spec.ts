@@ -94,7 +94,7 @@ for (const theme of ['light', 'dark'] as const) {
           '.home h1',
           '.home h2',
           '.home > header p',
-          '[data-active="true"]:not([data-disabled]) p',
+          '[data-scenario]:not([aria-hidden="true"]):not([data-disabled]) p',
         ],
         4.5,
       ),

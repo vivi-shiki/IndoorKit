@@ -120,7 +120,7 @@ test('the backdrop covers the whole window and lets clicks through', async ({ pa
 
 test('scenario cards are frosted glass over the icons', async ({ page }) => {
   await openHome(page);
-  const card = page.locator('[data-scenario][data-active="true"]');
+  const card = page.locator('[data-scenario]').first();
   const style = await card.evaluate((el) => {
     const s = getComputedStyle(el);
     return { filter: s.backdropFilter, background: s.backgroundColor };
