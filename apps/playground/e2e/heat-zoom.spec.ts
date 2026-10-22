@@ -9,17 +9,22 @@ test('crowding shows a heatmap when zoomed out and colored cells when zoomed in'
   const zoomTo = (zoom: number) => page.evaluate((z) => window.__vivi!.setZoom(z), zoom);
 
   // 打开时的视角：只有热力图
-  expect(await page.evaluate(() => window.__vivi!.zoom())).toBeLessThan(19);
+  expect(await page.evaluate(() => window.__vivi!.zoom())).toBeLessThan(20);
+  await pollHook(page, () => window.__vivi!.renderedCount('indoor-heat')).toBeGreaterThan(0);
+  expect(await rendered('indoor-heat-point')).toBe(0);
+
+  // 放大到 19.5 还是热力图，要再放大一些才切换
+  await zoomTo(19.5);
   await pollHook(page, () => window.__vivi!.renderedCount('indoor-heat')).toBeGreaterThan(0);
   expect(await rendered('indoor-heat-point')).toBe(0);
 
   // 过渡区间：两者都在
-  await zoomTo(19.5);
+  await zoomTo(20.5);
   await pollHook(page, () => window.__vivi!.renderedCount('indoor-heat-point')).toBeGreaterThan(0);
   expect(await rendered('indoor-heat')).toBeGreaterThan(0);
 
   // 放大后：只有着色圆点
-  await zoomTo(21.5);
+  await zoomTo(22);
   await pollHook(page, () => window.__vivi!.renderedCount('indoor-heat-point')).toBeGreaterThan(0);
   await pollHook(page, () => window.__vivi!.renderedCount('indoor-heat')).toBe(0);
 

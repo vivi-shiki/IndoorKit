@@ -15,18 +15,24 @@ describe('home page scenarios', () => {
     ]);
   });
 
-  it('describes every scenario with at least two views, in every language', () => {
+  it('describes every scenario with a title and a short introduction only, in every language', () => {
     for (const scenario of SCENARIOS) {
-      expect(scenario.views.length).toBeGreaterThanOrEqual(2);
+      expect(Object.keys(scenario).sort()).toEqual(['description', 'href', 'id', 'title']);
       for (const locale of ['zh', 'en', 'ja'] as const) {
-        for (const key of [
-          scenario.title,
-          scenario.description,
-          ...scenario.views.flatMap((v) => [v.title, v.desc]),
-        ]) {
+        for (const key of [scenario.title, scenario.description]) {
           expect(messages[locale][key], `${locale} ${key}`).toBeTruthy();
         }
       }
+    }
+  });
+
+  it('no longer keeps copy for the view subheadings the home page used to list', () => {
+    for (const locale of ['zh', 'en', 'ja'] as const) {
+      expect(
+        Object.keys(messages[locale]).filter((k) =>
+          /^scenario\.(parking|museum)\.[a-z]+\.(title|desc)$/.test(k),
+        ),
+      ).toEqual([]);
     }
   });
 

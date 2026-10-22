@@ -151,9 +151,6 @@ describe('terminology', () => {
     for (const [key, text] of Object.entries(messages.ja)) {
       expect(text, key).not.toMatch(/ジオフェンス|位置報告|現在地|積算照度|オンライン/);
     }
-    expect(messages.ja['scenario.museum.curator.desc']).toContain('積算露光量');
-    // 中文“曝光量”容易联想到摄影曝光
-    expect(messages.zh['scenario.museum.curator.desc']).toContain('累计光照量（lx·h）');
     for (const [key, text] of Object.entries(messages.zh)) expect(text, key).not.toMatch(/定位上报|曝光/);
     for (const [key, text] of Object.entries(messages.en)) expect(text, key).not.toMatch(/location report/i);
   });

@@ -89,11 +89,16 @@ test('the hospital card uses the reviewed copy in every language', async ({ page
     '架空の「さくら総合病院」を例に、医療機器の所在と稼働状況、職員や患者などの所在と移動履歴を確認できるデモです。',
   );
   await expect(page.getByTestId('home-tagline')).toHaveText(TAGLINES.ja);
-  // 医院场景列出侧栏里的两个业务视图
-  await expect(card(page, 'hospital').getByTestId('scenario-view').locator('strong')).toHaveText([
-    '医療機器',
-    '人の所在',
-  ]);
+});
+
+test('each card has only its title and a short introduction, no subheadings', async ({ page }) => {
+  await openHome(page);
+  for (const id of IDS) {
+    await expect(card(page, id).getByTestId('scenario-description')).toBeVisible();
+    await expect(card(page, id).getByTestId('scenario-view')).toHaveCount(0);
+    await expect(card(page, id).locator('ul, strong, h4')).toHaveCount(0);
+    await expect(card(page, id).getByRole('heading')).toHaveCount(1);
+  }
 });
 
 test('the dark theme shows dark screenshots', async ({ page }) => {

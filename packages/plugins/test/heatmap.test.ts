@@ -132,13 +132,13 @@ describe('heatmap display by zoom', () => {
   const increasing = (values: number[]) => values.every((v, i) => i === 0 || v > values[i - 1]!);
   const paintOf = (layer: unknown) => (layer as { paint: Record<string, unknown> }).paint;
 
-  it('draws a heatmap when zoomed out and fades it out between zoom 19 and 21', async () => {
+  it('draws a heatmap when zoomed out and fades it out between zoom 20 and 22', async () => {
     const { fake } = await open();
     const layer = fake.getLayer('indoor-heat') as { type: string; maxzoom: number };
     expect(layer.type).toBe('heatmap');
-    expect(layer.maxzoom).toBe(21);
+    expect(layer.maxzoom).toBe(22);
     const paint = paintOf(layer);
-    expect(paint['heatmap-opacity']).toEqual(['interpolate', ['linear'], ['zoom'], 19, 1, 21, 0]);
+    expect(paint['heatmap-opacity']).toEqual(['interpolate', ['linear'], ['zoom'], 20, 1, 22, 0]);
     // 半径和强度随缩放增大，放大时光斑跟着变大
     for (const key of ['heatmap-radius', 'heatmap-intensity']) {
       const s = stops(paint[key]);
@@ -149,12 +149,12 @@ describe('heatmap display by zoom', () => {
     expect(stops(paint['heatmap-color']).input).toEqual(['heatmap-density']);
   });
 
-  it('colors cells as circles from zoom 19, fading them in by zoom 20', async () => {
+  it('colors cells as circles from zoom 20, fading them in by zoom 21', async () => {
     const { fake } = await open();
     const layer = fake.getLayer('indoor-heat-point') as { type: string; source: string; minzoom: number };
-    expect(layer).toMatchObject({ type: 'circle', source: 'indoor-heat', minzoom: 19 });
+    expect(layer).toMatchObject({ type: 'circle', source: 'indoor-heat', minzoom: 20 });
     const paint = paintOf(layer);
-    expect(paint['circle-opacity']).toEqual(['interpolate', ['linear'], ['zoom'], 19, 0, 20, 1]);
+    expect(paint['circle-opacity']).toEqual(['interpolate', ['linear'], ['zoom'], 20, 0, 21, 1]);
     expect(paint['circle-stroke-color']).toBe('white');
     expect(paint['circle-stroke-width']).toBe(1);
 
