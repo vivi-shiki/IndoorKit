@@ -10,5 +10,6 @@ export default defineConfig({
       'apps/*/test/**/*.test.ts',
     ],
     environment: 'node',
+    maxWorkers: 2,
   },
 });

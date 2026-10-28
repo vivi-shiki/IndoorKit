@@ -5,6 +5,7 @@ const PORT = 4173;
 export default defineConfig({
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
   retries: process.env.CI ? 1 : 0,
+  workers: 2,
   use: {
     baseURL: `http://localhost:${PORT}/IndoorKit/`,
     ...devices['Desktop Chrome'],
