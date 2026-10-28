@@ -7,13 +7,13 @@ export const PARKING_GROUPS = [
 ] as const;
 
 export type ParkingGroup = (typeof PARKING_GROUPS)[number]['id'];
-export type ParkingPage = (typeof PARKING_GROUPS)[number]['pages'][number];
+export type ParkingPage = (typeof PARKING_GROUPS)[number]['pages'][number] | 'twin';
 export const PARKING_PAGES: readonly ParkingPage[] = PARKING_GROUPS.flatMap((g) => g.pages);
 
 export const parkingHref = (page: ParkingPage, query = '') => `#/parking/${page}${query ? `?${query}` : ''}`;
 
 export const isParkingPage = (name: string | undefined): name is ParkingPage =>
-  PARKING_PAGES.includes(name as ParkingPage);
+  name === 'twin' || PARKING_PAGES.includes(name as ParkingPage);
 
 /** 停车场页面组件收到的参数（如 ?t=09:30 从这个时刻开始模拟） */
 export interface ParkingPageProps {

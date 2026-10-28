@@ -11,3 +11,4 @@ playwright-report/
 apps/playground/public/data/
 .DS_Store
 Thumbs.db
+.tmp/

@@ -18,6 +18,7 @@ export function AppControls() {
     <div className="app-controls">
       <Button
         className="theme-toggle"
+        data-testid="theme-toggle"
         variant="outlined"
         size="small"
         color="inherit"
@@ -41,6 +42,7 @@ export function AppControls() {
         {LOCALES.map((l) => (
           <ToggleButton
             key={l}
+            data-testid={`lang-${l}`}
             value={l}
             lang={l}
             sx={{ ...selected, color: 'text.primary', px: 1.25, py: 0.5, fontSize: 13 }}

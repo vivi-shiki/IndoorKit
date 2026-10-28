@@ -89,7 +89,9 @@ describe('generateVenue', () => {
 
   it('gives every enclosed unit one door on its boundary facing the corridor', () => {
     for (const level of levels) {
-      const doors = archive.opening.features.filter((o) => o.properties.level_id === level.id);
+      const doors = archive.opening.features.filter(
+        (o) => o.properties.level_id === level.id && o.properties.category === 'pedestrian',
+      );
       const enclosed = unitsOn(level.id).filter((u) => u.properties.category !== 'walkway');
       for (const unit of enclosed) {
         const [x0, y0, x1, y1] = bbox(outer(unit));

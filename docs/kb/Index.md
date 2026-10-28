@@ -72,6 +72,10 @@ Live positions come from a `DataProvider` (`packages/rtls/src/index.ts`, which a
 
 ## Design Explanation
 
+#### Digital-twin campuses
+
+Use the optional `@indoorkit/core/twin` entry for geographic GLB rendering with MapLibre. `twinPlugin` exposes representation and quality controls, export URL and a state subscription. It shares the map context and tracks its GPU resources; never call `forceContextLoss` on this renderer. Models and local outdoor maps are generated from IMDF by `tools/venue-gen/src/twin.ts`. See [ADR 0006](../adr/0006-digital-twin.md) and [asset/Blender guide](../digital-twin.md).
+
 #### Reverse-order release
 
 The map is registered first so it is released last; sources are registered before the layers that use them, so layers are removed first. This mirrors the order MapLibre requires (a source cannot be removed while a layer uses it, which `FakeMap.removeSource` also enforces).

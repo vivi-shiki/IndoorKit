@@ -30,7 +30,7 @@ type XY = [number, number];
 /**
  * 布局（米，x 向东、y 向北）。
  *
- * 立体停车场每层 4 排车位，每排 18 个（2.5 × 5 m）：
+ * 立体停车场每层 4 排车位，每排 18 个（2.5 × 5 m）；1F A 排为 17 个，末两格宽 3.75 m：
  *   A 排 y 0–5 ─ 车道 1（y 5–11，中心 8，向东）─ B 排 y 11–16 ─ C 排 y 16–21
  *   ─ 车道 2（y 21–27，中心 24，向西）─ D 排 y 27–32
  * 两端是纵向车道：西侧 x 0–6（中心 3，向南），东侧 x 51–57（中心 54，向北），合成一个逆时针的单向环。
@@ -153,19 +153,21 @@ export function generateParking(options: ParkingGenOptions): ParkingArchive {
     x: number;
     y: number;
     count: number;
-    width?: number;
+    width?: number | ((i: number) => number);
     depth?: number;
     type: (i: number) => BayType;
     detection: Detection;
   }
   /** 一排车位成为一个区；返回车位 id */
   const row = (levelId: string, prefix: string, spec: RowSpec) => {
-    const w = spec.width ?? BAY_W;
     const d = spec.depth ?? BAY_D;
+    let x = spec.x;
     const bays = Array.from({ length: spec.count }, (_, i) => {
+      const w = typeof spec.width === 'function' ? spec.width(i) : (spec.width ?? BAY_W);
       const number = `${spec.letter}${String(i + 1).padStart(2, '0')}`;
       const code = `${prefix}-${number}`;
-      const rect: Rect = [spec.x + i * w, spec.y, spec.x + (i + 1) * w, spec.y + d];
+      const rect: Rect = [x, spec.y, x + w, spec.y + d];
+      x += w;
       const unitId = unit(`bay/${code}`, levelId, rect, 'parking', { ja: number, en: number, zh: number });
       return { unit_id: unitId, code, type: spec.type(i), detection: spec.detection, rect };
     });
@@ -206,7 +208,7 @@ export function generateParking(options: ParkingGenOptions): ParkingArchive {
       (letter: string) =>
       (i: number): BayType => {
         if (roof && (letter === 'A' || letter === 'B')) return 'monthly';
-        if (firstFloor && letter === 'A') return i < 6 ? 'ev' : i >= ROW - 2 ? 'accessible' : 'standard';
+        if (firstFloor && letter === 'A') return i < 6 ? 'ev' : i >= ROW - 3 ? 'accessible' : 'standard';
         return 'standard';
       };
     const rows: [string, number][] = [
@@ -222,7 +224,8 @@ export function generateParking(options: ParkingGenOptions): ParkingArchive {
         site: 'garage',
         x: 6,
         y,
-        count: ROW,
+        count: firstFloor && letter === 'A' ? ROW - 1 : ROW,
+        width: firstFloor && letter === 'A' ? (i) => (i >= ROW - 3 ? 3.75 : BAY_W) : BAY_W,
         type: rowType(letter),
         detection: 'sensor',
       });
@@ -303,6 +306,11 @@ export function generateParking(options: ParkingGenOptions): ParkingArchive {
         levelId,
         [
           [60, 16],
+          [60, 6],
+          [58.5, 6],
+          [58.5, 26],
+          [61.5, 26],
+          [61.5, 16],
           [60, 16],
         ],
         false,

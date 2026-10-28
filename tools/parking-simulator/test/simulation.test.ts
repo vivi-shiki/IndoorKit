@@ -168,6 +168,6 @@ describe('createParkingDay', () => {
       expect(anomalies, a).toContain(a);
     }
     expect(anomalies.length).toBeLessThan(today.length / 20);
-    expect(zone('1F-A').bayIds.length).toBe(18);
+    expect(zone('1F-A').bayIds.length).toBe(17);
   });
 });

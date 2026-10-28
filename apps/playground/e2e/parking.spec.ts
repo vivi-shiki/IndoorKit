@@ -12,7 +12,7 @@ import {
 
 const sidebar = (page: Page) => page.getByTestId('nav-sidebar');
 const switcher = (page: Page) => page.getByRole('group', { name: /language|语言|言語/i });
-const TOTAL_SPACES = 332;
+const TOTAL_SPACES = 331;
 
 test.describe('parking menu', () => {
   test('enters on the availability map and lists the operator and driver pages', async ({ page }) => {
@@ -130,7 +130,7 @@ test.describe('space availability', () => {
     await pollParking(page, () => window.__parking!.highlighted().length).toBe(6);
     await page.getByTestId('type-chip').filter({ hasText: 'EV charging' }).click();
     await page.getByTestId('zone-row').filter({ hasText: '1F' }).first().click();
-    await pollParking(page, () => window.__parking!.highlighted().length).toBe(18);
+    await pollParking(page, () => window.__parking!.highlighted().length).toBe(17);
   });
 
   test('turns the device layers on and off', async ({ page }) => {

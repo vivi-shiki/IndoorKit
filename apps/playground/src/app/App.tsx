@@ -10,6 +10,7 @@ import { HomePage } from '../pages/home';
 import { OccupancyPage } from '../pages/occupancy';
 import { TrackingPage } from '../pages/tracking';
 import { TrailPage } from '../pages/trail';
+import { HospitalTwinPage } from '../pages/twin';
 import { ParkingApp } from '../parking';
 import { AppControls } from './controls';
 import { HospitalLayout } from './hospital-layout';
@@ -18,6 +19,7 @@ import { useHashRoute, useSettled } from './router';
 import { type HospitalPage, type HospitalPageProps, routeKey } from './routes';
 
 const HOSPITAL_PAGES: Record<HospitalPage, ComponentType<HospitalPageProps>> = {
+  twin: HospitalTwinPage,
   assets: AssetsPage,
   tracking: TrackingPage,
   trail: TrailPage,

@@ -10,9 +10,11 @@
     "generate": "tsx src/cli.ts ../../apps/playground/public/data"
   },
   "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
     "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
     "@indoorkit/museum": "workspace:*",
-    "@indoorkit/parking": "workspace:*"
+    "@indoorkit/parking": "workspace:*",
+    "three": "^0.186.1"
   }
 }

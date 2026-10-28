@@ -17,7 +17,7 @@ function sourceFiles(dir: string): string[] {
     if (name === 'node_modules' || name === 'dist') return [];
     const path = join(abs, name);
     if (statSync(path).isDirectory()) return sourceFiles(relative(ROOT, path));
-    return /\.tsx?$/.test(name) ? [relative(ROOT, path)] : [];
+    return /\.tsx?$/.test(name) ? [relative(ROOT, path).replaceAll('\\', '/')] : [];
   });
 }
 
@@ -51,7 +51,11 @@ const museumPages = sourceFiles(`${APP}/museum/pages`);
 
 /** 相对导入解析成仓库里的路径（不带扩展名）；包名原样返回 */
 const resolveImport = (file: string, module: string) =>
-  module.startsWith('.') ? join(dirname(file), module).replace(/\.tsx?$/, '') : module;
+  module.startsWith('.')
+    ? join(dirname(file), module)
+        .replaceAll('\\', '/')
+        .replace(/\.tsx?$/, '')
+    : module;
 
 describe('layer directories', () => {
   it.each([
@@ -243,7 +247,7 @@ describe('parking scenario', () => {
   it('uses only the app shell outside its own folder, never the hospital demo or the home page', () => {
     // 外框：路由和布局、语言与主题的保存、地图的创建与统计
     const shell = [
-      /^apps\/playground\/src\/app\/(scenario-layout|map|teardown|mui-theme)$/,
+      /^apps\/playground\/src\/app\/(scenario-layout|map|teardown|mui-theme|twin(?:\/.*)?)$/,
       /^apps\/playground\/src\/(app-i18n|app-theme|settings|theme)$/,
       /^apps\/playground\/src\/testing\/hooks$/,
     ];
@@ -311,7 +315,7 @@ describe('museum scenario', () => {
 
   it('uses only the app shell outside its own folder, never the other demos or the home page', () => {
     const shell = [
-      /^apps\/playground\/src\/app\/(scenario-layout|map|teardown|mui-theme)$/,
+      /^apps\/playground\/src\/app\/(scenario-layout|map|teardown|mui-theme|twin(?:\/.*)?)$/,
       /^apps\/playground\/src\/(app-i18n|app-theme|settings|theme)$/,
     ];
     const bad = (module: string, file: string) => {

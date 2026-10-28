@@ -10,7 +10,7 @@ export const HOSPITAL_GROUPS = [
 ] as const;
 
 export type HospitalGroup = (typeof HOSPITAL_GROUPS)[number]['id'];
-export type HospitalPage = (typeof HOSPITAL_GROUPS)[number]['pages'][number];
+export type HospitalPage = (typeof HOSPITAL_GROUPS)[number]['pages'][number] | 'twin';
 export const HOSPITAL_PAGES: readonly HospitalPage[] = HOSPITAL_GROUPS.flatMap((g) => g.pages);
 
 export type Route =
@@ -28,7 +28,7 @@ export const hospitalHref = (page: HospitalPage, query = '') =>
   `#/hospital/${page}${query ? `?${query}` : ''}`;
 
 const isPage = (name: string | undefined): name is HospitalPage =>
-  HOSPITAL_PAGES.includes(name as HospitalPage);
+  name === 'twin' || HOSPITAL_PAGES.includes(name as HospitalPage);
 
 /**
  * 解析 hash。redirect 是应当替换到地址栏的规范地址：

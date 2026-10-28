@@ -35,6 +35,7 @@ export interface ScenarioLayoutProps {
   /** 手机端菜单的元素 id */
   menuId: string;
   children: ReactNode;
+  featureLink?: { href: string; title: string };
 }
 
 /** 演示的菜单：业务视图各自列出页面；点一项只换地图区域的内容 */
@@ -44,7 +45,10 @@ function ScenarioNav({
   product,
   labels,
   groups,
-}: Pick<ScenarioLayoutProps, 'current' | 'product' | 'labels' | 'groups'> & { onNavigate?: () => void }) {
+  featureLink,
+}: Pick<ScenarioLayoutProps, 'current' | 'product' | 'labels' | 'groups' | 'featureLink'> & {
+  onNavigate?: () => void;
+}) {
   return (
     <>
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
@@ -64,6 +68,18 @@ function ScenarioNav({
         </Typography>
       </Box>
       <List component="nav" aria-label={labels.nav} dense>
+        {featureLink && (
+          <ListItemButton
+            component="a"
+            href={featureLink.href}
+            data-testid="twin-nav"
+            selected={current === 'twin'}
+            onClick={onNavigate}
+            sx={{ mx: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 1 }}
+          >
+            <ListItemText primary={`◈  ${featureLink.title}`} />
+          </ListItemButton>
+        )}
         {groups.map((group) => (
           <li key={group.id}>
             <ul style={{ padding: 0 }}>
@@ -99,7 +115,13 @@ function ScenarioNav({
  */
 export function ScenarioLayout(props: ScenarioLayoutProps) {
   const { labels, menuId, children } = props;
-  const nav = { current: props.current, product: props.product, labels, groups: props.groups };
+  const nav = {
+    current: props.current,
+    product: props.product,
+    labels,
+    groups: props.groups,
+    featureLink: props.featureLink,
+  };
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up('sm'), { noSsr: true });
   const [menuOpen, setMenuOpen] = useState(false);

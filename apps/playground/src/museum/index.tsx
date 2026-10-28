@@ -5,16 +5,20 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import type { ComponentType, ReactNode } from 'react';
 import { ScenarioLayout } from '../app/scenario-layout';
+import { TWIN_MESSAGES } from '../app/twin/messages';
+import { useLocale } from '../app-i18n';
 import { useMuseumT } from './i18n';
 import { CollectionPage } from './pages/collection';
 import { EnvironmentPage } from './pages/environment';
 import { GuidePage } from './pages/guide';
 import { SecurityPage } from './pages/security';
+import { MuseumTwinPage } from './pages/twin';
 import { VisitorsPage } from './pages/visitors';
 import { MUSEUM_GROUPS, type MuseumPage, type MuseumPageProps, museumHref } from './routes';
 import './museum.css';
 
 const PAGES: Record<MuseumPage, ComponentType<MuseumPageProps>> = {
+  twin: MuseumTwinPage,
   environment: EnvironmentPage,
   collection: CollectionPage,
   visitors: VisitorsPage,
@@ -23,6 +27,7 @@ const PAGES: Record<MuseumPage, ComponentType<MuseumPageProps>> = {
 };
 
 const ICONS: Record<MuseumPage, ReactNode> = {
+  twin: <PaletteIcon />,
   environment: <ThermostatIcon />,
   collection: <PaletteIcon />,
   visitors: <GroupsIcon />,
@@ -41,6 +46,7 @@ export function MuseumApp(props: {
   routeKey: string;
 }) {
   const t = useMuseumT();
+  const locale = useLocale();
   const groups = MUSEUM_GROUPS.map((group) => ({
     id: group.id,
     title: t(`group.${group.id}.title`),
@@ -55,6 +61,7 @@ export function MuseumApp(props: {
   return (
     <ScenarioLayout
       product={t('app.name')}
+      featureLink={{ href: museumHref('twin'), title: TWIN_MESSAGES[locale].title }}
       labels={{ home: t('nav.home'), menu: t('nav.menu'), nav: t('nav.label') }}
       groups={groups}
       current={props.page}

@@ -6,6 +6,7 @@
       "!**/dist",
       "!**/node_modules",
       "!**/public/data",
+      "!**/public/models",
       "!**/test-results",
       "!**/playwright-report",
       "!**/*.md"

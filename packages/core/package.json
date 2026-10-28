@@ -5,13 +5,15 @@
   "license": "MIT",
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./twin": "./src/twin/index.ts"
   },
   "scripts": {
     "build": "vite build"
   },
   "dependencies": {
-    "@indoorkit/imdf": "workspace:*"
+    "@indoorkit/imdf": "workspace:*",
+    "three": "^0.186.1"
   },
   "peerDependencies": {
     "maplibre-gl": "^6.15.0"

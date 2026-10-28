@@ -44,7 +44,7 @@ type XY = [number, number];
 const WIDTH = 66;
 const DEPTH = 34;
 const HALL_Y = 17;
-const CORE_X = 63;
+const CORE_X = 61.5;
 
 interface RoomSpec {
   code: string;
@@ -535,14 +535,22 @@ export function generateMuseum(options: MuseumGenOptions): MuseumArchive {
   for (const floor of FLOORS) {
     const levelId = id(`level/${floor.short}`);
     levels.push(
-      feature('level', `level/${floor.short}`, polygon([0, 0, WIDTH, DEPTH]), {
-        category: 'unspecified',
-        ordinal: floor.ordinal,
-        outdoor: false,
-        name: floor.name,
-        short_name: { ja: floor.short, en: floor.short, zh: floor.short },
-        building_ids: [building.id],
-      }),
+      feature(
+        'level',
+        `level/${floor.short}`,
+        {
+          type: 'MultiPolygon',
+          coordinates: [polygon([0, 0, WIDTH, DEPTH]).coordinates, polygon([-6, 14, 0, 20]).coordinates],
+        },
+        {
+          category: 'unspecified',
+          ordinal: floor.ordinal,
+          outdoor: false,
+          name: floor.name,
+          short_name: { ja: floor.short, en: floor.short, zh: floor.short },
+          building_ids: [building.id],
+        },
+      ),
     );
     unit(`${floor.short}/hall`, levelId, [0, 14, 60, 20], 'walkway', null);
     unit(`${floor.short}/landing`, levelId, [60, 14, WIDTH, 20], 'walkway', null);
@@ -553,7 +561,20 @@ export function generateMuseum(options: MuseumGenOptions): MuseumArchive {
     });
     opening(`${floor.short}/stairs`, levelId, [CORE_X - 1, 20], [CORE_X + 1, 20]);
 
-    const elevator: Rect = [60, 0, WIDTH, 14];
+    unit(`${floor.short}/west-stairs`, levelId, [-6, 14, 0, 20], 'stairs', {
+      ja: '西避難階段',
+      en: 'West escape stairs',
+      zh: '西疏散楼梯',
+    });
+    opening(`${floor.short}/west-stairs`, levelId, [0, 16], [0, 18]);
+    unit(`${floor.short}/restroom`, levelId, [63, 0, WIDTH, 14], 'restroom', {
+      ja: 'トイレ',
+      en: 'Restroom',
+      zh: '洗手间',
+    });
+    opening(`${floor.short}/restroom`, levelId, [63.5, 14], [65.5, 14]);
+
+    const elevator: Rect = [60, 0, 63, 14];
     const elevatorId = unit(`${floor.short}/elevator`, levelId, elevator, 'elevator', {
       ja: 'エレベーター',
       en: 'Elevator',

@@ -5,16 +5,20 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import type { ComponentType, ReactNode } from 'react';
 import { ScenarioLayout } from '../app/scenario-layout';
+import { TWIN_MESSAGES } from '../app/twin/messages';
+import { useLocale } from '../app-i18n';
 import { useParkingT } from './i18n';
 import { AlertsPage } from './pages/alerts';
 import { AnalyticsPage } from './pages/analytics';
 import { AvailabilityPage } from './pages/availability';
 import { ReservePage } from './pages/reserve';
+import { ParkingTwinPage } from './pages/twin';
 import { VehiclesPage } from './pages/vehicles';
 import { PARKING_GROUPS, type ParkingPage, type ParkingPageProps, parkingHref } from './routes';
 import './parking.css';
 
 const PAGES: Record<ParkingPage, ComponentType<ParkingPageProps>> = {
+  twin: ParkingTwinPage,
   availability: AvailabilityPage,
   vehicles: VehiclesPage,
   alerts: AlertsPage,
@@ -23,6 +27,7 @@ const PAGES: Record<ParkingPage, ComponentType<ParkingPageProps>> = {
 };
 
 const ICONS: Record<ParkingPage, ReactNode> = {
+  twin: <LocalParkingIcon />,
   availability: <LocalParkingIcon />,
   vehicles: <SwapHorizIcon />,
   alerts: <NotificationsActiveIcon />,
@@ -41,6 +46,7 @@ export function ParkingApp(props: {
   routeKey: string;
 }) {
   const t = useParkingT();
+  const locale = useLocale();
   const groups = PARKING_GROUPS.map((group) => ({
     id: group.id,
     title: t(`group.${group.id}.title`),
@@ -55,6 +61,7 @@ export function ParkingApp(props: {
   return (
     <ScenarioLayout
       product={t('app.name')}
+      featureLink={{ href: parkingHref('twin'), title: TWIN_MESSAGES[locale].title }}
       labels={{ home: t('nav.home'), menu: t('nav.menu'), nav: t('nav.label') }}
       groups={groups}
       current={props.page}

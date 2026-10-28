@@ -42,9 +42,10 @@ describe('generateParking', () => {
     ]);
   });
 
-  it('has about 340 bays: 72 per garage floor and 44 in the surface lot', () => {
-    expect(parking.bays.length).toBe(332);
-    for (const levelId of parking.garageLevels) expect(count((b) => b.levelId === levelId)).toBe(72);
+  it('has 331 bays, with one standard bay exchanged for accessible transfer width on 1F', () => {
+    expect(parking.bays.length).toBe(331);
+    for (const levelId of parking.garageLevels)
+      expect(count((b) => b.levelId === levelId)).toBe(short(levelId) === '1F' ? 71 : 72);
     expect(count((b) => b.levelId === parking.surfaceLevels[0])).toBe(44);
   });
 

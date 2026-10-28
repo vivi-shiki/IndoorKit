@@ -12,6 +12,7 @@ import {
   MINATO_PARKING,
   SAKURA_HOSPITAL,
 } from './index';
+import { writeCampus } from './twin';
 
 /** 三个虚构场馆写到 <outDir>/<场馆>/<文件>.json */
 const outDir = resolve(process.argv[2] ?? 'out');
@@ -36,3 +37,9 @@ async function write(name: string, archive: ImdfArchive, extensions: readonly An
 await write('sakura-hospital', generateVenue(SAKURA_HOSPITAL), [departmentExtension]);
 await write('minato-parking', generateParking(MINATO_PARKING), parkingExtensions);
 await write('minato-museum', generateMuseum(MINATO_MUSEUM), museumExtensions);
+
+const modelDir = resolve(outDir, '..', 'models');
+const textures = join(modelDir, 'textures');
+await writeCampus(generateVenue(SAKURA_HOSPITAL), 'hospital', join(modelDir, 'hospital'), textures);
+await writeCampus(generateParking(MINATO_PARKING), 'parking', join(modelDir, 'parking'), textures);
+await writeCampus(generateMuseum(MINATO_MUSEUM), 'museum', join(modelDir, 'museum'), textures);

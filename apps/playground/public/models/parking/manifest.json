@@ -1,0 +1,36 @@
+{
+  "origin": [
+    139.95,
+    35.15
+  ],
+  "bearing": -24,
+  "bounds": [
+    [
+      139.9487750017832,
+      35.149317283507
+    ],
+    [
+      139.9512249982168,
+      35.150682716492994
+    ]
+  ],
+  "floorHeight": 3.2,
+  "counts": {
+    "buildings": 2,
+    "floors": 5,
+    "trees": 44,
+    "surfaces": 16
+  },
+  "budgets": {
+    "high": {
+      "triangles": 21928,
+      "meshes": 42,
+      "bytes": 6069928
+    },
+    "low": {
+      "triangles": 7824,
+      "meshes": 33,
+      "bytes": 2570640
+    }
+  }
+}

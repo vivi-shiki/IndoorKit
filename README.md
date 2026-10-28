@@ -66,10 +66,12 @@ await indoor.destroy();
 
 ## Examples
 
+Each scenario also has a **Digital twin** cockpit with an editable 3D campus, local outdoor map, indoor floor switching, light/dark themes and a mobile layout. High/low quality controls support slower devices. **Export GLB** downloads the complete campus for Blender. See the [model, licence and editing guide](docs/digital-twin.md).
+
 The live demo shows three use cases built on the SDK. Each has its own business package (`domains/hospital`, `domains/parking`, `domains/museum`) and simulator, and is independent of the others. All venues, people, vehicles, companies and collection objects are fictional.
 
 - **Hospital RTLS**: "Sakura General Hospital", 3 buildings with 5 floors. Live tracking of up to 5,000 people, asset tracking, location history playback, alerts from department zones and geofences, and a location heatmap.
-- **Parking management**: "Minato Central Parking", a four-level garage and a surface lot with 332 spaces. Space availability with sensors and cameras, entries and exits with fees, three tiers of alerts, reservations with routes along the lanes, and operations analytics.
+- **Parking management**: "Minato Central Parking", a four-level garage and a surface lot with 331 spaces. Space availability with sensors and cameras, entries and exits with fees, three tiers of alerts, reservations with routes along the lanes, and operations analytics.
 - **Museum**: "Minato City Museum of Art and History", three public floors and basement storage with 59 display cases. Temperature, relative humidity and light monitoring with 24-hour curves, cumulative light exposure and display days for each object, object moves checked against RFID reads, visitor crowding and dwell time, three tiers of alerts with security patrol checks, and a visitor guide with suggested tours.
 
 | Hospital | Parking | Museum |

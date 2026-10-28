@@ -376,10 +376,32 @@ export function generateVenue(options: VenueGenOptions): HospitalArchive {
 
           const front: [number, number] = row === 0 ? [y1 - WALL, y1] : [y0, y0 + WALL];
           const back: [number, number] = row === 0 ? [y0, y0 + WALL] : [y1 - WALL, y1];
+          const exteriorDoor = f === 0 && department?.en === 'Reception';
+          if (exteriorDoor) {
+            openings.push(
+              feature(
+                'opening',
+                `entrance/${cellKey}`,
+                {
+                  type: 'LineString',
+                  coordinates: [
+                    toLngLat(cx - DOOR / 2, row === 0 ? y0 : y1),
+                    toLngLat(cx + DOOR / 2, row === 0 ? y0 : y1),
+                  ],
+                },
+                { category: 'pedestrian.principal', level_id: levelId },
+              ),
+            );
+          }
           const walls: Rect[] = [
             [x0, y0, x0 + WALL, y1],
             [x1 - WALL, y0, x1, y1],
-            [x0, back[0], x1, back[1]],
+            ...(exteriorDoor
+              ? ([
+                  [x0, back[0], cx - DOOR / 2, back[1]],
+                  [cx + DOOR / 2, back[0], x1, back[1]],
+                ] as Rect[])
+              : ([[x0, back[0], x1, back[1]]] as Rect[])),
             [x0, front[0], cx - DOOR / 2, front[1]],
             [cx + DOOR / 2, front[0], x1, front[1]],
           ];
