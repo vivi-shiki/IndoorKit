@@ -26,6 +26,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { definePlugin } from '../plugin';
 import { themes } from '../style';
 import type { ScreenPoint } from '../types';
+import { download } from './download';
 import { localMetres } from './floors';
 import {
   type CutState,
@@ -215,25 +216,6 @@ const siteColors = (dark: boolean) => {
     other,
   ] as unknown as string;
 };
-
-/** 下载并报告进度；没有 Content-Length 时一次读完 */
-async function download(url: string, signal: AbortSignal, onProgress: (p: number) => void) {
-  const response = await fetch(url, { signal });
-  if (!response.ok) throw new Error(`3D model: HTTP ${response.status}`);
-  const total = Number(response.headers.get('content-length')) || 0;
-  if (!response.body || total === 0) return response.arrayBuffer();
-  const reader = response.body.getReader();
-  const out = new Uint8Array(total);
-  let received = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    out.set(value.subarray(0, Math.max(0, total - received)), received);
-    received += value.length;
-    onProgress(Math.min(1, received / total));
-  }
-  return out.buffer;
-}
 
 /** Optional renderer entry point. Applications lazy-load it only when opening a 3D view. */
 export function twinPlugin(options: TwinOptions) {
