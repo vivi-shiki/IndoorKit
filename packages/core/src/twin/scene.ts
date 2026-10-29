@@ -237,15 +237,16 @@ export function buildFloorStack(
 }
 
 /**
- * 剖切：选中楼层以上隐藏，本层实体，以下半透明。
- * 整组下移到本层贴地，本层略低于 MapLibre 画的楼层，标注和点选仍归 MapLibre。
+ * 剖切：选中楼层以上隐藏，本层交给 MapLibre 画（实体），以下半透明。
+ * 整组下移到本层贴地，下面的楼层落在地面以下。
  */
 export function applyCut(stack: FloorStack, cut: Record<number, CutState>, current: string | null) {
   const base = current ? (stack.levels.get(current)?.elevation ?? 0) : 0;
   stack.group.position.y = -base - 0.12;
   for (const level of stack.levels.values()) {
     const state = cut[level.ordinal] ?? 'hidden';
-    for (const mesh of level.meshes) mesh.visible = state !== 'hidden';
+    // 本层由 MapLibre 画（标注、点选都在那边）；Three.js 再画一份会和它及园区地面挤在同一深度，手机上闪烁
+    for (const mesh of level.meshes) mesh.visible = state === 'ghost';
     for (const m of level.materials) {
       m.transparent = state === 'ghost';
       m.opacity = state === 'ghost' ? 0.28 : 1;

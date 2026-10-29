@@ -55,3 +55,20 @@ describe('indoor floors generated in Three.js from IMDF', () => {
     expect(floors.get(IDS.level2)!.walls).toBeNull();
   });
 });
+
+describe('section cut on the Three.js floors', () => {
+  it('leaves the current floor to MapLibre so no two surfaces share a depth', async () => {
+    const { applyCut, buildFloorStack } = await import('../src/twin/scene');
+    const { themes } = await import('../src/style');
+    const venue = buildVenueModel(makeArchive());
+    const stack = buildFloorStack(venue, [0, 0], 4, themes.light);
+    // 在 1 层（夹具里唯一有房间和墙的一层）：本层由 MapLibre 画，Three.js 不再画一份
+    applyCut(stack, { 0: 'solid', 1: 'hidden' }, IDS.level1);
+    expect(stack.levels.get(IDS.level1)!.meshes.length).toBeGreaterThan(0);
+    expect(stack.levels.get(IDS.level1)!.meshes.every((m) => !m.visible)).toBe(true);
+    // 在 2 层：1 层是下面的半透明楼层
+    applyCut(stack, { 0: 'ghost', 1: 'solid' }, IDS.level2);
+    expect(stack.levels.get(IDS.level1)!.meshes.every((m) => m.visible)).toBe(true);
+    expect(stack.levels.get(IDS.level1)!.materials.every((m) => m.transparent && !m.depthWrite)).toBe(true);
+  });
+});
