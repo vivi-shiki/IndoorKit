@@ -1,5 +1,6 @@
 import CloseIcon from '@mui/icons-material/Close';
 import MenuIcon from '@mui/icons-material/Menu';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
@@ -35,6 +36,7 @@ export interface ScenarioLayoutProps {
   /** 手机端菜单的元素 id */
   menuId: string;
   children: ReactNode;
+  /** 菜单最上面、不属于任何业务视图的入口（数字孪生） */
   featureLink?: { href: string; title: string };
 }
 
@@ -74,10 +76,14 @@ function ScenarioNav({
             href={featureLink.href}
             data-testid="twin-nav"
             selected={current === 'twin'}
+            aria-current={current === 'twin' ? 'page' : undefined}
             onClick={onNavigate}
-            sx={{ mx: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider', mb: 1 }}
+            sx={{ mx: 1, borderRadius: 1 }}
           >
-            <ListItemText primary={`◈  ${featureLink.title}`} />
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <ViewInArIcon />
+            </ListItemIcon>
+            <ListItemText primary={featureLink.title} />
           </ListItemButton>
         )}
         {groups.map((group) => (

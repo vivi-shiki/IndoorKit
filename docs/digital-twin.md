@@ -35,7 +35,7 @@ Models are committed at `apps/playground/public/models/{hospital,parking,museum}
 
 ## Blender editing
 
-1. Use **Export GLB** on a cockpit, or open its committed `scene.glb`.
+1. Open the committed `scene.glb` (the page no longer offers a download button).
 2. In Blender choose **File → Import → glTF 2.0 (.glb/.gltf)**. Textures are embedded; no external paths need repairing.
 3. Keep the imported scale: one glTF unit is one metre. Blender converts glTF's Y-up coordinates automatically. The geographic origin is metadata, not a huge world-space vertex offset.
 4. Objects are grouped by names such as `Building 1/Floor 2`, `Water garden` and `Street furniture`. In Edit Mode, **Separate → By Loose Parts** separates individual windows, trees or cars from their material batch. Materials remain editable.
@@ -43,4 +43,4 @@ Models are committed at `apps/playground/public/models/{hospital,parking,museum}
 
 ## Verification
 
-`pnpm verify` checks circulation, accessible-bay geometry, route parsing, quality/zoom policy and the committed GLBs. `pnpm build` regenerates all three sites and packages the pages. `pnpm e2e` checks desktop/mobile controls, three languages, both themes, automatic indoor transitions, GLB downloads, and release after repeated scenario/quality changes. Screenshots from the twin tests are written to `test-results/` for visual review.
+`pnpm verify` checks circulation, accessible-bay geometry, route parsing, quality/zoom policy and the committed GLBs. `pnpm build` regenerates all three sites and packages the pages. `pnpm e2e` checks desktop/mobile controls, three languages, both themes, automatic indoor transitions, that no model download is offered, and release after repeated scenario/quality changes. Screenshots from the twin tests are written to `test-results/` for visual review.

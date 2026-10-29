@@ -42,7 +42,6 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [quality, setQuality] = useState<Quality>('auto');
-  const [details, setDetails] = useState(false);
   const [hour, setHour] = useState(14);
   useEffect(() => {
     document.title = `${t.title} | IndoorKit`;
@@ -124,7 +123,6 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
       level: l,
       count: units.filter((u) => u.properties.level_id === l.id).length,
     })) ?? [];
-  const maxCount = Math.max(1, ...countByLevel.map((l) => l.count));
   const chooseFloor = (id: string) => {
     floor?.set(id);
     setCurrent(id);
@@ -135,33 +133,66 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
     if (api) api.view('outdoor');
     else setSnapshot((s) => (s ? { ...s, view: 'outdoor' } : s));
   };
-  const exportModel = () => {
-    const a = document.createElement('a');
-    a.href = api?.exportUrl() ?? `${import.meta.env.BASE_URL}models/${asset}/scene.glb`;
-    a.download = `${asset}.glb`;
-    a.click();
-  };
+  const [panelOpen, setPanelOpen] = useState(false);
+  const siteName = data ? pickLabel(data.venue.name, [locale, 'en']) : '';
+  const facts: [string, string | number][] = [
+    [t.buildings, data?.venue.buildings.length ?? '—'],
+    [t.floors, data?.venue.levels.length ?? '—'],
+    [t.stairs, units.filter((u) => u.properties.category === 'stairs').length],
+    [
+      t.entrances,
+      data?.venue.features.openings.features.filter((o) => o.properties.category === 'pedestrian.principal')
+        .length ?? '—',
+    ],
+    [t.meshes, snapshot?.meshes ?? '—'],
+    [t.triangles, snapshot?.triangles.toLocaleString(locale) ?? '—'],
+  ];
+  // 和其他地图页同一套布局：标题栏放指标和画质，地图右上角是楼层按钮，左侧面板在手机上收进按钮
   return (
-    <section
-      className={`twin twin-${asset}`}
-      data-testid="twin-status"
-      data-ready={snapshot?.ready ?? false}
-      data-view={snapshot?.view ?? 'outdoor'}
-      data-quality={snapshot?.quality ?? 'low'}
-    >
-      <header className="twin-header">
-        <div>
-          <p className="twin-eyebrow">{t.eyebrow}</p>
+    <>
+      <header className="bar">
+        <div className="bar-title">
           <h1 data-testid="twin-title">{t.title}</h1>
-          <p className="twin-site-name">{data ? pickLabel(data.venue.name, [locale, 'en']) : 'IndoorKit'}</p>
+          <p className="page-desc">{t.hint}</p>
         </div>
-        <div className="twin-badge">
-          <span />
-          {t.simulation}
-        </div>
+        {metrics.map((m) => (
+          <span className="metric" key={m.label}>
+            {t[m.label]}: <b>{m.value.toLocaleString(locale)}</b>
+            {m.total !== undefined && (
+              <>
+                {' / '}
+                <b>{m.total.toLocaleString(locale)}</b>
+              </>
+            )}
+          </span>
+        ))}
+        <label className="select">
+          {t.quality}
+          <select
+            data-testid="twin-quality"
+            disabled={!api}
+            value={quality}
+            onChange={(e) => {
+              const value = e.target.value as Quality;
+              setQuality(value);
+              void api?.quality(value).catch(() => setError(true));
+            }}
+          >
+            <option value="auto">{t.auto}</option>
+            <option value="low">{t.low}</option>
+            <option value="high">{t.high}</option>
+          </select>
+        </label>
       </header>
-      <div className="twin-workspace">
-        <section className="twin-map" ref={container} aria-label={t.overview} />
+      <div
+        className={`stage twin twin-${asset}`}
+        data-testid="twin-status"
+        data-ready={snapshot?.ready ?? false}
+        data-view={snapshot?.view ?? 'outdoor'}
+        data-quality={snapshot?.quality ?? 'low'}
+        data-panel-open={panelOpen ? '' : undefined}
+      >
+        <section className="map" ref={container} aria-label={t.overview} />
         {error && data && (
           <PlanFallback
             venue={data.venue}
@@ -171,130 +202,12 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
             label={t.fallback}
           />
         )}
-        {(!snapshot?.ready || (error && !data)) && (
-          <div className="twin-loading" role="status">
-            {error ? t.failed : t.loading}
-            {error && (
-              <button type="button" onClick={() => setAttempt(attempt + 1)}>
-                {t.retry}
-              </button>
-            )}
-          </div>
-        )}
-        <aside
-          className={`twin-left twin-panel ${details ? 'twin-expanded' : ''}`}
-          data-testid="twin-inventory"
-        >
-          <div className="twin-panel-heading">
-            <h2>{t.operations}</h2>
-            <button
-              type="button"
-              className="twin-mobile-close"
-              onClick={() => setDetails(false)}
-              aria-label={t.close}
-            >
-              ×
-            </button>
-          </div>
-          {data?.timeDependent && (
-            <label className="twin-time">
-              {t.time}
-              <b>{String(hour).padStart(2, '0')}:00</b>
-              <input
-                aria-label={t.time}
-                type="range"
-                min="0"
-                max="23"
-                value={hour}
-                onChange={(e) => setHour(Number(e.target.value))}
-              />
-            </label>
-          )}
-          <div className="twin-metrics">
-            {metrics.map((m) => (
-              <div className="twin-metric" key={m.label}>
-                <span>{t[m.label]}</span>
-                <strong>
-                  {m.value.toLocaleString(locale)}
-                  {m.total && <small> / {m.total}</small>}
-                </strong>
-                {m.total && (
-                  <div className="twin-meter">
-                    <i style={{ width: `${Math.min(100, (m.value / m.total) * 100)}%` }} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <a className="twin-operations-link" href={data?.operationsHref}>
-            {t.more} ↗
-          </a>
-          <h2>{t.levels}</h2>
-          <div className="twin-bars">
-            {countByLevel.map(({ level, count }) => (
-              <button type="button" key={level.id} onClick={() => chooseFloor(level.id)}>
-                <span>{pickLabel(level.shortName, [locale, 'en'])}</span>
-                <i style={{ width: `${(count / maxCount) * 100}%` }} />
-                <b>{count}</b>
-              </button>
-            ))}
-          </div>
-          <p className="twin-note">{t.units}</p>
-        </aside>
-        <aside className="twin-right twin-panel">
-          <p className="twin-section-code">01 / {t.inventory}</p>
-          <h2>{t.facilities}</h2>
-          <dl className="twin-system-list">
-            <div>
-              <dt>{t.buildings}</dt>
-              <dd>{data?.venue.buildings.length ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>{t.floors}</dt>
-              <dd>{data?.venue.levels.length ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>{t.stairs}</dt>
-              <dd>{units.filter((u) => u.properties.category === 'stairs').length}</dd>
-            </div>
-            <div>
-              <dt>{t.entrances}</dt>
-              <dd>
-                {data?.venue.features.openings.features.filter(
-                  (o) => o.properties.category === 'pedestrian.principal',
-                ).length ?? '—'}
-              </dd>
-            </div>
-          </dl>
-          <div className="twin-site-diagram" aria-hidden="true">
-            {data?.venue.buildings.map((building) => (
-              <span key={building.id} />
-            ))}
-          </div>
-          <h2>{t.accessible}</h2>
-          <p className="twin-note">{t.connected}</p>
-          <p className="twin-section-code">02 / {t.geometry}</p>
-          <dl className="twin-system-list">
-            <div>
-              <dt>{t.meshes}</dt>
-              <dd>{snapshot?.meshes ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>{t.triangles}</dt>
-              <dd>{snapshot?.triangles.toLocaleString(locale) ?? '—'}</dd>
-            </div>
-          </dl>
-          <p className="twin-note">{t.offline}</p>
-        </aside>
-        <div className="twin-scene-label">
-          <span className="twin-live-dot" />
-          {snapshot?.fallback ? t.fallback : snapshot?.view === 'indoor' ? t.indoor : t.overview}
-        </div>
-        <nav className="twin-floors" aria-label={t.floors}>
+        <fieldset className="floors" aria-label={t.floors}>
           <button
             type="button"
             data-testid="twin-outdoor"
             aria-pressed={snapshot?.view === 'outdoor'}
+            title={t.overview}
             disabled={!data}
             onClick={outside}
           >
@@ -311,51 +224,85 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
               {pickLabel(l.shortName, [locale, 'en'])}
             </button>
           ))}
-        </nav>
-        <div className="twin-bottom">
-          <p>{t.hint}</p>
-          <div className="twin-toolbar">
-            <button type="button" onClick={outside}>
-              {t.overview}
-            </button>
-            <button
-              type="button"
-              data-testid="twin-mobile-panel"
-              className="twin-mobile-toggle"
-              onClick={() => setDetails(!details)}
-            >
-              {t.details}
-            </button>
-            <label>
-              <span>{t.quality}</span>
-              <select
-                aria-label={t.quality}
-                data-testid="twin-quality"
-                disabled={!api}
-                value={quality}
-                onChange={(e) => {
-                  const value = e.target.value as Quality;
-                  setQuality(value);
-                  void api?.quality(value).catch(() => setError(true));
-                }}
-              >
-                <option value="auto">{t.auto}</option>
-                <option value="low">{t.low}</option>
-                <option value="high">{t.high}</option>
-              </select>
-            </label>
-            <button
-              type="button"
-              data-testid="twin-export"
-              disabled={!data}
-              title={t.exportHint}
-              onClick={exportModel}
-            >
-              ↓ {t.export}
-            </button>
-          </div>
+        </fieldset>
+        <div className="venue-name">
+          {siteName}
+          {snapshot?.fallback && <span className="muted"> · {t.fallback}</span>}
         </div>
+        <aside className="panel" data-testid="twin-inventory">
+          {data?.timeDependent && (
+            <label className="twin-time">
+              <span>
+                {t.time} <b className="clock">{String(hour).padStart(2, '0')}:00</b>
+              </span>
+              <input
+                aria-label={t.time}
+                type="range"
+                min="0"
+                max="23"
+                value={hour}
+                onChange={(e) => setHour(Number(e.target.value))}
+              />
+            </label>
+          )}
+          <h2>{t.levels}</h2>
+          <ul className="rows">
+            {countByLevel.map(({ level, count }) => (
+              <li key={level.id}>
+                <button
+                  type="button"
+                  className="row"
+                  aria-pressed={snapshot?.view === 'indoor' && current === level.id}
+                  onClick={() => chooseFloor(level.id)}
+                >
+                  <span className="name">{pickLabel(level.shortName, [locale, 'en'])}</span>
+                  <span className="count">{count}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <h2>{t.facilities}</h2>
+          <dl className="twin-facts">
+            {facts.map(([term, value]) => (
+              <div key={term}>
+                <dt>{term}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="muted">
+            {t.simulation} · {t.offline}
+          </p>
+          {data && (
+            <a className="link" href={data.operationsHref}>
+              {t.more} →
+            </a>
+          )}
+        </aside>
+        {(!snapshot?.ready || (error && !data)) && (
+          <div className="map-status" role={error ? 'alert' : 'status'}>
+            {error ? (
+              <>
+                <p>{t.failed}</p>
+                <button type="button" className="chip" onClick={() => setAttempt(attempt + 1)}>
+                  {t.retry}
+                </button>
+              </>
+            ) : (
+              t.loading
+            )}
+          </div>
+        )}
+        <button
+          type="button"
+          className="panel-toggle"
+          data-testid="twin-mobile-panel"
+          aria-expanded={panelOpen}
+          onClick={() => setPanelOpen(!panelOpen)}
+        >
+          {panelOpen ? t.close : t.details}
+        </button>
       </div>
-    </section>
+    </>
   );
 }

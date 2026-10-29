@@ -66,7 +66,7 @@ await indoor.destroy();
 
 ## Examples
 
-Each scenario also has a **Digital twin** cockpit with an editable 3D campus, local outdoor map, indoor floor switching, light/dark themes and a mobile layout. High/low quality controls support slower devices. **Export GLB** downloads the complete campus for Blender. See the [model, licence and editing guide](docs/digital-twin.md).
+Each scenario also has a **Digital twin** cockpit with an editable 3D campus, local outdoor map, indoor floor switching, light/dark themes and a mobile layout. High/low quality controls support slower devices. The campus models are committed as GLB files and can be edited in Blender. See the [model, licence and editing guide](docs/digital-twin.md).
 
 The live demo shows three use cases built on the SDK. Each has its own business package (`domains/hospital`, `domains/parking`, `domains/museum`) and simulator, and is independent of the others. All venues, people, vehicles, companies and collection objects are fictional.
 

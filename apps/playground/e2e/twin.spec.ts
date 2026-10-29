@@ -1,8 +1,7 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 for (const scenario of ['hospital', 'parking', 'museum']) {
-  test(`${scenario} twin: model, floors, quality, themes, languages and export`, async ({ page }) => {
+  test(`${scenario} twin: model, floors, quality, themes, and languages`, async ({ page }) => {
     test.setTimeout(90000);
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -28,11 +27,8 @@ for (const scenario of ['hospital', 'parking', 'museum']) {
     await page.evaluate(() => window.__twin!.setZoom(18.4));
     await expect(page.getByTestId('twin-status')).toHaveAttribute('data-view', 'outdoor');
     await page.getByTestId('twin-outdoor').click();
-    const download = page.waitForEvent('download');
-    await page.getByTestId('twin-export').click();
-    const exported = await download;
-    expect(exported.suggestedFilename()).toBe(`${scenario}.glb`);
-    expect((await readFile((await exported.path())!)).subarray(0, 4).toString()).toBe('glTF');
+    // 模型下载在界面上隐藏
+    await expect(page.getByTestId('twin-export')).toHaveCount(0);
     for (const lang of ['zh', 'ja', 'en']) {
       await page.getByTestId(`lang-${lang}`).click();
       await expect(page.getByTestId('twin-title')).not.toBeEmpty();
@@ -72,7 +68,7 @@ test('twin resources are released across scenario and quality changes', async ({
   }
 });
 
-test('a device without WebGL still opens the local plan, floors and model export', async ({ page }) => {
+test('a device without WebGL still opens the local plan and floors', async ({ page }) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
@@ -86,5 +82,4 @@ test('a device without WebGL still opens the local plan, floors and model export
   await page.getByTestId('twin-floor-2F').click();
   await expect(page.getByTestId('twin-status')).toHaveAttribute('data-view', 'indoor');
   await expect(page.getByTestId('twin-plan-fallback').locator('path').first()).toBeVisible();
-  await expect(page.getByTestId('twin-export')).toBeEnabled();
 });
