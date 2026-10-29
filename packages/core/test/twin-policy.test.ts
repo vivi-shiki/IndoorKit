@@ -3,6 +3,7 @@ import {
   createFrameGovernor,
   detectLevel,
   focusStyle,
+  governedSettings,
   needsReload,
   nextView,
   placeLabels,
@@ -108,6 +109,19 @@ describe('render levels', () => {
     for (let i = 0; i < 1000; i++) expect(governor.sample(10)).toBeNull();
     // 拖动后停顿很久的帧不计入
     for (let i = 0; i < 50; i++) expect(governor.sample(900)).toBeNull();
+  });
+
+  it('never steps down to the massing-only level, which would swap the model away mid-gesture', () => {
+    const governor = createFrameGovernor('L1', 'L1');
+    for (let i = 0; i < 500; i++) expect(governor.sample(80)).toBeNull();
+    expect(governor.level).toBe('L1');
+  });
+
+  it('only changes switches that need no new model file', () => {
+    const current = resolveSettings('L3');
+    const lower = governedSettings(current, resolveSettings('L1'));
+    expect(needsReload(current, lower)).toBe(false);
+    expect(lower).toMatchObject({ shadows: 0, outline: false, pixelRatio: 1, model: 'high' });
   });
 
   it('reloads the model only when the file contents differ', () => {

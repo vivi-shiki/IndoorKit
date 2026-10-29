@@ -175,10 +175,14 @@ export interface FrameGovernor {
   sample(frameMs: number): RenderLevel | null;
 }
 
-/** 持续卡顿时降一档，持续流畅后升回一档，不超过 ceiling */
+/**
+ * 持续卡顿时降一档，持续流畅后升回一档，不超过 ceiling。
+ * 不会自动降到 L0：那一档换成体块，拖动中模型会消失再出现。
+ */
 export function createFrameGovernor(start: RenderLevel, ceiling: RenderLevel): FrameGovernor {
   let index = RENDER_LEVELS.indexOf(start);
   const top = RENDER_LEVELS.indexOf(ceiling);
+  const bottom = Math.min(index, 1);
   let slow = 0;
   let fast = 0;
   return {
@@ -194,7 +198,7 @@ export function createFrameGovernor(start: RenderLevel, ceiling: RenderLevel): F
         slow = Math.max(0, slow - 1);
         fast = frameMs < FAST_MS ? fast + 1 : 0;
       }
-      if (slow >= DOWN_AFTER && index > 0) {
+      if (slow >= DOWN_AFTER && index > bottom) {
         index--;
         slow = 0;
         fast = 0;
@@ -218,6 +222,18 @@ export const modelFile = (s: RenderSettings) =>
     : s.model === 'low' || s.props < 1 || !s.groundTexture
       ? 'scene-low.glb'
       : 'scene.glb';
+
+/**
+ * 自动降档时的设置：只改不用换模型文件的开关（像素比、阴影、反射、描边等），
+ * 模型、道具和铺装保持当前的，抗锯齿属于上下文也不变。
+ */
+export const governedSettings = (current: RenderSettings, target: RenderSettings): RenderSettings => ({
+  ...target,
+  antialias: current.antialias,
+  model: current.model,
+  props: current.props,
+  groundTexture: current.groundTexture,
+});
 
 /** 只有模型文件不同才需要重新下载，其余开关都能直接改 */
 export const needsReload = (a: RenderSettings, b: RenderSettings) =>

@@ -34,6 +34,7 @@ import {
   type DeviceInfo,
   detectLevel,
   type FrameGovernor,
+  governedSettings,
   modelFile,
   nextView,
   ORBIT_IDLE_MS,
@@ -591,7 +592,9 @@ export function twinPlugin(options: TwinOptions) {
       const apply = async (next: RenderSettings) => {
         // 抗锯齿属于 WebGL 上下文，创建后改不了；设置里记的是请求值，由调用方决定是否重建地图
         settings = next;
-        map.setPixelRatio(Math.min(devicePixelRatio, settings.pixelRatio));
+        // 改像素比会重建画布缓冲区，相同就不调
+        const ratio = Math.min(devicePixelRatio, settings.pixelRatio);
+        if (map.getPixelRatio() !== ratio) map.setPixelRatio(ratio);
         applySky();
         applyShadows();
         applyOutlines();
@@ -661,8 +664,9 @@ export function twinPlugin(options: TwinOptions) {
           const stepped = governor?.sample(elapsed);
           if (stepped && !disposed) {
             level = stepped;
+            // 拖动中降档不换模型文件，否则模型会消失再出现
             queueMicrotask(() => {
-              if (!disposed) void apply(resolveSettings(level, site, overrides));
+              if (!disposed) void apply(governedSettings(settings, resolveSettings(level, site, overrides)));
             });
           }
           for (const fn of frameListeners) fn();
@@ -842,7 +846,11 @@ export function twinPlugin(options: TwinOptions) {
         applyLayers();
       };
       ctx.on('theme:change', ({ name }) => theme(name === 'dark'));
+      // 手机浏览器在拖动时收起地址栏，只改高度；这种 resize 不重新取景，也不重判档位
+      let width = container.clientWidth;
       ctx.onMap('resize', () => {
+        if (container.clientWidth === width) return;
+        width = container.clientWidth;
         if (state.view === 'outdoor') fitOutside(0);
         if (requested !== 'auto') return;
         const next = detectLevel(device());

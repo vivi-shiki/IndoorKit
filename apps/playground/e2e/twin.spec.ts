@@ -127,6 +127,14 @@ for (const scenario of ['hospital', 'parking', 'museum']) {
     expect(panel!.x + panel!.width).toBeLessThanOrEqual(390);
     await page.getByTestId('twin-quality-button').click();
     await page.evaluate(() => window.__twin!.idle());
+    // 手机地址栏收起只改高度：不重新取景、不换档位
+    const before = await page.evaluate(() => window.__twin!.camera());
+    const levelBefore = await status(page).getAttribute('data-level');
+    await page.setViewportSize({ width: 390, height: 760 });
+    await page.evaluate(() => window.__twin!.idle());
+    expect(await page.evaluate(() => window.__twin!.camera())).toEqual(before);
+    await expect(status(page)).toHaveAttribute('data-level', levelBefore!);
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: `test-results/twin-${scenario}-mobile-scene.png` });
     await page.getByTestId('twin-mobile-panel').click();
     await expect(page.getByTestId('twin-inventory')).toBeVisible();
