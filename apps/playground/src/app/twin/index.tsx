@@ -1,5 +1,14 @@
-import type { AnyPlugin, IndoorMap } from '@indoorkit/core';
-import type { Quality, TwinApi, TwinSnapshot } from '@indoorkit/core/twin';
+import {
+  type AnyPlugin,
+  detectLevel,
+  type IndoorMap,
+  RENDER_PRESETS,
+  resolveSettings,
+  STATUS_COLORS,
+  type StatusPaint,
+  type TwinStatus,
+} from '@indoorkit/core';
+import type { TwinApi, TwinSnapshot } from '@indoorkit/core/twin';
 import { pickLabel, type VenueModel } from '@indoorkit/imdf';
 import { type FloorApi, floorPlugin } from '@indoorkit/plugins';
 import { useEffect, useRef, useState } from 'react';
@@ -8,7 +17,10 @@ import { appTheme } from '../../app-theme';
 import { createTrackedMap, followAppSettings } from '../map';
 import { trackTeardown } from '../teardown';
 import { PlanFallback } from './fallback';
+import { TwinLabels } from './labels';
 import { TWIN_MESSAGES, type TwinKey } from './messages';
+import { QualityPanel } from './quality-panel';
+import { browserStorage, loadQuality, type QualityChoice, saveQuality } from './quality-store';
 import './twin.css';
 
 export interface TwinData {
@@ -16,6 +28,9 @@ export interface TwinData {
   metrics(time: number): { label: TwinKey; value: number; total?: number }[];
   operationsHref: string;
   timeDependent?: boolean;
+  /** 涂在模型上的业务状态（停车场每层空位、博物馆报警的房间） */
+  status?(time: number): StatusPaint[];
+  legend?: { status: TwinStatus; label: TwinKey }[];
 }
 declare global {
   interface Window {
@@ -25,8 +40,33 @@ declare global {
       setView(view: 'indoor' | 'outdoor'): void;
       setZoom(value: number): void;
       idle(): Promise<void>;
+      sky(): boolean;
+      buildings(): { id: string; names: { zh: string; ja: string; en: string } }[];
+      /** 一栋能点中的楼，页面坐标 */
+      buildingPoint(): { id: string; x: number; y: number };
+      levels(): { id: string; shortName: string; ordinal: number }[];
+      floorMeshes(): number;
+      camera(): { zoom: number; pitch: number; bearing: number };
+      levelInView(levelId: string): boolean;
+      extrusions(): number;
+      gl(): { antialias: boolean };
     };
   }
+}
+
+/** 地图创建前就要知道是否抗锯齿：按保存的选择和设备估算，和插件用同一套规则 */
+function wantsAntialias(choice: QualityChoice) {
+  const level =
+    choice.quality === 'auto'
+      ? detectLevel({
+          width: innerWidth,
+          cores: navigator.hardwareConcurrency || 4,
+          memory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+          saveData:
+            (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData ?? false,
+        })
+      : choice.quality;
+  return resolveSettings(level, undefined, choice.overrides).antialias;
 }
 
 /** Shared presentation only. Each scenario owns the data loader and metric calculations. */
@@ -41,13 +81,18 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
   const [snapshot, setSnapshot] = useState<TwinSnapshot>();
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const [quality, setQuality] = useState<Quality>('auto');
+  const [choice, setChoice] = useState<QualityChoice>(() => loadQuality(browserStorage()));
+  const choiceRef = useRef(choice);
+  choiceRef.current = choice;
+  const [antialias, setAntialias] = useState(() => wantsAntialias(choice));
+  const [qualityOpen, setQualityOpen] = useState(false);
   const [hour, setHour] = useState(14);
+  const time = useRef<HTMLInputElement>(null);
   useEffect(() => {
     document.title = `${t.title} | IndoorKit`;
     document.documentElement.lang = locale;
   }, [t.title, locale]);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: retry must recreate the whole owned map.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: retry and anti-aliasing must recreate the whole owned map.
   useEffect(() => {
     let disposed = false;
     let indoor: IndoorMap<readonly AnyPlugin[]> | undefined;
@@ -55,6 +100,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
     const cleanups: (() => void)[] = [];
     setError(false);
     setSnapshot(undefined);
+    setApi(undefined);
     const create = async () => {
       const [loaded, { twinPlugin }] = await Promise.all([load(), import('@indoorkit/core/twin')]);
       if (disposed) return;
@@ -64,9 +110,17 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
       indoor = await createTrackedMap({
         container: container.current!,
         venue: loaded.venue,
+        antialias,
         plugins: [
           floorPlugin,
-          twinPlugin({ url: `${import.meta.env.BASE_URL}models/${asset}`, dark: appTheme.value === 'dark' }),
+          twinPlugin({
+            url: `${import.meta.env.BASE_URL}models/${asset}`,
+            dark: appTheme.value === 'dark',
+            quality: choiceRef.current.quality,
+            overrides: choiceRef.current.overrides,
+            // 自动化测试里不做空闲环绕，镜头只随操作变化
+            orbit: !navigator.webdriver,
+          }),
         ] as const,
       });
       if (disposed) return;
@@ -77,18 +131,48 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
         twin.subscribe(() => setSnapshot({ ...twin.snapshot() })),
       );
       cleanups.push(indoor.events.on('floor:change', () => setCurrent(floors.current().id)));
-      const hook = {
+      const venue = loaded.venue;
+      const box = () => container.current!.getBoundingClientRect();
+      const hook: NonNullable<Window['__twin']> = {
         snapshot: twin.snapshot,
         floor: () => floors.current().shortName.en ?? '',
         setView: twin.view,
         setZoom: twin.zoom,
         idle: twin.idle,
+        sky: twin.debug.sky,
+        buildings: () =>
+          twin.buildings().map((b) => {
+            const name = venue.buildings.find((v) => v.id === b.id)?.name ?? {};
+            return {
+              id: b.id,
+              names: {
+                zh: pickLabel(name, ['zh', 'en']) ?? '',
+                ja: pickLabel(name, ['ja', 'en']) ?? '',
+                en: pickLabel(name, ['en']) ?? '',
+              },
+            };
+          }),
+        buildingPoint: () => {
+          // 只取没有被面板、按钮挡住的点
+          const point = twin.debug
+            .buildingPoints()
+            .map((p) => ({ id: p.id, x: box().left + p.x, y: box().top + p.y }))
+            .find((p) => document.elementFromPoint(p.x, p.y) === container.current!.querySelector('canvas'));
+          if (!point) throw new Error('no building can be clicked from the current view');
+          return point;
+        },
+        levels: () =>
+          venue.levels.map((l) => ({ id: l.id, shortName: l.shortName.en ?? '', ordinal: l.ordinal })),
+        floorMeshes: twin.debug.floorMeshes,
+        camera: twin.debug.camera,
+        levelInView: twin.debug.levelInView,
+        extrusions: twin.debug.extrusions,
+        gl: () => ({ antialias: twin.debug.antialias() }),
       };
       window.__twin = hook;
       cleanups.push(() => {
         if (window.__twin === hook) delete window.__twin;
       });
-      setData(loaded);
       setApi(twin);
       setFloor(floors);
       setCurrent(floors.current().id);
@@ -101,9 +185,17 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
         if (loadedData)
           setSnapshot({
             ready: true,
+            progress: 1,
             view: 'outdoor',
-            quality: 'low',
-            shadows: false,
+            quality: choiceRef.current.quality,
+            level: 'L0',
+            settings: RENDER_PRESETS.L0,
+            renderer: { toneMapping: 'ACESFilmic', environment: false },
+            focused: null,
+            cut: {},
+            hour: 14,
+            night: false,
+            painted: 0,
             meshes: 0,
             triangles: 0,
             fallback: true,
@@ -115,7 +207,38 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
       for (const off of cleanups.reverse()) off();
       trackTeardown(created.then(() => indoor?.destroy()));
     };
-  }, [asset, load, attempt]);
+  }, [asset, load, attempt, antialias]);
+
+  // 模拟时间：太阳、夜间灯光和业务状态
+  useEffect(() => {
+    if (!api || !data) return;
+    if (data.timeDependent) api.time(hour);
+    if (data.status) api.paint(data.status(hour * 3600_000));
+  }, [api, data, hour]);
+  // Playwright 和部分辅助技术直接改 value，React 的受控输入收不到，所以监听原生事件
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the slider only exists once the data has loaded.
+  useEffect(() => {
+    const input = time.current;
+    if (!input) return;
+    const read = () => setHour(Number(input.value));
+    input.addEventListener('input', read);
+    input.addEventListener('change', read);
+    return () => {
+      input.removeEventListener('input', read);
+      input.removeEventListener('change', read);
+    };
+  }, [data]);
+
+  const choose = (next: QualityChoice) => {
+    setChoice(next);
+    saveQuality(browserStorage(), next);
+    const aa = wantsAntialias(next);
+    // 抗锯齿属于 WebGL 上下文，只能重建地图
+    if (aa !== antialias) {
+      setSnapshot(undefined);
+      setAntialias(aa);
+    } else void api?.quality(next.quality, next.overrides).catch(() => setError(true));
+  };
   const metrics = data?.metrics(hour * 3600_000) ?? [];
   const units = data?.venue.features.units.features ?? [];
   const countByLevel =
@@ -144,10 +267,16 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
       data?.venue.features.openings.features.filter((o) => o.properties.category === 'pedestrian.principal')
         .length ?? '—',
     ],
-    [t.meshes, snapshot?.meshes ?? '—'],
-    [t.triangles, snapshot?.triangles.toLocaleString(locale) ?? '—'],
   ];
-  // 和其他地图页同一套布局：标题栏放指标和画质，地图右上角是楼层按钮，左侧面板在手机上收进按钮
+  const focused = snapshot?.focused ? api?.buildings().find((b) => b.id === snapshot.focused) : undefined;
+  const focusedLevels = focused
+    ? (data?.venue.levels.filter((l) => l.buildingIds.includes(focused.id)) ?? [])
+    : [];
+  const focusedName = focused
+    ? pickLabel(data?.venue.buildings.find((b) => b.id === focused.id)?.name ?? {}, [locale, 'en'])
+    : '';
+  const loading = !error && (!snapshot || (!snapshot.ready && snapshot.meshes === 0));
+  // 和其他地图页同一套布局：标题栏放指标，地图右上角是楼层按钮，左下角是画质，左侧面板在手机上收进按钮
   return (
     <>
       <header className="bar">
@@ -166,33 +295,27 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
             )}
           </span>
         ))}
-        <label className="select">
-          {t.quality}
-          <select
-            data-testid="twin-quality"
-            disabled={!api}
-            value={quality}
-            onChange={(e) => {
-              const value = e.target.value as Quality;
-              setQuality(value);
-              void api?.quality(value).catch(() => setError(true));
-            }}
-          >
-            <option value="auto">{t.auto}</option>
-            <option value="low">{t.low}</option>
-            <option value="high">{t.high}</option>
-          </select>
-        </label>
       </header>
       <div
         className={`stage twin twin-${asset}`}
         data-testid="twin-status"
         data-ready={snapshot?.ready ?? false}
         data-view={snapshot?.view ?? 'outdoor'}
-        data-quality={snapshot?.quality ?? 'low'}
+        data-level={snapshot?.level ?? ''}
         data-panel-open={panelOpen ? '' : undefined}
       >
         <section className="map" ref={container} aria-label={t.overview} />
+        {api && data && <TwinLabels api={api} venue={data.venue} locale={locale} />}
+        {snapshot && !snapshot.ready && (
+          <div
+            className="twin-progress"
+            role="progressbar"
+            aria-label={t.progress}
+            aria-valuenow={Math.round(snapshot.progress * 100)}
+          >
+            <span style={{ width: `${Math.round(snapshot.progress * 100)}%` }} />
+          </div>
+        )}
         {error && data && (
           <PlanFallback
             venue={data.venue}
@@ -229,6 +352,70 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
           {siteName}
           {snapshot?.fallback && <span className="muted"> · {t.fallback}</span>}
         </div>
+        {focused && (
+          <section className="twin-card" data-testid="twin-building-card" aria-label={focusedName}>
+            <h2>{focusedName}</h2>
+            <dl className="twin-facts">
+              <div>
+                <dt>{t.height}</dt>
+                <dd>{focused.height.toLocaleString(locale)} m</dd>
+              </div>
+              <div>
+                <dt>{t.storeys}</dt>
+                <dd>{focusedLevels.filter((l) => l.ordinal >= 0).length}</dd>
+              </div>
+            </dl>
+            <div className="twin-card-actions">
+              <button
+                type="button"
+                className="chip"
+                data-testid="twin-enter-floor"
+                disabled={focusedLevels.length === 0}
+                onClick={() => {
+                  const ground =
+                    focusedLevels.find((l) => l.ordinal === 0) ??
+                    focusedLevels.toSorted((a, b) => Math.abs(a.ordinal) - Math.abs(b.ordinal))[0]!;
+                  chooseFloor(ground.id);
+                }}
+              >
+                {t.enterFloor}
+              </button>
+              <button type="button" className="chip" onClick={() => api?.focus(null)}>
+                {t.closeCard}
+              </button>
+            </div>
+          </section>
+        )}
+        <div className="twin-tools">
+          {qualityOpen && (
+            <QualityPanel
+              t={t}
+              api={api}
+              choice={choice}
+              level={snapshot?.level ?? (choice.quality === 'auto' ? 'L2' : choice.quality)}
+              locale={locale}
+              onChoose={choose}
+            />
+          )}
+          <button
+            type="button"
+            className="chip"
+            data-testid="twin-quality-button"
+            aria-expanded={qualityOpen}
+            onClick={() => setQualityOpen(!qualityOpen)}
+          >
+            {t.quality} · {snapshot?.level ?? '…'}
+          </button>
+          <button
+            type="button"
+            className="chip"
+            data-testid="twin-reset"
+            disabled={!api}
+            onClick={() => api?.resetView()}
+          >
+            {t.resetView}
+          </button>
+        </div>
         <aside className="panel" data-testid="twin-inventory">
           {data?.timeDependent && (
             <label className="twin-time">
@@ -236,14 +423,25 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
                 {t.time} <b className="clock">{String(hour).padStart(2, '0')}:00</b>
               </span>
               <input
+                ref={time}
+                data-testid="twin-time"
                 aria-label={t.time}
                 type="range"
                 min="0"
                 max="23"
-                value={hour}
-                onChange={(e) => setHour(Number(e.target.value))}
+                defaultValue={hour}
               />
             </label>
+          )}
+          {data?.legend && (
+            <ul className="twin-legend">
+              {data.legend.map((l) => (
+                <li key={l.label}>
+                  <i style={{ background: STATUS_COLORS[l.status] }} />
+                  {t[l.label]}
+                </li>
+              ))}
+            </ul>
           )}
           <h2>{t.levels}</h2>
           <ul className="rows">
@@ -279,7 +477,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
             </a>
           )}
         </aside>
-        {(!snapshot?.ready || (error && !data)) && (
+        {(loading || (error && !data)) && (
           <div className="map-status" role={error ? 'alert' : 'status'}>
             {error ? (
               <>

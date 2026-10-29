@@ -1,60 +1,37 @@
+# !!!INVESTIGATE!!!
+
 # PROBLEM DESCRIPTION
 
-帮我拉取最新代码，然后完成以下数字孪生演示demo的开发
+建模、外表和ui都缺少数字孪生的精致感，参考我原来项目的室内室外模型，以及建筑模型，还有各种画质显示配置项，给出一个优化方案
 
-1、对照实际存在的医院、博物馆、停车场平面图，修复逻辑不合理的地方
-2、对这三个建筑进行建模
-3、参照主流开源项目，完善3D模型的渲染逻辑，另外添加光照阴影等
-4、美化建模，让外表看起来像正常建筑
-5、寻找开源的室外景观贴图和模型，树木、汽车、马路、湖泊、绿化、景观、雕塑等等，设计整个室外部分，如果有开源贴图或者模型则借鉴，没有则帮我绘制生成，要求建筑和其它各种东西的成果物都能导出到blender来编辑
-6、视角一定高度以上显示模型和室外地图，一定高度以内显示室内地图，旁边有小控件可以切换楼层
-7、为三个demo场景各自多设计一个数字孪生界面，参考主流的以及我之前的项目，完成这部分设计和渲染
-8、各种渲染均需考虑到电脑或者手机性能不足的情况，补全低画质逻辑，另外为手机端设计一套界面
+(Plan delivered as the artifact "数字孪生页精致化方案". Decisions and follow-up from Vivi, 2026-10-29:)
 
-完成标准：
-1、存在三套建模和一套贴图
-2、三个数字孪生页面正常显示，电脑端和手机端均能正确显示，三语言和亮色暗色主题正常显示
-3、室外地图正常加载，室外模型正常加载显示，且没有严重性能问题
-4、数字孪生页面的周边有驾驶舱设计感，可以参照各种主流大屏驾驶舱
-5、仓库中存在对应提交
-6、该提交提交到vivi-shiki的github远端，注意不是map1en的仓库
-7、对应的github项目的pages正常更新成功
+1用three 2用cc0 3暂时先不做
+
+先给上述你列出的方案写测试，而后再实现
 
 # UPDATES
 
 # TEST [CONFIRMED]
 
-- Unit: three new routes, all cockpit translations; zoom hysteresis, quality selection; generated GLB headers, metre/Y-up coordinates, scene nodes, asset budgets; floor-plan entrances and connected circulation.
-- E2E: each scenario loads its outdoor model, switches by camera zoom and floor buttons, exports a valid GLB; light/dark and zh/en/ja, desktop/mobile overflow and controls; disposal on leaving. Low quality disables shadows and uses reduced geometry. Rendering screenshots reviewed separately.
-- Gates: pnpm verify, pnpm build, pnpm e2e. Commit includes owner trailer; origin must be vivi-shiki/IndoorKit. GitHub Actions and Pages deployment checked on pushed SHA.
+Plan items A (modelling), B (materials and lighting, without post-processing), C (quality settings) and D (UI). Each item has a test written before its implementation.
+
+- Unit, `packages/core/test/twin-policy.test.ts`: five presets L0–L4 with the agreed switch matrix; three-layer merge (preset < site defaults < user overrides); device detection; frame governor that steps down after sustained slow frames and back up after sustained fast frames, never above its ceiling; only model/prop/texture changes need a new GLB; shadow extent follows zoom; sun position and night by simulated hour; section cut (above hidden, current solid, below ghost); building focus style; label decluttering; idle orbit only outdoors and never with reduced motion.
+- Unit, `packages/core/test/twin-floors.test.ts`: indoor floors are generated in Three.js from IMDF (units grouped by category, wall fixtures extruded to wall height, level elevation = ordinal × floor height, local metre coordinates inside the building).
+- Unit, `packages/core/test/create-indoor-map.test.ts`: `antialias` reaches the map factory.
+- Generator, `tools/venue-gen/test/twin-assets.test.ts` and `twin.test.ts`: GLB budgets (high ≤ 4 MB, low ≤ 1.5 MB); CC0 props vendored with checksums and credited; props instanced with `EXT_mesh_gpu_instancing`, low has about half the instances; windows on all four facades; baked vertex AO on building shells; a context neighbourhood outside the site; extended ground, sidewalks and crossings in `site.geojson`; manifest lists buildings with node names, centres and heights; the parking garage has a principal entrance; the museum pond clears every building.
+- App unit, `apps/playground/test/twin.test.ts`: quality preferences round-trip through storage and ignore corrupt values; parking levels and museum rooms map simulated data to good / warn / critical; new copy exists in zh/en/ja.
+- E2E, `apps/playground/e2e/twin.spec.ts`: the quality popover (levels, per-switch override, persistence after reload, performance line); L0 shows 2.5D extrusions without a GLB; antialias, sky, environment lighting and tone mapping on L2+; floors open with a section cut, pitch ≥ 40° and the whole building in view; building labels in the current language; clicking a building focuses it and shows a card that can enter a floor; reset view; night after 18:00 on the simulation slider; status colours painted on parking and museum; parking shows a principal entrance; desktop/mobile, both themes, three languages, no page errors.
+- Leak bench, `tools/leak-bench/twin.spec.ts`: switching through every level, floors, focus and labels keeps unreleased resources at 0 and heap growth under 8 MiB.
+
+Gates: `pnpm verify`, `pnpm build`, `pnpm e2e`. Commits carry the owner trailer.
 
 # PROPOSALS
 
-- No.1 Shared geographic 3D renderer, generated editable campuses and independent scenario cockpits [CONFIRMED]
-
-## No.1 Shared geographic 3D renderer, generated editable campuses and independent scenario cockpits
-
-### CODE CHANGE
-
-- Keep existing scenario data and framework boundaries. Generate three fictitious campuses from IMDF footprints; use real published plans only as circulation references, never copy real operational data.
-- Lazy Three.js renderer in core, MapLibre shared context and geographic alignment; PBR materials, sun shadows, on-demand rendering, reduced quality and offline local outdoor map. Indoor/outdoor zoom threshold has hysteresis; floor plugin stays authoritative indoors.
-- Build-time GLB assets, named editable objects, embedded textures and asset provenance. Separate reduced assets. Export the same complete GLB for Blender.
-- Shared responsive cockpit under app/twin, independent adapters/pages per scenario. Metrics come from the existing fictional venue/simulator or are explicitly labelled geometry inventories.
-- Preserve test-first sequencing; do not commit deliberately failing tests because AGENTS.md requires both gates before every commit.
-
-### Verification notes
-
-- Before implementation, `pnpm verify` failed on the missing twin-policy module. The accessible-bay regression test then measured 2.5003 m before the fix (expected at least 3.6 m). The revised 1F row has 15 ordinary-width bays and two 3.75 m accessible bays, with the same overall row length and aisle width.
-- Pulled `origin/main` with `--ff-only`; origin is `https://github.com/vivi-shiki/IndoorKit.git` and was already current at c3b668a.
-- First verification exposed Windows path separators in the architecture scanner and excessive default test concurrency (69 Vitest workers competing with software WebGL). Normalize paths before all boundary checks and bound both suites to two workers. Intermittent failures are rechecked separately before accepting the fix.
-- Parking ramp travel now has nonzero distance, so arrival times changed. Morning demand is increased in the fictional day generator to retain the existing busy-noon requirement; the test threshold is unchanged.
-- Three initial browser scenarios passed with no page errors; exported files have the glTF magic header. Screenshot review led to responsive exterior fitting, corrected parking device counts and a separate no-WebGL view.
-
-### CONFIRMED
-
-- Final `pnpm verify`: 70 test files, 576 tests passed; lint and type checking passed. `pnpm build` passed and regenerated all six GLBs and the three local site maps.
-- Final `pnpm e2e`: 159 tests passed, including all three new cockpit scenarios, zh/en/ja and light/dark, desktop/mobile, camera transitions, export, no-WebGL recovery and both memory regressions. The 3D regression performs repeated high/low changes across all three scenes, checks zero unreleased tracked resources and limits post-GC heap growth to 8 MiB.
-- Reviewed generated desktop, indoor and mobile screenshots. The assets contain embedded textures and named metre-scale objects; glTF structure and downloads are tested. Blender itself is not installed on this workstation, so native Blender import was not executed.
-- High-quality scene budgets: hospital 17,656 triangles / 5,690,904 bytes; parking 21,928 triangles / 6,069,928 bytes; museum 12,100 triangles / 5,124,240 bytes. All have separately generated low-quality assets. Shared paving textures are CC0, with attribution and editing instructions in `docs/digital-twin.md`.
-- The earlier intermittent browser cases passed 10 consecutive repetitions each (30 passes). The seven affected unit-test files also passed 10 consecutive runs. Test concurrency is bounded to two workers; that stability fix is committed separately from the feature.
-- Push target and Pages configuration verified as `vivi-shiki/IndoorKit`, with GitHub Actions deployment to `https://vivi-shiki.github.io/IndoorKit/`. The resulting remote commit and deployment are checked after pushing.
+1. Render policy in `packages/core/src/twin/policy.ts` (L0–L4 switch sets, three-layer merge, device detection, frame governor, view hysteresis, shadow extent, sun by hour, section cut, focus, label placement, idle orbit), free of Three.js and exported from `@indoorkit/core`. [CONFIRMED] 13 unit tests.
+2. Indoor floors generated in Three.js from IMDF (`floors.ts`), shown in the indoor view at L3+ with a section cut: the current floor sits just under the MapLibre floor so labels and picking stay with MapLibre; lower floors are translucent ghosts. [CONFIRMED] unit + e2e (pitch ≥ 40°, level in view).
+3. Generator rewrite: buildings as nodes carrying IMDF ids, windows on four facades, baked vertex AO on the shell plinth, sidewalks/kerbs/crossings, context neighbourhood, CC0 Kenney props as GPU instances. Static geometry is indexed and only paving keeps UVs; car counts and context density were cut to stay under 120k triangles. [CONFIRMED] 66 generator tests; budgets high 1.4–2.0 MB, low 1.25–1.43 MB, 81k–104k triangles.
+4. Renderer: ACES tone mapping, room environment map, MapLibre sky, shadows sized per level with zoom-following extent, outlines, focus with per-building material clones, ray picking against building boxes, labels projected from the last frame, night emissive glass and lamps, status bands and markers, progressive low→high download with progress. [CONFIRMED] e2e.
+5. Page: quality popover (levels, individual switches, performance line) persisted in localStorage; anti-aliasing change recreates the map; labels with declutter; building card with enter-floor; reset view; legend; site plan dimmed at night. [CONFIRMED] e2e 8/8 twin tests.
+6. Test hook `buildingPoint` only returns points not covered by UI (the quality popover covered the first candidate). [CONFIRMED]
+7. L0 reports ready only after MapLibre has drawn the massing layer (map idle). [CONFIRMED] fixed a race in the extrusion check.

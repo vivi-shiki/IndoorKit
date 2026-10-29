@@ -14,23 +14,64 @@
       35.200682716493
     ]
   ],
+  "ground": [
+    [
+      139.8963414238005,
+      35.19781530722243
+    ],
+    [
+      139.90365857619952,
+      35.20218469277758
+    ]
+  ],
   "floorHeight": 4,
+  "buildings": [
+    {
+      "id": "1e92dbcd-d500-4a68-ade0-90d72cc1a752",
+      "node": "Building A",
+      "center": [
+        139.89947232,
+        35.2
+      ],
+      "height": 20
+    },
+    {
+      "id": "1d92da3a-d600-4bfb-ace0-8f442dc1a8e5",
+      "node": "Building B",
+      "center": [
+        139.9,
+        35.2
+      ],
+      "height": 20
+    },
+    {
+      "id": "1c92d8a7-d700-4d8e-afe0-93fd2ac1a42c",
+      "node": "Building C",
+      "center": [
+        139.90052768,
+        35.2
+      ],
+      "height": 20
+    }
+  ],
   "counts": {
     "buildings": 3,
     "floors": 5,
     "trees": 42,
-    "surfaces": 16
+    "surfaces": 26
   },
   "budgets": {
     "high": {
-      "triangles": 17656,
-      "meshes": 92,
-      "bytes": 5690904
+      "triangles": 92226,
+      "meshes": 99,
+      "bytes": 2030216,
+      "instances": 167
     },
     "low": {
-      "triangles": 9244,
-      "meshes": 89,
-      "bytes": 2741696
+      "triangles": 50205,
+      "meshes": 98,
+      "bytes": 1255144,
+      "instances": 91
     }
   }
 }

@@ -40,6 +40,7 @@ await write('minato-museum', generateMuseum(MINATO_MUSEUM), museumExtensions);
 
 const modelDir = resolve(outDir, '..', 'models');
 const textures = join(modelDir, 'textures');
-await writeCampus(generateVenue(SAKURA_HOSPITAL), 'hospital', join(modelDir, 'hospital'), textures);
-await writeCampus(generateParking(MINATO_PARKING), 'parking', join(modelDir, 'parking'), textures);
-await writeCampus(generateMuseum(MINATO_MUSEUM), 'museum', join(modelDir, 'museum'), textures);
+const props = resolve(import.meta.dirname, '../assets/cc0');
+await writeCampus(generateVenue(SAKURA_HOSPITAL), 'hospital', join(modelDir, 'hospital'), textures, props);
+await writeCampus(generateParking(MINATO_PARKING), 'parking', join(modelDir, 'parking'), textures, props);
+await writeCampus(generateMuseum(MINATO_MUSEUM), 'museum', join(modelDir, 'museum'), textures, props);

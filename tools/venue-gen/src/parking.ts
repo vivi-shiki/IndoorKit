@@ -246,6 +246,8 @@ export function generateParking(options: ParkingGenOptions): ParkingArchive {
     unit(`stairs/${short}`, levelId, [57, 27, 63, 32], 'stairs', NAMES.stairs);
     opening(`elevator/${short}`, levelId, [57, 1.5], [57, 3.5], 'pedestrian');
     opening(`stairs/${short}`, levelId, [57, 28.5], [57, 30.5], 'pedestrian');
+    // 地面层电梯厅朝外的门是步行主入口
+    if (firstFloor) opening(`entrance/${short}`, levelId, [59, 0], [61, 0], 'pedestrian.principal');
 
     // 逆时针单向环；东侧纵向车道在 (54, 16) 接坡道
     lane(

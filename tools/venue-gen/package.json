@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
     "@indoorkit/hospital": "workspace:*",
     "@indoorkit/imdf": "workspace:*",
     "@indoorkit/museum": "workspace:*",
     "@indoorkit/parking": "workspace:*",
+    "meshoptimizer": "^1.1.1",
     "three": "^0.186.1"
   }
 }

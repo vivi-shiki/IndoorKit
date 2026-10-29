@@ -28,6 +28,8 @@ export interface CreateIndoorMapOptions<P extends readonly AnyPlugin[]> {
   pitch?: number;
   bearing?: number;
   mapFactory?: MapFactory;
+  /** 多重采样抗锯齿，默认关闭；创建后不能再改 */
+  antialias?: boolean;
   /** 字形（PBF）地址模板，默认 OpenFreeMap */
   glyphs?: string;
   on?: { [K in keyof IndoorEvents]?: (payload: IndoorEvents[K]) => void };
@@ -74,10 +76,11 @@ export interface IndoorMap<P extends readonly AnyPlugin[]> {
 
 const GLYPHS = 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
 
-const defaultMapFactory: MapFactory = async (options) => {
+const defaultMapFactory: MapFactory = async ({ antialias, ...options }) => {
   const { Map: MapLibreMap } = await import('maplibre-gl');
   return new MapLibreMap({
     ...options,
+    canvasContextAttributes: { antialias },
     fitBoundsOptions: { padding: 48 },
     attributionControl: false,
   }) as unknown as MapLike;
@@ -113,6 +116,7 @@ export async function createIndoorMap<const P extends readonly AnyPlugin[] = []>
     bounds: options.zoom === undefined ? options.venue.bounds : undefined,
     pitch: options.pitch ?? 45,
     bearing: options.bearing ?? 0,
+    antialias: options.antialias ?? false,
   });
   // 最先登记，最后释放
   tracker.track(map, (m) => m.remove(), 'map');

@@ -1,12 +1,21 @@
 import { type TwinData, TwinPage } from '../../../app/twin';
+import { parkingLevelStatus } from '../../adapters/twin-status';
 import { liveAt, loadParking } from '../../adapters/venue';
 
 async function load(): Promise<TwinData> {
   const ctx = await loadParking();
+  const totals = new Map<string, number>();
+  for (const bay of ctx.parking.bays) totals.set(bay.levelId, (totals.get(bay.levelId) ?? 0) + 1);
   return {
     venue: ctx.venue,
     operationsHref: '#/parking/availability',
     timeDependent: true,
+    status: (time) => parkingLevelStatus(liveAt(ctx, time).freeByLevel, totals),
+    legend: [
+      { status: 'good', label: 'legendFree' },
+      { status: 'warn', label: 'legendBusy' },
+      { status: 'critical', label: 'legendFull' },
+    ],
     metrics: (time) => {
       const live = liveAt(ctx, time);
       return [

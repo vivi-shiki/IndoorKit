@@ -14,23 +14,46 @@
       35.100682716493
     ]
   ],
+  "ground": [
+    [
+      139.8464864673314,
+      35.097815307222426
+    ],
+    [
+      139.8535135326686,
+      35.10218469277758
+    ]
+  ],
   "floorHeight": 5,
+  "buildings": [
+    {
+      "id": "fd3a054d-ce4b-480a-b787-11877d2a2744",
+      "node": "Building A",
+      "center": [
+        139.84996705999998,
+        35.1
+      ],
+      "height": 15
+    }
+  ],
   "counts": {
     "buildings": 1,
     "floors": 4,
     "trees": 40,
-    "surfaces": 16
+    "surfaces": 26
   },
   "budgets": {
     "high": {
-      "triangles": 12100,
-      "meshes": 39,
-      "bytes": 5124240
+      "triangles": 82457,
+      "meshes": 77,
+      "bytes": 1486748,
+      "instances": 134
     },
     "low": {
-      "triangles": 4028,
-      "meshes": 36,
-      "bytes": 2207764
+      "triangles": 50294,
+      "meshes": 76,
+      "bytes": 1317632,
+      "instances": 73
     }
   }
 }

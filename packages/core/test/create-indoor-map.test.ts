@@ -29,6 +29,14 @@ describe('createIndoorMap', () => {
     expect(phases).toEqual(['init', 'load', 'ready', 'destroy']);
   });
 
+  it('passes antialiasing to the map factory only when asked', async () => {
+    const seen: (boolean | undefined)[] = [];
+    const mapFactory = fakeMapFactory((_m, options) => seen.push(options.antialias));
+    await (await createIndoorMap({ container: 'map', venue, mapFactory })).destroy();
+    await (await createIndoorMap({ container: 'map', venue, mapFactory, antialias: true })).destroy();
+    expect(seen).toEqual([false, true]);
+  });
+
   it('adds indoor sources and layers to the map', async () => {
     const s = setup();
     const map = await createIndoorMap({ container: 'map', venue, mapFactory: s.mapFactory });

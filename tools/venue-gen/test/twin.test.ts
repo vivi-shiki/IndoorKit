@@ -15,6 +15,12 @@ describe('buildable circulation', () => {
       3,
     );
   });
+  it('gives the parking garage a principal pedestrian entrance', () => {
+    const a = generateParking(MINATO_PARKING);
+    expect(
+      a.opening.features.filter((o) => o.properties.category === 'pedestrian.principal').length,
+    ).toBeGreaterThan(0);
+  });
   it('models inter-floor travel with a nonzero ramp footprint', () => {
     const a = generateParking(MINATO_PARKING);
     const ramps = a['parking-lane'].features.filter((f) => f.properties.from_level !== f.properties.to_level);

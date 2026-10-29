@@ -86,6 +86,8 @@ export interface MapFactoryOptions {
   bounds?: [[number, number], [number, number]];
   pitch: number;
   bearing: number;
+  /** 多重采样抗锯齿；创建后不能再改 */
+  antialias: boolean;
 }
 
 export type MapFactory = (options: MapFactoryOptions) => MapLike | Promise<MapLike>;

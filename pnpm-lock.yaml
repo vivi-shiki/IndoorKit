@@ -256,6 +256,9 @@ importers:
       '@gltf-transform/core':
         specifier: ^4.5.1
         version: 4.5.1
+      '@gltf-transform/extensions':
+        specifier: ^4.5.1
+        version: 4.5.1
       '@indoorkit/hospital':
         specifier: workspace:*
         version: link:../../domains/hospital
@@ -268,6 +271,9 @@ importers:
       '@indoorkit/parking':
         specifier: workspace:*
         version: link:../../domains/parking
+      meshoptimizer:
+        specifier: ^1.1.1
+        version: 1.1.1
       three:
         specifier: ^0.186.1
         version: 0.186.1
@@ -594,6 +600,9 @@ packages:
 
   '@gltf-transform/core@4.5.1':
     resolution: {integrity: sha512-OWgBYssKHKoXMIrMb2N20jXqWRnMP9HdtcTFQBEAJtz4P+OOxx5fozl5eAeK7nktIs5uDE/lu4NbkE5VCZaR9g==}
+
+  '@gltf-transform/extensions@4.5.1':
+    resolution: {integrity: sha512-3jTe+GWRy4fj1TU790LPsO+rpO/4byUWPTpNkjy6M6h8RvrUivRf12Mptc0770K4ZczibpJDNHXZFkFsFMRDLA==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -1088,6 +1097,9 @@ packages:
 
   kdbush@4.1.0:
     resolution: {integrity: sha512-e9vurzrXJQrFX6ckpHP3bvj5l+9CnYzkxDNnNQ1h2QTqdWsUAJgXiKdGNcOa1EY85dU8KbQ+z/FdQdB7P+9yfQ==}
+
+  ktx-parse@1.1.0:
+    resolution: {integrity: sha512-mKp3y+FaYgR7mXWAbyyzpa/r1zDWeaunH+INJO4fou3hb45XuNSwar+7llrRyvpMWafxSIi99RNFJ05MHedaJQ==}
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -1734,6 +1746,11 @@ snapshots:
     dependencies:
       property-graph: 4.1.0
 
+  '@gltf-transform/extensions@4.5.1':
+    dependencies:
+      '@gltf-transform/core': 4.5.1
+      ktx-parse: 1.1.0
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
@@ -2172,6 +2189,8 @@ snapshots:
   json-stringify-pretty-compact@4.0.0: {}
 
   kdbush@4.1.0: {}
+
+  ktx-parse@1.1.0: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true

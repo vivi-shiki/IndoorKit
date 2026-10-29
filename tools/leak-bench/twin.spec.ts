@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
-test('editable 3D campuses release their scenes after repeated high/low switches', async ({ page }) => {
-  test.setTimeout(240000);
+test('editable 3D campuses release their scenes across every render level, floors and focus', async ({
+  page,
+}) => {
+  test.setTimeout(480000);
   await page.goto('./#/');
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Performance.enable');
@@ -17,10 +19,22 @@ test('editable 3D campuses release their scenes after repeated high/low switches
         location.hash = `#/${name}/twin`;
       }, scene);
       await expect(page.getByTestId('twin-status')).toHaveAttribute('data-ready', 'true', { timeout: 60000 });
-      await page.getByTestId('twin-quality').selectOption('high');
-      await expect(page.getByTestId('twin-status')).toHaveAttribute('data-quality', 'high');
-      await page.getByTestId('twin-quality').selectOption('low');
-      await expect(page.getByTestId('twin-status')).toHaveAttribute('data-quality', 'low');
+      for (const level of ['L4', 'L3', 'L2', 'L1', 'L0']) {
+        if (!(await page.getByTestId('twin-quality-panel').isVisible()))
+          await page.getByTestId('twin-quality-button').click();
+        await page.getByTestId(`twin-level-${level}`).click();
+        await expect(page.getByTestId('twin-status')).toHaveAttribute('data-level', level);
+        await expect(page.getByTestId('twin-status')).toHaveAttribute('data-ready', 'true', {
+          timeout: 60000,
+        });
+        if (level === 'L3') {
+          const target = await page.evaluate(() => window.__twin!.buildingPoint());
+          await page.mouse.click(target.x, target.y);
+          await page.getByTestId('twin-enter-floor').click();
+          await expect(page.getByTestId('twin-status')).toHaveAttribute('data-view', 'indoor');
+          await page.getByTestId('twin-outdoor').click();
+        }
+      }
       await page.evaluate(() => {
         location.hash = '#/';
       });
