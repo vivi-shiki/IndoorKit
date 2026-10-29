@@ -17,18 +17,5 @@
     "jsx": "react-jsx",
     "types": ["node", "vite/client"]
   },
-  "include": [
-    "packages/*/src",
-    "packages/*/test",
-    "domains/*/src",
-    "domains/*/test",
-    "tools/*/src",
-    "tools/*/test",
-    "tools/leak-bench",
-    "apps/*/src",
-    "apps/*/e2e",
-    "apps/*/test",
-    "test",
-    "*.config.ts"
-  ]
+  "include": ["packages/*/src", "packages/*/test", "test", "*.config.ts"]
 }

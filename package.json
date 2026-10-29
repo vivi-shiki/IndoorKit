@@ -12,19 +12,15 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "verify": "pnpm lint && pnpm typecheck && pnpm test",
-    "gen:venue": "pnpm --filter @indoorkit/venue-gen run generate",
     "build:lib": "pnpm --filter \"./packages/*\" run build",
-    "build": "pnpm gen:venue && pnpm build:lib && pnpm --filter playground run build",
-    "e2e": "playwright test"
+    "build": "pnpm build:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
-    "@playwright/test": "1.64.1",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^22.19.0",
     "@types/three": "^0.186.0",
     "happy-dom": "^21.0.3",
-    "tsx": "^4.20.0",
     "typescript": "~5.9.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.5"

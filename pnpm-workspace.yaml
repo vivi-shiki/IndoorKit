@@ -1,8 +1,5 @@
 packages:
   - packages/*
-  - domains/*
-  - apps/*
-  - tools/*
 
 onlyBuiltDependencies:
   - esbuild

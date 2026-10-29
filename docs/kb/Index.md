@@ -2,6 +2,8 @@
 
 Notes for working on IndoorKit that the code alone does not make obvious: which API to reach for, and why the core is shaped the way it is. Check here before making design or API decisions.
 
+Paths under `apps/`, `domains/` and `tools/` are in the [indoorkit-demo](https://github.com/vivi-shiki/indoorkit-demo) repository since the split ([ADR 0007](../adr/0007-sdk-and-demo-repositories.md)).
+
 How pages are written:
 - Every claim points to the code that backs it, by file and function or class name.
 - No code snippets and no line numbers, since both go stale quickly. Name things instead.

@@ -2,6 +2,8 @@
 
 Project instructions shared by AI collaborators and human developers. Claude Code loads this file through `CLAUDE.md`; Codex reads `AGENTS.md` directly.
 
+This repository is the IndoorKit SDK only. The demo app, the business packages (`domains/*`), the simulators, the venue generator and the memory regression tests live in [indoorkit-demo](https://github.com/vivi-shiki/indoorkit-demo), which includes this repository as a submodule ([ADR 0007](docs/adr/0007-sdk-and-demo-repositories.md)). Some older documents in `docs/` still refer to their former paths here.
+
 ## Layout
 
 | Path | Responsibility |
@@ -10,27 +12,17 @@ Project instructions shared by AI collaborators and human developers. Claude Cod
 | `packages/rtls` | Real-time positioning contract: `TagPosition`, `PositionBatch`, `DataProvider`, `positions:update` |
 | `packages/core` | `createIndoorMap`, camera, plugin system, `ResourceTracker`, `EventBus`, style generation. The only package that imports maplibre-gl |
 | `packages/plugins` | Official plugins (`floor`, `zone`, `position-stream`, `unit-cluster`, `unit-state`, `route`, `heatmap`, ...). No hospital, parking or museum concepts |
-| `domains/hospital` | Hospital business logic without a map or DOM: departments, roster model, alarm rules and engine |
-| `domains/parking` | Parking business logic without a map or DOM: zones, devices and lanes (IMDF extensions), tariff, three-tier alarms, lane routing, bookings, statistics and suggestions |
-| `domains/museum` | Museum business logic without a map or DOM: rooms, cases, objects, devices and routes (IMDF extensions), conservation standards, light exposure and display days, three-tier alarms, patrol and object-move checks, rotation suggestions |
-| `tools/venue-gen` | Generates IMDF data for the fictional hospital "さくら総合病院" the fictional garage "みなと中央パーキング" and the fictional museum "みなと市立美術博物館" |
-| `tools/rtls-simulator` | Roster and movement simulator, as a Worker data provider |
-| `tools/parking-simulator` | Seeded day of vehicles, reservations and device incidents for the parking demo, with a data provider for vehicles on the move |
-| `tools/museum-simulator` | Seeded day of climate and light readings, visitors, guards, object moves and security events for the museum demo, with a data provider for tagged visitors |
-| `tools/leak-bench` | Playwright memory regression tests |
-| `apps/playground` | React + MUI demo app, deployed to GitHub Pages: `app/` (hash router, scenario sidebar / top menu, shared map helpers, theme), `engine/`, `adapters/`, `presentation/`, `pages/<page>/{index,view}.tsx` (hospital pages; `home` shows the three scenarios side by side, as a carousel on phones), `testing/`. `parking/` is the self-contained parking demo with the same inner layout ([ADR 0004](docs/adr/0004-parking-scenario.md)); `museum/` is the self-contained museum demo ([ADR 0005](docs/adr/0005-museum-scenario.md)) |
 
-React and MUI are used only in `apps/` ([ADR 0003](docs/adr/0003-react-app.md)); the SDK packages and `domains/` stay framework-free TypeScript. The layers and what each may import are described in [ADR 0002](docs/adr/0002-sdk-and-domain-layers.md) and checked by `test/layers.test.ts`.
+The SDK packages are framework-free TypeScript and know nothing about hospitals, parking or museums. The layers and what each may import are described in [ADR 0002](docs/adr/0002-sdk-and-domain-layers.md); `test/layers.test.ts` checks the SDK side here, and indoorkit-demo checks the rest.
 
 ## The only entry commands
 
 ```bash
 pnpm verify   # lint + typecheck + unit tests
-pnpm build    # generate data + build packages + build playground
-pnpm e2e      # end-to-end and memory regression tests (run pnpm build first)
+pnpm build    # build packages
 ```
 
-Do not call vite, tsc, vitest or playwright directly. The one exception is narrowing a run while reproducing an intermittent failure, as described in [docs/guidelines/coding.md](docs/guidelines/coding.md#memory-leaks-and-intermittent-failures).
+Do not call vite, tsc or vitest directly. The one exception is narrowing a run while reproducing an intermittent failure, as described in [docs/guidelines/coding.md](docs/guidelines/coding.md#memory-leaks-and-intermittent-failures).
 
 ## Read before working
 
@@ -42,10 +34,10 @@ Do not call vite, tsc, vitest or playwright directly. The one exception is narro
 
 ## Rules
 
-- Write the test first, then the implementation. Commit only when `pnpm verify` and `pnpm e2e` both pass.
+- Write the test first, then the implementation. Commit only when `pnpm verify` passes. A change that affects how the map renders or behaves in the browser is also checked in indoorkit-demo (point its `sdk/` submodule at your branch, then `pnpm build && pnpm e2e` there) before it lands on `main`.
 - Do not commit data about any real hospital, company or person.
 - End every commit message with the trailer `Co-authored-by: vivi-shiki <70496895+vivi-shiki@users.noreply.github.com>`, after any other trailers, so the project owner is credited on GitHub.
-- Prefer checking state through the `window.__vivi` test hooks (`apps/playground/src/testing/hooks.ts`; parking pages use `window.__parking` in `apps/playground/src/parking/testing/hooks.ts`, museum pages `window.__museum` in `apps/playground/src/museum/testing/hooks.ts`) over screenshots. Use screenshots only when the rendering itself is what is being checked.
+- Browser-level checks use the `window.__vivi` test hooks of the indoorkit-demo app; prefer them over screenshots.
 
 ## Workflows
 

@@ -7,8 +7,6 @@ node_modules/
 dist/
 test-results/
 playwright-report/
-# 由 tools/venue-gen 生成
-apps/playground/public/data/
 .DS_Store
 Thumbs.db
 .tmp/

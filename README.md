@@ -4,7 +4,7 @@
 
 IndoorKit is an indoor mapping SDK for the browser, written in TypeScript on top of MapLibre GL JS. It reads venues in IMDF, draws floors and rooms in 2.5D, and puts everything else (floors, markers, live positions, geofences, heatmaps, routes) into plugins that are typed end to end and clean up after themselves.
 
-**Live demo: <https://vivi-shiki.github.io/IndoorKit/?lang=en>**
+**Live demo: <https://vivi-shiki.github.io/indoorkit-demo/?lang=en>**
 
 ## Features
 
@@ -14,7 +14,7 @@ IndoorKit is an indoor mapping SDK for the browser, written in TypeScript on top
 - **Styles from data.** Room colors and heights come from the room category and a theme, and rooms and walls are extruded without 3D models. Language and theme switch at runtime without recreating the map.
 - **Real-time positioning.** A `DataProvider` contract for location feeds, with a position stream that interpolates thousands of tags smoothly, plus trails with stop detection, geofences, room clustering and bounded-memory heatmaps.
 - **Business logic stays outside.** The SDK knows nothing about any industry. Domain packages hold the rules and do not depend on the map or the DOM.
-- **Tested without a GPU.** Unit tests run the SDK against an in-memory mock map. Playwright drives the demo through test hooks and measures heap growth.
+- **Tested without a GPU.** Unit tests run the SDK against an in-memory mock map. The demo repository drives the SDK in a browser with Playwright and measures heap growth.
 
 ## Packages
 
@@ -66,19 +66,11 @@ await indoor.destroy();
 
 ## Examples
 
-Each scenario also has a **Digital twin** cockpit with an editable 3D campus, local outdoor map, indoor floor switching, light/dark themes and a mobile layout. High/low quality controls support slower devices. The campus models are committed as GLB files and can be edited in Blender. See the [model, licence and editing guide](docs/digital-twin.md).
-
-The live demo shows three use cases built on the SDK. Each has its own business package (`domains/hospital`, `domains/parking`, `domains/museum`) and simulator, and is independent of the others. All venues, people, vehicles, companies and collection objects are fictional.
-
-- **Hospital RTLS**: "Sakura General Hospital", 3 buildings with 5 floors. Live tracking of up to 5,000 people, asset tracking, location history playback, alerts from department zones and geofences, and a location heatmap.
-- **Parking management**: "Minato Central Parking", a four-level garage and a surface lot with 331 spaces. Space availability with sensors and cameras, entries and exits with fees, three tiers of alerts, reservations with routes along the lanes, and operations analytics.
-- **Museum**: "Minato City Museum of Art and History", three public floors and basement storage with 59 display cases. Temperature, relative humidity and light monitoring with 24-hour curves, cumulative light exposure and display days for each object, object moves checked against RFID reads, visitor crowding and dwell time, three tiers of alerts with security patrol checks, and a visitor guide with suggested tours.
+The live demo shows three use cases built on the SDK, each with its own business package and simulator: hospital RTLS, parking management and a museum, plus a digital twin cockpit for each. Its source, the fictional venue data and the 3D campus models are in the [indoorkit-demo](https://github.com/vivi-shiki/indoorkit-demo) repository.
 
 | Hospital | Parking | Museum |
 | --- | --- | --- |
-| ![Live People Tracking](docs/images/tracking.png) | ![Space Availability](docs/images/parking-availability.png) | ![Environmental Monitoring](docs/images/museum-environment.png) |
-
-The demo app is in `apps/playground` (React and MUI), and supports Chinese, English and Japanese, light and dark themes, and phones.
+| ![Live People Tracking](https://raw.githubusercontent.com/vivi-shiki/indoorkit-demo/main/docs/images/tracking.png) | ![Space Availability](https://raw.githubusercontent.com/vivi-shiki/indoorkit-demo/main/docs/images/parking-availability.png) | ![Environmental Monitoring](https://raw.githubusercontent.com/vivi-shiki/indoorkit-demo/main/docs/images/museum-environment.png) |
 
 ## Development
 
@@ -86,10 +78,8 @@ Requires Node.js 22 and pnpm.
 
 ```bash
 pnpm install
-pnpm build                         # generate data, build packages and the demo
-pnpm verify                        # lint, typecheck and unit tests
-pnpm e2e                           # end-to-end and memory tests
-pnpm --filter playground preview   # http://localhost:4173/IndoorKit/
+pnpm verify   # lint, typecheck and unit tests
+pnpm build    # build the packages
 ```
 
 Architecture decisions are in [docs/adr](docs/adr).
