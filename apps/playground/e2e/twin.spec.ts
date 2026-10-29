@@ -161,6 +161,29 @@ for (const scenario of ['parking', 'museum']) {
   });
 }
 
+test('a high-density phone keeps Three.js drawing into the whole canvas after shadow updates', async ({
+  browser,
+}) => {
+  test.setTimeout(120000);
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  await open(page, 'hospital');
+  await chooseLevel(page, 'L2');
+  await page.getByTestId('twin-quality-button').click();
+  // 拖动结束会重画阴影贴图；画完回到画布时视口必须是当前画布大小，否则这一帧画错位置
+  await page.evaluate(() => window.__twin!.setZoom(17.6));
+  await page.evaluate(() => window.__twin!.idle());
+  const { viewport } = await page.evaluate(() => window.__twin!.gl());
+  expect(viewport.buffer[0]).toBeGreaterThan(390);
+  expect(viewport.three).toEqual(viewport.buffer);
+  await context.close();
+});
+
 test('the parking twin counts its principal entrance', async ({ page }) => {
   await open(page, 'parking');
   const row = page.getByTestId('twin-inventory').getByText('Principal entrances').locator('..');

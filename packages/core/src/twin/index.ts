@@ -146,6 +146,8 @@ export interface TwinApi {
   debug: {
     sky(): boolean;
     antialias(): boolean;
+    /** 最近一帧 Three.js 的视口和画布缓冲区大小，应当一致 */
+    viewport(): { three: [number, number]; buffer: [number, number] };
     floorMeshes(): number;
     extrusions(): number;
     camera(): { zoom: number; pitch: number; bearing: number };
@@ -633,7 +635,7 @@ export function twinPlugin(options: TwinOptions) {
           renderer.shadowMap.autoUpdate = false;
           renderer.shadowMap.needsUpdate = true;
         },
-        render(_gl, input) {
+        render(context, input) {
           if (!renderer || document.hidden) return;
           matrix.fromArray(input.defaultProjectionData.mainMatrix).multiply(transform);
           camera.projectionMatrix.copy(matrix);
@@ -653,6 +655,9 @@ export function twinPlugin(options: TwinOptions) {
             scene.environment = environment;
             scene.environmentIntensity = 0.55;
           } else if (!settings.environment && environment) releaseEnvironment();
+          // Three.js 记的画布大小停在创建时；像素比或地址栏变了以后，阴影贴图画完回到画布会用旧视口，
+          // 这一帧就画错位置（手机上的闪烁）。每帧按当前缓冲区设置视口
+          renderer.setViewport(0, 0, context.drawingBufferWidth, context.drawingBufferHeight);
           renderer.render(scene, camera);
           renderer.resetState();
           perf.drawCalls = renderer.info.render.calls;
@@ -945,6 +950,10 @@ export function twinPlugin(options: TwinOptions) {
         debug: {
           sky: () => map.getSky() !== undefined,
           antialias: () => gl?.getContextAttributes()?.antialias ?? false,
+          viewport: () => {
+            const v = renderer?.getViewport(new Vector4()) ?? new Vector4();
+            return { three: [v.z, v.w], buffer: [gl?.drawingBufferWidth ?? 0, gl?.drawingBufferHeight ?? 0] };
+          },
           floorMeshes: () => {
             let n = 0;
             floors?.group.traverse((o) => {

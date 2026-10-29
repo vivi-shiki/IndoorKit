@@ -49,7 +49,7 @@ declare global {
       camera(): { zoom: number; pitch: number; bearing: number };
       levelInView(levelId: string): boolean;
       extrusions(): number;
-      gl(): { antialias: boolean };
+      gl(): { antialias: boolean; viewport: { three: [number, number]; buffer: [number, number] } };
     };
   }
 }
@@ -167,7 +167,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
         camera: twin.debug.camera,
         levelInView: twin.debug.levelInView,
         extrusions: twin.debug.extrusions,
-        gl: () => ({ antialias: twin.debug.antialias() }),
+        gl: () => ({ antialias: twin.debug.antialias(), viewport: twin.debug.viewport() }),
       };
       window.__twin = hook;
       cleanups.push(() => {
