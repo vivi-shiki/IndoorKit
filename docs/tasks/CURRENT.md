@@ -1,37 +1,52 @@
-# !!!INVESTIGATE!!!
-
 # PROBLEM DESCRIPTION
 
-建模、外表和ui都缺少数字孪生的精致感，参考我原来项目的室内室外模型，以及建筑模型，还有各种画质显示配置项，给出一个优化方案
+帮我拉取最新项目
 
-(Plan delivered as the artifact "数字孪生页精致化方案". Decisions and follow-up from Vivi, 2026-10-29:)
+然后调研其它数字孪生项目和我的项目，给出一个继续提升的方案
 
-1用three 2用cc0 3暂时先不做
+最后帮我把数字孪生项目的逻辑改为，视角拉近以后，外面地图渲染不变，只是隐藏建筑主体本身，然后改为显示室内地图，可以用室内控件切换楼层，同时这个时候出现另外一个控件，用来像各个分页面一样查看对应的各种设备信息、人员信息等等等等
 
-先给上述你列出的方案写测试，而后再实现
+验收要求
+1、ui写法和呈现风格和原来的一致
+2、参考现有的ui编写流程
+3、commit推到vivi-shiki的github，并且pages更新成功，不涉及map1en的任何项目
+4、给出一个继续提升显示效果的方案，这份方案只在这个聊天窗口展示，不放到项目内部
+5、pages正常打开，在三个demo中控件都能正常切换，且对应的显示内容都得以改变
 
 # UPDATES
 
 # TEST [CONFIRMED]
 
-Plan items A (modelling), B (materials and lighting, without post-processing), C (quality settings) and D (UI). Each item has a test written before its implementation.
-
-- Unit, `packages/core/test/twin-policy.test.ts`: five presets L0–L4 with the agreed switch matrix; three-layer merge (preset < site defaults < user overrides); device detection; frame governor that steps down after sustained slow frames and back up after sustained fast frames, never above its ceiling; only model/prop/texture changes need a new GLB; shadow extent follows zoom; sun position and night by simulated hour; section cut (above hidden, current solid, below ghost); building focus style; label decluttering; idle orbit only outdoors and never with reduced motion.
-- Unit, `packages/core/test/twin-floors.test.ts`: indoor floors are generated in Three.js from IMDF (units grouped by category, wall fixtures extruded to wall height, level elevation = ordinal × floor height, local metre coordinates inside the building).
-- Unit, `packages/core/test/create-indoor-map.test.ts`: `antialias` reaches the map factory.
-- Generator, `tools/venue-gen/test/twin-assets.test.ts` and `twin.test.ts`: GLB budgets (high ≤ 4 MB, low ≤ 1.5 MB); CC0 props vendored with checksums and credited; props instanced with `EXT_mesh_gpu_instancing`, low has about half the instances; windows on all four facades; baked vertex AO on building shells; a context neighbourhood outside the site; extended ground, sidewalks and crossings in `site.geojson`; manifest lists buildings with node names, centres and heights; the parking garage has a principal entrance; the museum pond clears every building.
-- App unit, `apps/playground/test/twin.test.ts`: quality preferences round-trip through storage and ignore corrupt values; parking levels and museum rooms map simulated data to good / warn / critical; new copy exists in zh/en/ja.
-- E2E, `apps/playground/e2e/twin.spec.ts`: the quality popover (levels, per-switch override, persistence after reload, performance line); L0 shows 2.5D extrusions without a GLB; antialias, sky, environment lighting and tone mapping on L2+; floors open with a section cut, pitch ≥ 40° and the whole building in view; building labels in the current language; clicking a building focuses it and shows a card that can enter a floor; reset view; night after 18:00 on the simulation slider; status colours painted on parking and museum; parking shows a principal entrance; desktop/mobile, both themes, three languages, no page errors.
-- Leak bench, `tools/leak-bench/twin.spec.ts`: switching through every level, floors, focus and labels keeps unreleased resources at 0 and heap growth under 8 MiB.
-
-Gates: `pnpm verify`, `pnpm build`, `pnpm e2e`. Commits carry the owner trailer.
+- Scene visibility: entering an interior preserves terrain, roads, landscaping, surrounding buildings and surface parking while hiding the venue building envelope and attached parts. Returning outside restores the same objects; zoom hysteresis and all render levels still work.
+- Business overlays: each scenario has its own modes backed by existing domain/simulator data. Changing mode, floor, time or locale changes the actual map markers and matching list/details; markers cannot remain visible outside or on another floor. Selection and search use the same dataset as the map.
+- UI follows ADR 0003 and existing map-page chips, rows, search, drawer and mobile panel; zh/en/ja and light/dark remain usable, including the no-WebGL fallback.
+- Verify with pnpm verify, pnpm build, pnpm e2e, screenshots and resource/heap regression. Push only to vivi-shiki/IndoorKit and verify the pushed SHA's Actions/Pages deployment and published assets. The research/improvement proposal stays in the chat.
 
 # PROPOSALS
 
-1. Render policy in `packages/core/src/twin/policy.ts` (L0–L4 switch sets, three-layer merge, device detection, frame governor, view hysteresis, shadow extent, sun by hour, section cut, focus, label placement, idle orbit), free of Three.js and exported from `@indoorkit/core`. [CONFIRMED] 13 unit tests.
-2. Indoor floors generated in Three.js from IMDF (`floors.ts`), shown in the indoor view at L3+ with a section cut: the current floor sits just under the MapLibre floor so labels and picking stay with MapLibre; lower floors are translucent ghosts. [CONFIRMED] unit + e2e (pitch ≥ 40°, level in view).
-3. Generator rewrite: buildings as nodes carrying IMDF ids, windows on four facades, baked vertex AO on the shell plinth, sidewalks/kerbs/crossings, context neighbourhood, CC0 Kenney props as GPU instances. Static geometry is indexed and only paving keeps UVs; car counts and context density were cut to stay under 120k triangles. [CONFIRMED] 66 generator tests; budgets high 1.4–2.0 MB, low 1.25–1.43 MB, 81k–104k triangles.
-4. Renderer: ACES tone mapping, room environment map, MapLibre sky, shadows sized per level with zoom-following extent, outlines, focus with per-building material clones, ray picking against building boxes, labels projected from the last frame, night emissive glass and lamps, status bands and markers, progressive low→high download with progress. [CONFIRMED] e2e.
-5. Page: quality popover (levels, individual switches, performance line) persisted in localStorage; anti-aliasing change recreates the map; labels with declutter; building card with enter-floor; reset view; legend; site plan dimmed at night. [CONFIRMED] e2e 8/8 twin tests.
-6. Test hook `buildingPoint` only returns points not covered by UI (the quality popover covered the first candidate). [CONFIRMED]
-7. L0 reports ready only after MapLibre has drawn the massing layer (map idle). [CONFIRMED] fixed a race in the extrusion check.
+- No.1 Preserve campus context and add floor-scoped business inspection [CONFIRMED]
+
+## No.1 Preserve campus context and add floor-scoped business inspection
+
+### CODE CHANGE
+
+- Keep one owned map and its existing quality/lifecycle controls. Toggle only building-envelope objects when entering the indoor representation; preserve site geometry and local outdoor fill.
+- Reuse the existing marker overlay with a batched update API. Scenario adapters supply floor-positioned objects and translated details from existing domain/simulator data; shared presentation owns mode, search, selection and responsive inspection UI.
+- Keep the current UI components and tokens. Test the rendering visibility and business data flow first, then verify every scenario and deployment. No future visual-improvement roadmap is saved to the repository.
+
+### Verification notes
+
+- Pulled origin/main with --ff-only to 78f55f5; origin is vivi-shiki/IndoorKit. Existing working tree was clean.
+- New tests fail on the missing campus visibility helper, batched marker API and inspection hooks, confirming that the requested behavior is absent. The pulled lockfile also introduces asset-tool dependencies; install it before further verification.
+- Browser plugin not available in this session. Use the repository's pnpm e2e workflow and inspect its rendering screenshots.
+- First full browser run passed all 168 tests. Desktop/mobile inspection screenshots confirmed the retained campus context and matching business lists in all three scenarios. Review identified rooftop props that must disappear with the envelope; generic glTF metadata now identifies attached geometry and elevated instances while preserving paving and ground traffic.
+- Keep scenario-specific names in asset metadata, not SDK logic. The SDK boundary test caught a hardcoded prop-group name; the renderer now consumes generic indoorHidden / indoorKeepMaterial / indoorHideAbove attributes.
+- During verification origin/main advanced to 5500182 with a Three.js viewport/canvas synchronization fix. Stopped the superseded local run, preserved all work in a temporary stash, pulled with --ff-only, and combined the viewport debug hook with the new inspection hook. Restart all gates on the combined source; do not overwrite the upstream fix.
+
+### CONFIRMED
+
+- On the combined 5500182 base, `pnpm build` passed and regenerated all six GLBs with the generic indoor visibility metadata. `pnpm verify` passed lint, type checks and all 628 tests in 74 files.
+- `pnpm e2e` passed all 170 tests, including the new seven inspection tests: three scenes at 1600×1000 and 390×844, plus the three-scene no-WebGL path. Mode changes replace actual rendered markers; floor/search filtering, marker and list selection, detail drawers, three languages and theme changes work together. Exterior site/landscape visibility is retained and the envelope is restored outside.
+- Reviewed the desktop/mobile screenshots. Existing map-page presentation is preserved. The SDK's nearest-marker picking resolves overlapping hit areas; invalid bulk marker data leaves the previous source intact.
+- Both memory regressions passed. The twin regression warms every business mode, then repeats all modes across render levels, floor entry and scenario teardown; tracked resources are released and post-GC growth stays within the existing 8 MiB limit.
+- Deployment target remains vivi-shiki/IndoorKit. The pushed SHA's CI/Pages and the published inspection tests are checked after pushing. The future visual-improvement proposal is delivered only in the chat.

@@ -760,8 +760,16 @@ export async function writeCampus(
         for (const g of geometries) g.dispose();
       }
       const parent = top(name.split('/')[0]!);
-      if (name.includes('/')) parent.addChild(doc.createNode(name).setMesh(mesh));
-      else parent.setMesh(mesh);
+      if (name === 'Links') parent.setExtras({ indoorHidden: true });
+      if (name === 'Accessible entrance') parent.setExtras({ indoorKeepMaterial: 'paving' });
+      if (name.includes('/')) {
+        const child = doc.createNode(name).setMesh(mesh);
+        if (name.startsWith('Bays/')) {
+          const level = archive.level.features.find((l) => l.properties.short_name.en === name.slice(5));
+          if (level && level.properties.ordinal > 0) child.setExtras({ indoorHidden: true });
+        }
+        parent.addChild(child);
+      } else parent.setMesh(mesh);
     }
 
     // ---- CC0 道具：每个原型一个网格，用 EXT_mesh_gpu_instancing 摆放 ----
@@ -859,7 +867,8 @@ export async function writeCampus(
         .setAttribute('ROTATION', doc.createAccessor().setType('VEC4').setArray(rotation).setBuffer(buffer))
         .setAttribute('SCALE', doc.createAccessor().setType('VEC3').setArray(scale).setBuffer(buffer));
       // 道具组带标记，渲染器按画质开关整组显示或隐藏
-      if (groupName !== 'Sculpture garden') top(groupName).setExtras({ props: true });
+      if (groupName !== 'Sculpture garden')
+        top(groupName).setExtras({ props: true, ...(isCar ? { indoorHideAbove: 1 } : {}) });
       top(groupName).addChild(
         doc.createNode(`${groupName}/${name}`).setMesh(mesh).setExtension('EXT_mesh_gpu_instancing', batch),
       );

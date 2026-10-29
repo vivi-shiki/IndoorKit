@@ -7,18 +7,71 @@ import {
   CylinderGeometry,
   EdgesGeometry,
   Group,
+  InstancedMesh,
   LineBasicMaterial,
   LineSegments,
   type Material,
+  Matrix4,
   Mesh,
   MeshStandardMaterial,
   type Object3D,
   SphereGeometry,
   type Texture,
+  Vector3,
 } from 'three';
 import type { Theme } from '../style';
 import { buildFloors, localMetres } from './floors';
-import { type CutState, focusStyle, STATUS_COLORS, type StatusPaint, type TwinStatus } from './policy';
+import {
+  type CutState,
+  focusStyle,
+  STATUS_COLORS,
+  type StatusPaint,
+  type TwinStatus,
+  type TwinView,
+} from './policy';
+
+/** Building-owned geometry is separate from the terrain and instanced landscape props. */
+export function campusEnvelopes(model: Object3D): Object3D[] {
+  const parts: Object3D[] = [];
+  model.traverse((node) => {
+    if ((node.userData.buildingId && node.userData.height > 0) || node.userData.indoorHidden)
+      parts.push(node);
+    if (typeof node.userData.indoorKeepMaterial === 'string')
+      node.traverse((part) => {
+        if (
+          part instanceof Mesh &&
+          [part.material]
+            .flat()
+            .every((material: Material) => material.name !== node.userData.indoorKeepMaterial)
+        )
+          parts.push(part);
+      });
+  });
+  return parts;
+}
+
+/** Keep the campus in place while exchanging the venue envelope for its indoor map. */
+export function applyCampusView(model: Object3D, view: TwinView) {
+  for (const node of campusEnvelopes(model)) node.visible = view === 'outdoor';
+  // Elevated instances can belong to the envelope while the ground instances stay in place.
+  for (const node of model.children) {
+    const above = node.userData.indoorHideAbove as number | undefined;
+    if (above === undefined) continue;
+    node.traverse((part) => {
+      if (!(part instanceof InstancedMesh)) return;
+      part.userData.twinExteriorMatrices ??= part.instanceMatrix.array.slice();
+      const original = part.userData.twinExteriorMatrices as Float32Array;
+      const matrix = new Matrix4();
+      for (let i = 0; i < part.count; i++) {
+        if (original[i * 16 + 13]! <= above) continue;
+        matrix.fromArray(original, i * 16);
+        if (view === 'indoor') matrix.scale(new Vector3(0, 0, 0));
+        part.setMatrixAt(i, matrix);
+      }
+      part.instanceMatrix.needsUpdate = true;
+    });
+  }
+}
 
 /** 释放一棵对象树里的几何、材质和贴图 */
 export function disposeTree(root: Object3D, extra: Iterable<Material> = []) {

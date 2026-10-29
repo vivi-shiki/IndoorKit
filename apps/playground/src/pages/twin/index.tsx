@@ -1,3 +1,4 @@
+import { hospitalIndoor } from '../../adapters/twin-indoor';
 import { loadVenue, placesOf } from '../../adapters/venue';
 import { type TwinData, TwinPage } from '../../app/twin';
 
@@ -6,6 +7,8 @@ async function load(): Promise<TwinData> {
   const { hospital } = placesOf(venue);
   return {
     venue,
+    indoor: hospitalIndoor(venue),
+    timeDependent: true,
     operationsHref: '#/hospital/assets',
     metrics: () => [
       { label: 'departments', value: hospital.departments.length },

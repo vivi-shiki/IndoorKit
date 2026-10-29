@@ -52,12 +52,14 @@ import {
   validateOverrides,
 } from './policy';
 import {
+  applyCampusView,
   applyCut,
   applyFocus,
   applyNight,
   buildFloorStack,
   buildOutlines,
   buildStatusMarkers,
+  campusEnvelopes,
   disposeTree,
   type FloorStack,
   type PreparedBuilding,
@@ -154,6 +156,7 @@ export interface TwinApi {
     levelInView(levelId: string): boolean;
     /** 能点中的楼和它们地面中心的容器像素，按清单顺序 */
     buildingPoints(): { id: string; x: number; y: number }[];
+    campus(): { siteVisible: boolean; buildingShells: number; landscapeMeshes: number };
   };
 }
 
@@ -424,11 +427,7 @@ export function twinPlugin(options: TwinOptions) {
       const applyLayers = () => {
         for (const id of ctx.indoorLayerIds)
           map.setLayoutProperty(id, 'visibility', state.view === 'indoor' ? 'visible' : 'none');
-        map.setLayoutProperty(
-          'indoor-twin-site',
-          'visibility',
-          state.view === 'outdoor' ? 'visible' : 'none',
-        );
+        map.setLayoutProperty('indoor-twin-site', 'visibility', 'visible');
         map.setLayoutProperty(
           'indoor-twin-massing',
           'visibility',
@@ -540,6 +539,7 @@ export function twinPlugin(options: TwinOptions) {
         applyFocus(prepared.buildings, state.focused);
         applyNight(prepared.glow, sunAt(hour).night);
         applyProps();
+        applyCampusView(root, state.view);
         applyOutlines();
         modelRoot.add(root);
         if (renderer) renderer.shadowMap.needsUpdate = true;
@@ -642,7 +642,7 @@ export function twinPlugin(options: TwinOptions) {
           camera.projectionMatrixInverse.copy(matrix).invert();
           rendered = true;
           const outdoor = state.view === 'outdoor';
-          modelRoot.visible = outdoor;
+          modelRoot.visible = true;
           if (markers) markers.visible = outdoor;
           if (floors) floors.group.visible = !outdoor;
           renderer.resetState();
@@ -753,6 +753,8 @@ export function twinPlugin(options: TwinOptions) {
       const setView = (view: TwinView) => {
         state = { ...state, view, cut: cutFor(view) };
         if (view === 'indoor') stopOrbit();
+        if (model) applyCampusView(model, view);
+        if (renderer) renderer.shadowMap.needsUpdate = true;
         applyFloors();
         applyLayers();
         update({});
@@ -948,6 +950,21 @@ export function twinPlugin(options: TwinOptions) {
             else idleWaiters.add(resolve);
           }),
         debug: {
+          campus: () => {
+            const envelopes = model ? campusEnvelopes(model) : [];
+            let landscapeMeshes = 0;
+            const count = (node: Object3D) => {
+              if (!node.visible || envelopes.includes(node)) return;
+              if (node instanceof Mesh) landscapeMeshes++;
+              for (const child of node.children) count(child);
+            };
+            if (model) count(model);
+            return {
+              siteVisible: map.getLayoutProperty('indoor-twin-site', 'visibility') !== 'none',
+              buildingShells: envelopes.filter((node) => node.visible).length,
+              landscapeMeshes,
+            };
+          },
           sky: () => map.getSky() !== undefined,
           antialias: () => gl?.getContextAttributes()?.antialias ?? false,
           viewport: () => {

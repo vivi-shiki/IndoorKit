@@ -74,7 +74,9 @@ Live positions come from a `DataProvider` (`packages/rtls/src/index.ts`, which a
 
 #### Digital-twin campuses
 
-Use the optional `@indoorkit/core/twin` entry for geographic GLB rendering with MapLibre. `twinPlugin` exposes representation and quality controls, export URL and a state subscription. It shares the map context and tracks its GPU resources; never call `forceContextLoss` on this renderer. Models and local outdoor maps are generated from IMDF by `tools/venue-gen/src/twin.ts`. See [ADR 0006](../adr/0006-digital-twin.md) and [asset/Blender guide](../digital-twin.md).
+Use the optional `@indoorkit/core/twin` entry for geographic GLB rendering with MapLibre. `twinPlugin` exposes representation, quality, building focus, time and status controls plus state/frame subscriptions. It shares the map context and tracks its GPU resources; never call `forceContextLoss` on this renderer. Models and local outdoor maps are generated from IMDF by `tools/venue-gen/src/twin.ts`. See [ADR 0006](../adr/0006-digital-twin.md) and [asset/Blender guide](../digital-twin.md).
+
+`applyCampusView` in `packages/core/src/twin/scene.ts` hides only building-owned geometry indoors; keep the outdoor scene root visible. Business views belong in each scenario's `adapters/twin-indoor.ts`. `filterIndoorItems` in `app/twin/indoor.ts` supplies the same floor/search slice to the list and the `markerPlugin.replaceAll` overlay. Do not create another map or duplicate device/person state when adding a business mode. `markerPlugin.setVisible` and `pick` keep outdoor visibility and map selection consistent with the existing floor overlay lifecycle.
 
 #### Reverse-order release
 

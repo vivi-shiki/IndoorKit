@@ -64,7 +64,10 @@ export interface LiveSnapshot {
   freeByLevel: ReadonlyMap<string, number>;
 }
 
-export function liveAt(ctx: ParkingContext, t: number): LiveSnapshot {
+export function liveAt(
+  ctx: Pick<ParkingContext, 'parking' | 'day' | 'alarms' | 'bookings'>,
+  t: number,
+): LiveSnapshot {
   ctx.alarms.update(t);
   const parked = ctx.day.parkedAt(t);
   const states = bayStates({

@@ -55,13 +55,13 @@
     "high": {
       "triangles": 104057,
       "meshes": 81,
-      "bytes": 1601816,
+      "bytes": 1601908,
       "instances": 142
     },
     "low": {
       "triangles": 61374,
       "meshes": 80,
-      "bytes": 1429908,
+      "bytes": 1430000,
       "instances": 77
     }
   }

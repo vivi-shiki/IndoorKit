@@ -120,6 +120,53 @@
   display: flex;
   gap: 8px;
   align-items: flex-start;
+  flex-wrap: wrap;
+  max-width: calc(100% - 392px);
+}
+
+.twin-business-control {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0 6px;
+  min-height: 30px;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.twin-business-control select {
+  max-width: 180px;
+  min-width: 80px;
+  font: inherit;
+}
+
+.twin-object-name {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.twin-object-name small {
+  display: block;
+  font-size: 11px;
+}
+
+.twin-object-status {
+  flex-shrink: 0;
+  max-width: 35%;
+  text-align: right;
+  font-size: 11px;
+}
+
+.twin-detail-field {
+  display: contents;
+}
+
+.twin .drawer dd {
+  overflow-wrap: anywhere;
 }
 
 .twin-tools > .chip {
@@ -242,6 +289,7 @@
   .twin-tools {
     top: 92px;
     left: 12px;
+    max-width: calc(100% - 92px);
   }
 
   .twin-card {

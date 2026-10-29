@@ -1,4 +1,5 @@
 import { type TwinData, TwinPage } from '../../../app/twin';
+import { parkingIndoor } from '../../adapters/twin-indoor';
 import { parkingLevelStatus } from '../../adapters/twin-status';
 import { liveAt, loadParking } from '../../adapters/venue';
 
@@ -8,6 +9,7 @@ async function load(): Promise<TwinData> {
   for (const bay of ctx.parking.bays) totals.set(bay.levelId, (totals.get(bay.levelId) ?? 0) + 1);
   return {
     venue: ctx.venue,
+    indoor: parkingIndoor(ctx),
     operationsHref: '#/parking/availability',
     timeDependent: true,
     status: (time) => parkingLevelStatus(liveAt(ctx, time).freeByLevel, totals),

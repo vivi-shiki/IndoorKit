@@ -32,6 +32,15 @@ test('editable 3D campuses release their scenes across every render level, floor
           await page.mouse.click(target.x, target.y);
           await page.getByTestId('twin-enter-floor').click();
           await expect(page.getByTestId('twin-status')).toHaveAttribute('data-view', 'indoor');
+          const modes = await page
+            .getByTestId('twin-layer')
+            .locator('option')
+            .evaluateAll((options) => options.map((option) => (option as HTMLOptionElement).value));
+          for (const mode of modes) {
+            await page.getByTestId('twin-layer').selectOption(mode);
+            await expect(page.getByTestId('twin-status')).toHaveAttribute('data-mode', mode);
+            await page.evaluate(() => window.__twin!.idle());
+          }
           await page.getByTestId('twin-outdoor').click();
         }
       }

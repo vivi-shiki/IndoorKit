@@ -10,13 +10,15 @@ import {
 } from '@indoorkit/core';
 import type { TwinApi, TwinSnapshot } from '@indoorkit/core/twin';
 import { pickLabel, type VenueModel } from '@indoorkit/imdf';
-import { type FloorApi, floorPlugin } from '@indoorkit/plugins';
-import { useEffect, useRef, useState } from 'react';
+import { type FloorApi, floorPlugin, type MarkerApi, markerPlugin } from '@indoorkit/plugins';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale } from '../../app-i18n';
 import { appTheme } from '../../app-theme';
 import { createTrackedMap, followAppSettings } from '../map';
 import { trackTeardown } from '../teardown';
 import { PlanFallback } from './fallback';
+import { filterIndoorItems, type IndoorItem, type IndoorMode } from './indoor';
+import { IndoorDetail, IndoorList } from './inspection';
 import { TwinLabels } from './labels';
 import { TWIN_MESSAGES, type TwinKey } from './messages';
 import { QualityPanel } from './quality-panel';
@@ -31,6 +33,7 @@ export interface TwinData {
   /** 涂在模型上的业务状态（停车场每层空位、博物馆报警的房间） */
   status?(time: number): StatusPaint[];
   legend?: { status: TwinStatus; label: TwinKey }[];
+  indoor: IndoorMode[];
 }
 declare global {
   interface Window {
@@ -50,6 +53,15 @@ declare global {
       levelInView(levelId: string): boolean;
       extrusions(): number;
       gl(): { antialias: boolean; viewport: { three: [number, number]; buffer: [number, number] } };
+      campus(): { siteVisible: boolean; buildingShells: number; landscapeMeshes: number };
+      inspection(): {
+        mode: string;
+        ids: string[];
+        rendered: string[];
+        selected: string | null;
+        firstName?: string;
+        point: { id: string; x: number; y: number } | null;
+      };
     };
   }
 }
@@ -77,6 +89,16 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
   const [data, setData] = useState<TwinData>();
   const [api, setApi] = useState<TwinApi>();
   const [floor, setFloor] = useState<FloorApi>();
+  const [markers, setMarkers] = useState<MarkerApi>();
+  const [modeId, setModeId] = useState('');
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<string | null>(null);
+  const inspection = useRef<{ mode: string; items: readonly IndoorItem[]; selected: string | null }>({
+    mode: '',
+    items: [],
+    selected: null,
+  });
+  const mapRef = useRef<IndoorMap<readonly AnyPlugin[]> | undefined>(undefined);
   const [current, setCurrent] = useState('');
   const [snapshot, setSnapshot] = useState<TwinSnapshot>();
   const [error, setError] = useState(false);
@@ -101,6 +123,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
     setError(false);
     setSnapshot(undefined);
     setApi(undefined);
+    setMarkers(undefined);
     const create = async () => {
       const [loaded, { twinPlugin }] = await Promise.all([load(), import('@indoorkit/core/twin')]);
       if (disposed) return;
@@ -121,16 +144,27 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
             // 自动化测试里不做空闲环绕，镜头只随操作变化
             orbit: !navigator.webdriver,
           }),
+          markerPlugin,
         ] as const,
       });
       if (disposed) return;
       const twin = indoor.plugin<TwinApi>('twin');
       const floors = indoor.plugin<FloorApi>('floor');
+      const pins = indoor.plugin<MarkerApi>('marker');
+      pins.setVisible(false);
+      mapRef.current = indoor;
       cleanups.push(
         followAppSettings(indoor),
         twin.subscribe(() => setSnapshot({ ...twin.snapshot() })),
       );
       cleanups.push(indoor.events.on('floor:change', () => setCurrent(floors.current().id)));
+      cleanups.push(
+        indoor.events.on('map:click', ({ point }) => {
+          if (twin.snapshot().view !== 'indoor') return;
+          const id = pins.pick(point);
+          if (id) setSelected(id);
+        }),
+      );
       const venue = loaded.venue;
       const box = () => container.current!.getBoundingClientRect();
       const hook: NonNullable<Window['__twin']> = {
@@ -168,6 +202,30 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
         levelInView: twin.debug.levelInView,
         extrusions: twin.debug.extrusions,
         gl: () => ({ antialias: twin.debug.antialias(), viewport: twin.debug.viewport() }),
+        campus: twin.debug.campus,
+        inspection: () => {
+          const drawn = new Set(pins.rendered());
+          const point =
+            inspection.current.items
+              .filter((item) => drawn.has(item.id))
+              .map((item) => {
+                const p = indoor!.project(item.coord);
+                return { id: item.id, x: box().left + p.x, y: box().top + p.y };
+              })
+              .find(
+                (p) =>
+                  pins.pick({ x: p.x - box().left, y: p.y - box().top }) === p.id &&
+                  document.elementFromPoint(p.x, p.y) === container.current!.querySelector('canvas'),
+              ) ?? null;
+          return {
+            mode: inspection.current.mode,
+            ids: inspection.current.items.map((item) => item.id),
+            firstName: inspection.current.items[0]?.name,
+            rendered: pins.rendered(),
+            selected: inspection.current.selected,
+            point,
+          };
+        },
       };
       window.__twin = hook;
       cleanups.push(() => {
@@ -175,6 +233,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
       });
       setApi(twin);
       setFloor(floors);
+      setMarkers(pins);
       setCurrent(floors.current().id);
       setSnapshot({ ...twin.snapshot() });
     };
@@ -204,10 +263,46 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
     });
     return () => {
       disposed = true;
+      mapRef.current = undefined;
       for (const off of cleanups.reverse()) off();
       trackTeardown(created.then(() => indoor?.destroy()));
     };
   }, [asset, load, attempt, antialias]);
+
+  const isIndoor = snapshot?.view === 'indoor';
+  const mode = data?.indoor.find((m) => m.id === modeId) ?? data?.indoor[0];
+  const objects = useMemo(
+    () => (isIndoor ? (mode?.items(hour * 3600_000, locale) ?? []) : []),
+    [mode, hour, locale, isIndoor],
+  );
+  const filtered = useMemo(() => filterIndoorItems(objects, current, query), [objects, current, query]);
+  const selectedItem = isIndoor ? filtered.find((item) => item.id === selected) : undefined;
+  inspection.current = {
+    mode: mode?.id ?? '',
+    items: isIndoor ? filtered : [],
+    selected: selectedItem?.id ?? null,
+  };
+  useEffect(() => {
+    if (!markers) return;
+    markers.replaceAll(
+      isIndoor
+        ? filtered.map((item) => ({
+            id: item.id,
+            floor: item.levelId,
+            coord: item.coord,
+            label: item.id === selectedItem?.id ? item.name : '',
+            color: item.id === selectedItem?.id ? '#f59e0b' : item.color,
+          }))
+        : [],
+    );
+    markers.setVisible(isIndoor);
+  }, [markers, isIndoor, filtered, selectedItem?.id]);
+  const selectItem = (item: IndoorItem) => {
+    setSelected(item.id);
+    mapRef.current?.camera.focus(item.coord, {
+      durationMs: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
+    });
+  };
 
   // 模拟时间：太阳、夜间灯光和业务状态
   useEffect(() => {
@@ -247,6 +342,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
       count: units.filter((u) => u.properties.level_id === l.id).length,
     })) ?? [];
   const chooseFloor = (id: string) => {
+    setSelected(null);
     floor?.set(id);
     setCurrent(id);
     if (api) api.view('indoor');
@@ -302,6 +398,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
         data-ready={snapshot?.ready ?? false}
         data-view={snapshot?.view ?? 'outdoor'}
         data-level={snapshot?.level ?? ''}
+        data-mode={mode?.id ?? ''}
         data-panel-open={panelOpen ? '' : undefined}
       >
         <section className="map" ref={container} aria-label={t.overview} />
@@ -323,6 +420,8 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
             levelId={current}
             indoor={snapshot?.view === 'indoor'}
             label={t.fallback}
+            items={isIndoor ? filtered : []}
+            onSelect={setSelected}
           />
         )}
         <fieldset className="floors" aria-label={t.floors}>
@@ -352,7 +451,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
           {siteName}
           {snapshot?.fallback && <span className="muted"> · {t.fallback}</span>}
         </div>
-        {focused && (
+        {focused && !isIndoor && (
           <section className="twin-card" data-testid="twin-building-card" aria-label={focusedName}>
             <h2>{focusedName}</h2>
             <dl className="twin-facts">
@@ -387,6 +486,27 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
           </section>
         )}
         <div className="twin-tools">
+          {isIndoor && data && (
+            <label className="twin-business-control">
+              <span>{t.layer}</span>
+              <select
+                className="chip"
+                data-testid="twin-layer"
+                value={mode?.id ?? ''}
+                onChange={(e) => {
+                  setModeId(e.target.value);
+                  setQuery('');
+                  setSelected(null);
+                }}
+              >
+                {data.indoor.map((layer) => (
+                  <option key={layer.id} value={layer.id}>
+                    {t[layer.label]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {qualityOpen && (
             <QualityPanel
               t={t}
@@ -433,7 +553,7 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
               />
             </label>
           )}
-          {data?.legend && (
+          {!isIndoor && data?.legend && (
             <ul className="twin-legend">
               {data.legend.map((l) => (
                 <li key={l.label}>
@@ -443,40 +563,70 @@ export function TwinPage({ asset, load }: { asset: string; load(): Promise<TwinD
               ))}
             </ul>
           )}
-          <h2>{t.levels}</h2>
-          <ul className="rows">
-            {countByLevel.map(({ level, count }) => (
-              <li key={level.id}>
-                <button
-                  type="button"
-                  className="row"
-                  aria-pressed={snapshot?.view === 'indoor' && current === level.id}
-                  onClick={() => chooseFloor(level.id)}
-                >
-                  <span className="name">{pickLabel(level.shortName, [locale, 'en'])}</span>
-                  <span className="count">{count}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <h2>{t.facilities}</h2>
-          <dl className="twin-facts">
-            {facts.map(([term, value]) => (
-              <div key={term}>
-                <dt>{term}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
+          {isIndoor && mode ? (
+            <IndoorList
+              mode={mode}
+              items={filtered}
+              selected={selectedItem?.id ?? null}
+              query={query}
+              locale={locale}
+              floor={
+                pickLabel(data!.venue.levels.find((l) => l.id === current)!.shortName, [locale, 'en']) ?? ''
+              }
+              onQuery={setQuery}
+              onSelect={selectItem}
+            />
+          ) : (
+            <>
+              <h2>{t.levels}</h2>
+              <ul className="rows">
+                {countByLevel.map(({ level, count }) => (
+                  <li key={level.id}>
+                    <button
+                      type="button"
+                      className="row"
+                      aria-pressed={snapshot?.view === 'indoor' && current === level.id}
+                      onClick={() => chooseFloor(level.id)}
+                    >
+                      <span className="name">{pickLabel(level.shortName, [locale, 'en'])}</span>
+                      <span className="count">{count}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <h2>{t.facilities}</h2>
+              <dl className="twin-facts">
+                {facts.map(([term, value]) => (
+                  <div key={term}>
+                    <dt>{term}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          )}
           <p className="muted">
             {t.simulation} · {t.offline}
           </p>
-          {data && (
+          {!isIndoor && data && (
             <a className="link" href={data.operationsHref}>
               {t.more} →
             </a>
           )}
         </aside>
+        {selectedItem && (
+          <IndoorDetail
+            item={selectedItem}
+            locale={locale}
+            floor={
+              pickLabel(data!.venue.levels.find((l) => l.id === selectedItem.levelId)!.shortName, [
+                locale,
+                'en',
+              ]) ?? ''
+            }
+            onClose={() => setSelected(null)}
+          />
+        )}
         {(loading || (error && !data)) && (
           <div className="map-status" role={error ? 'alert' : 'status'}>
             {error ? (

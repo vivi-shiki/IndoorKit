@@ -1,4 +1,4 @@
-import { definePlugin } from '@indoorkit/core';
+import { definePlugin, type ScreenPoint, themes } from '@indoorkit/core';
 import type { Feature, Point } from 'geojson';
 import { floorOverlay } from './overlay';
 
@@ -13,6 +13,11 @@ export interface MarkerInput {
 }
 
 export interface MarkerApi {
+  /** Replace one complete dataset in one source update; invalid input leaves the previous data intact. */
+  replaceAll(markers: readonly MarkerInput[]): void;
+  setVisible(visible: boolean): void;
+  pick(point: ScreenPoint, radius?: number): string | null;
+  rendered(): string[];
   add(marker: MarkerInput): string;
   /** 改标记的文字、颜色或位置（同一楼层内） */
   update(id: string, patch: Partial<Pick<MarkerInput, 'label' | 'color' | 'coord'>>): void;
@@ -52,6 +57,21 @@ export const markerPlugin = definePlugin({
       },
     ]);
     const markers = new Map<string, Feature<Point>>();
+    const feature = ({ id, coord, floor: ref, label, color }: MarkerInput): Feature<Point> => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: coord },
+      properties: {
+        id,
+        level_id: (ref ? overlay.floor.resolve(ref) : overlay.floor.current()).id,
+        label: label ?? '',
+        color: color ?? DEFAULT_COLOR,
+      },
+    });
+    ctx.on('theme:change', ({ name }) => {
+      const theme = themes[name === 'dark' ? 'dark' : 'light'];
+      ctx.map.setPaintProperty('indoor-marker-labels', 'text-color', theme.label);
+      ctx.map.setPaintProperty('indoor-marker-labels', 'text-halo-color', theme.labelHalo);
+    });
 
     const sync = () => {
       overlay.setData([...markers.values()]);
@@ -59,14 +79,33 @@ export const markerPlugin = definePlugin({
     };
 
     return {
-      add({ id, coord, floor: ref, label, color }) {
-        if (markers.has(id)) throw new Error(`marker "${id}" already exists`);
-        const level = ref ? overlay.floor.resolve(ref) : overlay.floor.current();
-        markers.set(id, {
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: coord },
-          properties: { id, level_id: level.id, label: label ?? '', color: color ?? DEFAULT_COLOR },
+      replaceAll(items) {
+        const next = new Map<string, Feature<Point>>();
+        for (const item of items) {
+          if (next.has(item.id)) throw new Error(`marker "${item.id}" already exists`);
+          next.set(item.id, feature(item));
+        }
+        markers.clear();
+        for (const [id, item] of next) markers.set(id, item);
+        sync();
+      },
+      setVisible(visible) {
+        for (const id of ['indoor-markers', 'indoor-marker-labels'])
+          ctx.map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+      },
+      pick(point, radius = 12) {
+        const hits = ctx.queryRendered(['indoor-markers'], { point, radius }).map((feature) => {
+          const at = ctx.map.project((feature.geometry as Point).coordinates as [number, number]);
+          return { id: String(feature.properties.id), distance: Math.hypot(at.x - point.x, at.y - point.y) };
         });
+        hits.sort((a, b) => a.distance - b.distance);
+        return hits[0]?.id ?? null;
+      },
+      rendered: () => [...new Set(ctx.queryRendered(['indoor-markers']).map((f) => String(f.properties.id)))],
+      add(input) {
+        const { id } = input;
+        if (markers.has(id)) throw new Error(`marker "${id}" already exists`);
+        markers.set(id, feature(input));
         sync();
         return id;
       },

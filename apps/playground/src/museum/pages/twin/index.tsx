@@ -1,4 +1,5 @@
 import { type TwinData, TwinPage } from '../../../app/twin';
+import { museumIndoor } from '../../adapters/twin-indoor';
 import { museumRoomStatus } from '../../adapters/twin-status';
 import { loadMuseum } from '../../adapters/venue';
 
@@ -6,6 +7,7 @@ async function load(): Promise<TwinData> {
   const ctx = await loadMuseum();
   return {
     venue: ctx.venue,
+    indoor: museumIndoor(ctx),
     operationsHref: '#/museum/environment',
     timeDependent: true,
     status: (time) => {

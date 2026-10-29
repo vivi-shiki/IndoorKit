@@ -1,0 +1,74 @@
+import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial } from 'three';
+import { describe, expect, it } from 'vitest';
+import { applyCampusView, disposeTree } from '../src/twin/scene';
+
+describe('campus context in the interior view', () => {
+  it('hides roof vehicles without moving the ground-level instances', () => {
+    const model = new Group();
+    const vehicles = new Group();
+    vehicles.name = 'Vehicles';
+    vehicles.userData.indoorHideAbove = 1;
+    const cars = new InstancedMesh(new BoxGeometry(), new MeshStandardMaterial(), 2);
+    const ground = new Matrix4().makeTranslation(10, 0.3, 12);
+    const roof = new Matrix4().makeTranslation(15, 10, 16);
+    cars.setMatrixAt(0, ground);
+    cars.setMatrixAt(1, roof);
+    vehicles.add(cars);
+    model.add(vehicles);
+    const read = new Matrix4();
+    applyCampusView(model, 'indoor');
+    cars.getMatrixAt(0, read);
+    expect(read.elements).toEqual(ground.elements.map(Math.fround));
+    cars.getMatrixAt(1, read);
+    expect(read.elements[0]).toBe(0);
+    applyCampusView(model, 'outdoor');
+    cars.getMatrixAt(1, read);
+    expect(read.elements).toEqual(roof.elements);
+    disposeTree(model);
+  });
+
+  it('hides only building envelopes and their attachments, and restores them outside', () => {
+    const root = new Group();
+    const node = (name: string, data = {}) => {
+      const object = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
+      object.name = name;
+      object.userData = data;
+      root.add(object);
+      return object;
+    };
+    const shell = node('Building_1', { buildingId: 'main', height: 20 });
+    const surface = node('Building_2', { buildingId: 'surface', height: 0 });
+    const bridge = node('Attached 1', { indoorHidden: true });
+    const entrance = node('Attached 2', { indoorKeepMaterial: 'paving' });
+    const grass = node('Site');
+    const trees = node('Trees', { props: true });
+    const context = node('Context', { props: true });
+    const entryGroup = new Group();
+    entryGroup.name = 'Accessible_entrance';
+    entryGroup.userData.indoorKeepMaterial = 'paving';
+    const entrancePath = new Mesh(new BoxGeometry(), new MeshStandardMaterial({ name: 'paving' }));
+    entryGroup.add(entrancePath);
+    root.add(entryGroup);
+    const bays = new Group();
+    bays.name = 'Bays';
+    const roof = new Group();
+    roof.name = 'Bays/4F';
+    roof.userData.indoorHidden = true;
+    const ground = new Group();
+    ground.name = 'Bays/P2';
+    bays.add(roof, ground);
+    root.add(bays);
+    const before = root.children.map((o) => o.position.toArray());
+    applyCampusView(root, 'indoor');
+    expect([shell, bridge, entrance, roof].every((o) => !o.visible)).toBe(true);
+    expect([surface, grass, trees, context, ground, entrancePath].every((o) => o.visible)).toBe(true);
+    expect(root.children.map((o) => o.position.toArray())).toEqual(before);
+    applyCampusView(root, 'outdoor');
+    expect([shell, bridge, entrance, roof].every((o) => o.visible)).toBe(true);
+    trees.visible = false;
+    applyCampusView(root, 'indoor');
+    applyCampusView(root, 'outdoor');
+    expect(trees.visible).toBe(false);
+    disposeTree(root);
+  });
+});

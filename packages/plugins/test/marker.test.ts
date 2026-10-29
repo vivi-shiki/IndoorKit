@@ -22,6 +22,51 @@ const markerData = (fake: FakeMap) =>
   fake.getSourceData('indoor-markers') as GeoJSON.FeatureCollection<GeoJSON.Point>;
 
 describe('markerPlugin', () => {
+  it('picks the closest marker when hit areas overlap', async () => {
+    const { map, fake } = await open();
+    map.plugins.marker.replaceAll([
+      { id: 'far', coord: [0, 0] },
+      { id: 'near', coord: [0.0001, 0] },
+    ]);
+    expect(map.plugins.marker.pick(fake.project([0.0001, 0]))).toBe('near');
+    await map.destroy();
+  });
+
+  it('replaces a complete business layer atomically and keeps floor filtering', async () => {
+    const { map, fake } = await open();
+    const markers = map.plugins.marker;
+    markers.replaceAll([
+      { id: 'device', floor: '1F', coord: [0, 0], label: 'Monitor' },
+      { id: 'upstairs', floor: '2F', coord: [0, 0], label: 'Nurse' },
+    ]);
+    expect(markers.count()).toBe(2);
+    expect(markerData(fake).features.map((f) => f.properties!.id)).toEqual(['device']);
+    markers.replaceAll([{ id: 'person', floor: '1F', coord: [0.001, 0], label: 'Nurse' }]);
+    expect(markerData(fake).features.map((f) => f.properties!.id)).toEqual(['person']);
+    expect(markers.count()).toBe(1);
+    expect(() => markers.replaceAll([{ id: 'bad', floor: '9F', coord: [0, 0] }])).toThrow(/unknown floor/);
+    expect(markerData(fake).features.map((f) => f.properties!.id)).toEqual(['person']);
+    await map.destroy();
+    expect(map.resources.size).toBe(0);
+  });
+
+  it('hides both marker layers without discarding the business data', async () => {
+    const { map, fake } = await open();
+    map.plugins.marker.add({ id: 'a', coord: [0, 0] });
+    map.plugins.marker.setVisible(false);
+    expect(map.plugins.marker.rendered()).toEqual([]);
+    expect(map.plugins.marker.pick({ x: 0, y: 0 })).toBeNull();
+    for (const id of ['indoor-markers', 'indoor-marker-labels'])
+      expect((fake.getLayer(id) as { layout: { visibility: string } }).layout.visibility).toBe('none');
+    expect(map.plugins.marker.count()).toBe(1);
+    map.plugins.marker.setVisible(true);
+    expect(map.plugins.marker.rendered()).toEqual(['a']);
+    expect((fake.getLayer('indoor-markers') as { layout: { visibility: string } }).layout.visibility).toBe(
+      'visible',
+    );
+    await map.destroy();
+  });
+
   it('adds a marker to the marker source', async () => {
     const { map, fake } = await open();
     map.plugins.marker.add({ id: 'wheelchair-1', floor: '1F', coord: [0.0005, 0.0005], label: '車椅子' });
