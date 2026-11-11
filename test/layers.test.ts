@@ -132,3 +132,16 @@ describe('SDK layer', () => {
     expect(types).not.toMatch(/TagPosition|PositionBatch|DataProvider|positions:update|geofence/);
   });
 });
+
+describe('map-free entry points', () => {
+  it('the venue index can be used on a server: @indoorkit/plugins/venue-index imports no map code', () => {
+    const pkg = JSON.parse(read('packages/plugins/package.json')) as { exports: Record<string, string> };
+    expect(pkg.exports['./venue-index']).toBe('./src/venue-index.ts');
+    expect(
+      offending(
+        ['packages/plugins/src/venue-index.ts'],
+        (m) => m.startsWith('maplibre-gl') || m.startsWith('@indoorkit/core') || m.startsWith('.'),
+      ),
+    ).toEqual([]);
+  });
+});

@@ -4,7 +4,8 @@
   "type": "module",
   "license": "MIT",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./venue-index": "./src/venue-index.ts"
   },
   "scripts": {
     "build": "vite build"
